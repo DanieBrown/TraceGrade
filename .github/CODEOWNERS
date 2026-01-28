@@ -1,0 +1,43 @@
+# This file defines code owners for the repository
+# Lines starting with '#' are comments
+# Each line is a file pattern followed by one or more owners (@username or @org/team-name)
+# The last matching pattern takes precedence
+
+# Default owner for everything in the repo
+* @DanieBrown
+
+# Documentation
+*.md @DanieBrown
+docs/ @DanieBrown
+
+# CI/CD configurations
+.github/ @DanieBrown
+
+# Configuration files
+*.json @DanieBrown
+*.yml @DanieBrown
+*.yaml @DanieBrown
+
+# Frontend (React/Redux/Zustand)
+frontend/ @DanieBrown
+src/frontend/ @DanieBrown
+*.jsx @DanieBrown
+*.tsx @DanieBrown
+*.css @DanieBrown
+*.scss @DanieBrown
+
+# Backend (Go)
+backend/ @DanieBrown
+*.go @DanieBrown
+go.mod @DanieBrown
+go.sum @DanieBrown
+
+# Tests
+tests/ @DanieBrown
+**/*.test.* @DanieBrown
+**/*.spec.* @DanieBrown
+*_test.go @DanieBrown
+
+# Dependencies
+package.json @DanieBrown
+yarn.lock @DanieBrown

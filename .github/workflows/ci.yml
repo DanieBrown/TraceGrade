@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  frontend:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'yarn'
+
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+
+    - name: Lint
+      run: yarn lint || echo "Add 'lint' script to package.json"
+
+    - name: Build frontend
+      run: yarn build || echo "Add 'build' script to package.json"
+
+    # Uncomment when tests are added
+    # - name: Run tests
+    #   run: yarn test
+
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+        cache: true
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Lint with golangci-lint
+      uses: golangci/golangci-lint-action@v4
+      with:
+        version: latest
+
+    - name: Build backend
+      run: go build -v ./...
+
+    # Uncomment when tests are added
+    # - name: Run tests
+    #   run: go test -v ./...

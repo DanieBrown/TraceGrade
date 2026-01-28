@@ -1,0 +1,28 @@
+# Add labels to PRs based on file paths
+documentation:
+  - '**/*.md'
+  - 'docs/**/*'
+
+dependencies:
+  - 'package.json'
+  - 'package-lock.json'
+  - 'yarn.lock'
+  - 'pnpm-lock.yaml'
+  - 'requirements.txt'
+  - 'Pipfile'
+  - 'Gemfile'
+  - 'go.mod'
+  - 'Cargo.toml'
+
+ci/cd:
+  - '.github/**/*'
+  - '.gitlab-ci.yml'
+  - 'Dockerfile'
+  - 'docker-compose.yml'
+
+tests:
+  - '**/*.test.*'
+  - '**/*.spec.*'
+  - 'tests/**/*'
+  - 'test/**/*'
+  - '__tests__/**/*'
