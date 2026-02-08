@@ -46,6 +46,23 @@ rate-limit:
 # Server Configuration
 server:
   port: ${SERVER_PORT:8080}
+  forward-headers-strategy: native
+
+# Security Headers Configuration
+security-headers:
+  https-redirect-enabled: ${SECURITY_HTTPS_REDIRECT:false}
+  hsts-max-age-seconds: ${SECURITY_HSTS_MAX_AGE:31536000}
+  content-security-policy: >-
+    default-src 'self';
+    script-src 'self';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data: blob:;
+    font-src 'self' data:;
+    connect-src 'self';
+    frame-ancestors 'self';
+    base-uri 'self';
+    form-action 'self'
+  permissions-policy: "camera=(), microphone=(), geolocation=(), payment=()"
 
 # Actuator Configuration
 management:
