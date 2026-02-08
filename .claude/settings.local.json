@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" issue create:*)",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" project item-add 1 --owner DanieBrown --url https://github.com/DanieBrown/TraceGrade/issues/11)",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" project item-add 1 --owner DanieBrown --url https://github.com/DanieBrown/TraceGrade/issues/12)",
+      "Bash(gh issue view:*)",
+      "Bash(mvn test:*)"
+    ]
+  }
+}

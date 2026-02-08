@@ -1,0 +1,64 @@
+# ===========================
+# Spring Boot Main Configuration
+# ===========================
+
+spring:
+  application:
+    name: tracegrade-backend
+
+  # Default profile
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  # DataSource Configuration
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/tracegrade}
+    username: ${SPRING_DATASOURCE_USERNAME:tracegrade}
+    password: ${SPRING_DATASOURCE_PASSWORD:tracegrade_dev_password}
+    driver-class-name: org.postgresql.Driver
+
+  # JPA/Hibernate Configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # Redis Configuration
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+
+# Rate Limiting Configuration
+rate-limit:
+  enabled: ${RATE_LIMIT_ENABLED:true}
+  api-limit: ${RATE_LIMIT_API:100}
+  api-window-seconds: 60
+  upload-limit: ${RATE_LIMIT_UPLOAD:10}
+  upload-window-seconds: 3600
+  ai-limit: ${RATE_LIMIT_AI:50}
+  ai-window-seconds: 3600
+
+# Server Configuration
+server:
+  port: ${SERVER_PORT:8080}
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.tracegrade: DEBUG

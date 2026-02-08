@@ -1,0 +1,43 @@
+# ===========================
+# Docker Compose Override Example
+# ===========================
+# Copy this file to docker-compose.override.yml to customize your local development environment
+# docker-compose.override.yml is automatically loaded by Docker Compose and git-ignored
+
+version: '3.8'
+
+services:
+  # Example: Customize backend service
+  backend:
+    environment:
+      # Add custom environment variables
+      SPRING_JPA_SHOW_SQL: "true"
+      LOGGING_LEVEL_COM_TRACEGRADE: "DEBUG"
+    # ports:
+      # Map to a different port if 8080 is in use
+      # - "8081:8080"
+
+  # Example: Customize frontend service
+  frontend:
+    # ports:
+      # Map to a different port if 5173 is in use
+      # - "3000:5173"
+    # volumes:
+      # Add additional volume mounts
+      # - ./custom-config:/app/config
+
+  # Example: Customize postgres service
+  postgres:
+    # ports:
+      # Map to a different port if 5432 is in use
+      # - "5433:5432"
+
+  # Example: Add additional development tools
+  # mailhog:
+  #   image: mailhog/mailhog:latest
+  #   container_name: tracegrade-mailhog
+  #   ports:
+  #     - "1025:1025"  # SMTP
+  #     - "8025:8025"  # Web UI
+  #   networks:
+  #     - tracegrade-network
