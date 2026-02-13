@@ -85,6 +85,15 @@ management:
 sanitization:
   enabled: ${SANITIZATION_ENABLED:true}
 
+# CSRF Protection Configuration
+csrf:
+  enabled: ${CSRF_ENABLED:true}
+  cookie-name: XSRF-TOKEN
+  header-name: X-XSRF-TOKEN
+  cookie-path: /
+  cookie-secure: ${CSRF_COOKIE_SECURE:false}
+  same-site: Strict
+
 # Logging Configuration
 logging:
   level:

@@ -30,3 +30,7 @@ security-headers:
 
 sanitization:
   enabled: true
+
+csrf:
+  enabled: true
+  cookie-secure: false

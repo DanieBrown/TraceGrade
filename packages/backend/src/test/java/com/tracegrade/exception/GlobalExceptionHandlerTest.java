@@ -2,6 +2,7 @@ package com.tracegrade.exception;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -26,6 +27,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.tracegrade.config.CsrfAccessDeniedHandler;
+import com.tracegrade.config.CsrfProperties;
 import com.tracegrade.config.SecurityConfig;
 import com.tracegrade.config.SecurityHeadersProperties;
 import com.tracegrade.dto.request.CreateExamTemplateRequest;
@@ -39,12 +42,15 @@ import jakarta.validation.constraints.Min;
 
 @WebMvcTest(controllers = GlobalExceptionHandlerTest.TestController.class)
 @Import({SecurityConfig.class, SecurityHeadersProperties.class,
+         CsrfProperties.class, CsrfAccessDeniedHandler.class,
          RateLimitProperties.class, SanitizationProperties.class,
          GlobalExceptionHandler.class})
 @TestPropertySource(properties = {
         "security-headers.https-redirect-enabled=false",
         "rate-limit.enabled=false",
-        "sanitization.enabled=false"
+        "sanitization.enabled=false",
+        "csrf.enabled=true",
+        "csrf.cookie-secure=false"
 })
 class GlobalExceptionHandlerTest {
 
@@ -97,6 +103,7 @@ class GlobalExceptionHandlerTest {
         @DisplayName("Should return 400 with VALIDATION_ERROR for invalid request body")
         void shouldReturn400ForValidationErrors() throws Exception {
             mockMvc.perform(post("/test/validate")
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isBadRequest())
@@ -111,6 +118,7 @@ class GlobalExceptionHandlerTest {
         @DisplayName("Should return field-level details for each violated constraint")
         void shouldReturnFieldDetails() throws Exception {
             mockMvc.perform(post("/test/validate")
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isBadRequest())
@@ -144,6 +152,7 @@ class GlobalExceptionHandlerTest {
         @DisplayName("Should return 400 with INVALID_REQUEST for malformed JSON")
         void shouldReturn400ForMalformedJson() throws Exception {
             mockMvc.perform(post("/test/validate")
+                            .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{invalid json"))
                     .andExpect(status().isBadRequest())

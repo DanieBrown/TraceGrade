@@ -21,11 +21,14 @@ import com.tracegrade.ratelimit.RateLimitService;
 
 @WebMvcTest
 @Import({SecurityConfig.class, SecurityHeadersProperties.class,
+         CsrfProperties.class, CsrfAccessDeniedHandler.class,
          RateLimitProperties.class, SanitizationProperties.class})
 @TestPropertySource(properties = {
         "security-headers.https-redirect-enabled=false",
         "rate-limit.enabled=false",
-        "sanitization.enabled=false"
+        "sanitization.enabled=false",
+        "csrf.enabled=true",
+        "csrf.cookie-secure=false"
 })
 class SecurityConfigTest {
 

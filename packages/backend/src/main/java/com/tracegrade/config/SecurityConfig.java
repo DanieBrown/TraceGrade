@@ -7,34 +7,72 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 /**
  * Security configuration for TraceGrade.
- * Configures stateless JWT-based auth, security headers (HSTS, CSP,
- * X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy),
- * and conditional HTTPS redirect.
+ * Configures stateless JWT-based auth, CSRF protection (double-submit cookie),
+ * security headers (HSTS, CSP, X-Frame-Options, X-Content-Type-Options,
+ * Referrer-Policy, Permissions-Policy), and conditional HTTPS redirect.
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final SecurityHeadersProperties securityHeadersProperties;
+    private final CsrfProperties csrfProperties;
+    private final CsrfAccessDeniedHandler csrfAccessDeniedHandler;
 
-    public SecurityConfig(SecurityHeadersProperties securityHeadersProperties) {
+    public SecurityConfig(SecurityHeadersProperties securityHeadersProperties,
+                          CsrfProperties csrfProperties,
+                          CsrfAccessDeniedHandler csrfAccessDeniedHandler) {
         this.securityHeadersProperties = securityHeadersProperties;
+        this.csrfProperties = csrfProperties;
+        this.csrfAccessDeniedHandler = csrfAccessDeniedHandler;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // CSRF protection
+        if (csrfProperties.isEnabled()) {
+            CookieCsrfTokenRepository tokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+            tokenRepository.setCookieName(csrfProperties.getCookieName());
+            tokenRepository.setHeaderName(csrfProperties.getHeaderName());
+            tokenRepository.setCookiePath(csrfProperties.getCookiePath());
+            tokenRepository.setCookieCustomizer(cookie -> {
+                cookie.secure(csrfProperties.isCookieSecure());
+                cookie.sameSite(csrfProperties.getSameSite());
+            });
+
+            // Use plain CsrfTokenRequestAttributeHandler so the frontend can
+            // send the raw cookie value in the header without XOR encoding.
+            CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
+            requestHandler.setCsrfRequestAttributeName(null); // opt out of deferred loading
+
+            http.csrf(csrf -> csrf
+                    .csrfTokenRepository(tokenRepository)
+                    .csrfTokenRequestHandler(requestHandler)
+                    .ignoringRequestMatchers("/actuator/**")
+            );
+
+            // Eagerly load deferred CSRF token so the cookie is set on every response
+            http.addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class);
+        } else {
+            http.csrf(csrf -> csrf.disable());
+        }
+
         http
-                .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().permitAll() // Will be restricted when auth is implemented
-                );
+                )
+                .exceptionHandling(ex -> ex
+                        .accessDeniedHandler(csrfAccessDeniedHandler));
 
         // Security headers
         http.headers(headers -> headers
