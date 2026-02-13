@@ -6,6 +6,13 @@ spring:
   application:
     name: tracegrade-backend
 
+  # File Upload Configuration
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+      enabled: true
+
   # Default profile
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
@@ -73,6 +80,10 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+
+# Input Sanitization Configuration
+sanitization:
+  enabled: ${SANITIZATION_ENABLED:true}
 
 # Logging Configuration
 logging:

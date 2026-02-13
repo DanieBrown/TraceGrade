@@ -13,6 +13,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -28,9 +31,11 @@ import lombok.Setter;
 @Builder
 public class StudentSubmission extends BaseEntity {
 
+    @NotNull
     @Column(name = "assignment_id", nullable = false)
     private UUID assignmentId;
 
+    @NotNull
     @Column(name = "student_id", nullable = false)
     private UUID studentId;
 
@@ -38,9 +43,12 @@ public class StudentSubmission extends BaseEntity {
     @JoinColumn(name = "exam_template_id")
     private ExamTemplate examTemplate;
 
+    @NotBlank
     @Column(name = "submission_image_urls", nullable = false, columnDefinition = "TEXT")
     private String submissionImageUrls;
 
+    @NotBlank
+    @Size(max = 10)
     @Column(name = "original_format", nullable = false, length = 10)
     private String originalFormat;
 

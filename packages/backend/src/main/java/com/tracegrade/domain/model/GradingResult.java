@@ -10,6 +10,10 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -32,19 +36,25 @@ public class GradingResult extends BaseEntity {
     @Column(name = "grade_id")
     private UUID gradeId;
 
+    @DecimalMin("0")
     @Column(name = "ai_score", precision = 10, scale = 2)
     private BigDecimal aiScore;
 
     @Column(name = "final_score", precision = 10, scale = 2)
     private BigDecimal finalScore;
 
+    @NotNull
+    @DecimalMin("0")
+    @DecimalMax("100")
     @Column(name = "confidence_score", nullable = false, precision = 5, scale = 2)
     private BigDecimal confidenceScore;
 
+    @NotNull
     @Column(name = "needs_review", nullable = false)
     @Builder.Default
     private Boolean needsReview = false;
 
+    @NotBlank
     @Column(name = "question_scores", nullable = false, columnDefinition = "TEXT")
     private String questionScores;
 

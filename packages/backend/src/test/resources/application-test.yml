@@ -27,3 +27,6 @@ rate-limit:
 
 security-headers:
   https-redirect-enabled: false
+
+sanitization:
+  enabled: true

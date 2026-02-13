@@ -15,14 +15,17 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.tracegrade.filter.SanitizationProperties;
 import com.tracegrade.ratelimit.RateLimitProperties;
 import com.tracegrade.ratelimit.RateLimitService;
 
 @WebMvcTest
-@Import({SecurityConfig.class, SecurityHeadersProperties.class, RateLimitProperties.class})
+@Import({SecurityConfig.class, SecurityHeadersProperties.class,
+         RateLimitProperties.class, SanitizationProperties.class})
 @TestPropertySource(properties = {
         "security-headers.https-redirect-enabled=false",
-        "rate-limit.enabled=false"
+        "rate-limit.enabled=false",
+        "sanitization.enabled=false"
 })
 class SecurityConfigTest {
 

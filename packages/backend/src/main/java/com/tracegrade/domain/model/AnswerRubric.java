@@ -8,6 +8,8 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,6 +29,8 @@ public class AnswerRubric extends BaseEntity {
     @JoinColumn(name = "exam_template_id", nullable = false)
     private ExamTemplate examTemplate;
 
+    @NotNull
+    @Positive
     @Column(name = "question_number", nullable = false)
     private Integer questionNumber;
 
@@ -36,6 +40,8 @@ public class AnswerRubric extends BaseEntity {
     @Column(name = "answer_image_url", length = 500)
     private String answerImageUrl;
 
+    @NotNull
+    @Positive
     @Column(name = "points_available", nullable = false, precision = 10, scale = 2)
     private BigDecimal pointsAvailable;
 
