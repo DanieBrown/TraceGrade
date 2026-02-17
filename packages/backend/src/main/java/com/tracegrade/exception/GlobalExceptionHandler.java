@@ -155,6 +155,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(ApiResponse.error(error));
     }
 
+    @ExceptionHandler(StorageException.class)
+    public ResponseEntity<ApiResponse<Void>> handleStorageException(
+            StorageException ex) {
+        log.error("Storage operation [{}] failed: {}", ex.getOperation(), ex.getMessage(), ex);
+        ApiError error = ApiError.of("STORAGE_ERROR", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.error(error));
+    }
+
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodNotAllowed(
             HttpRequestMethodNotSupportedException ex) {

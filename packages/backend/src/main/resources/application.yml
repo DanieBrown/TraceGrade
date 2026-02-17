@@ -94,6 +94,14 @@ csrf:
   cookie-secure: ${CSRF_COOKIE_SECURE:false}
   same-site: Strict
 
+# Storage Configuration
+storage:
+  provider: ${STORAGE_PROVIDER:local}
+  s3:
+    bucket-name: ${S3_BUCKET_NAME:tracegrade-exams-dev}
+    region: ${AWS_REGION:us-east-1}
+    presigned-url-expiration-minutes: 15
+
 # Logging Configuration
 logging:
   level:

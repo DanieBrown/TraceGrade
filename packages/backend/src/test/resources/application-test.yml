@@ -34,3 +34,6 @@ sanitization:
 csrf:
   enabled: true
   cookie-secure: false
+
+storage:
+  provider: local
