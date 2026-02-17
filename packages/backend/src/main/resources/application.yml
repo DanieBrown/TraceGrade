@@ -100,6 +100,7 @@ storage:
   s3:
     bucket-name: ${S3_BUCKET_NAME:tracegrade-exams-dev}
     region: ${AWS_REGION:us-east-1}
+    endpoint: ${S3_ENDPOINT:}
     presigned-url-expiration-minutes: 15
 
 # Logging Configuration
