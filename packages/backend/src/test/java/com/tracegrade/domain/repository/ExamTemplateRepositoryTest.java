@@ -1,11 +1,14 @@
 package com.tracegrade.domain.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import jakarta.validation.ConstraintViolationException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,6 +17,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.tracegrade.domain.model.AnswerRubric;
 import com.tracegrade.domain.model.DifficultyLevel;
 import com.tracegrade.domain.model.ExamTemplate;
 
@@ -123,5 +127,127 @@ class ExamTemplateRepositoryTest {
 
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getName()).isEqualTo("Math Exam");
+    }
+
+    @Test
+    @DisplayName("Should reject ExamTemplate when required fields are missing")
+    void shouldRejectWhenRequiredFieldsMissing() {
+        ExamTemplate template = ExamTemplate.builder()
+                .name("")
+                .build();
+
+        assertThatThrownBy(() -> entityManager.persistAndFlush(template))
+                .isInstanceOf(ConstraintViolationException.class);
+    }
+
+    @Test
+    @DisplayName("Should load AnswerRubrics when fetching ExamTemplate")
+    void shouldLoadAnswerRubricsRelationship() {
+        ExamTemplate template = ExamTemplate.builder()
+                .teacherId(UUID.randomUUID())
+                .name("Rubric Test Exam")
+                .totalPoints(new BigDecimal("100.00"))
+                .questionsJson("[{\"q\":1},{\"q\":2}]")
+                .build();
+        ExamTemplate saved = entityManager.persistAndFlush(template);
+
+        AnswerRubric rubric1 = AnswerRubric.builder()
+                .examTemplate(saved)
+                .questionNumber(1)
+                .answerText("Answer 1")
+                .pointsAvailable(new BigDecimal("50.00"))
+                .build();
+        AnswerRubric rubric2 = AnswerRubric.builder()
+                .examTemplate(saved)
+                .questionNumber(2)
+                .answerText("Answer 2")
+                .pointsAvailable(new BigDecimal("50.00"))
+                .build();
+        entityManager.persistAndFlush(rubric1);
+        entityManager.persistAndFlush(rubric2);
+        entityManager.clear();
+
+        ExamTemplate found = examTemplateRepository.findById(saved.getId()).orElseThrow();
+
+        assertThat(found.getAnswerRubrics()).hasSize(2);
+        assertThat(found.getAnswerRubrics())
+                .extracting(AnswerRubric::getQuestionNumber)
+                .containsExactlyInAnyOrder(1, 2);
+    }
+
+    @Test
+    @DisplayName("Should save and retrieve description and gradeLevel fields")
+    void shouldSaveAndRetrieveNewFields() {
+        ExamTemplate template = ExamTemplate.builder()
+                .teacherId(UUID.randomUUID())
+                .name("Grade Level Test")
+                .subject("Science")
+                .gradeLevel("10th Grade")
+                .description("A comprehensive science exam covering chemistry basics")
+                .totalPoints(new BigDecimal("100.00"))
+                .questionsJson("[]")
+                .build();
+
+        ExamTemplate saved = entityManager.persistAndFlush(template);
+        entityManager.clear();
+
+        ExamTemplate found = examTemplateRepository.findById(saved.getId()).orElseThrow();
+
+        assertThat(found.getDescription()).isEqualTo("A comprehensive science exam covering chemistry basics");
+        assertThat(found.getGradeLevel()).isEqualTo("10th Grade");
+    }
+
+    @Test
+    @DisplayName("Should find exam templates by grade level")
+    void shouldFindByGradeLevel() {
+        UUID teacherId = UUID.randomUUID();
+        entityManager.persistAndFlush(ExamTemplate.builder()
+                .teacherId(teacherId)
+                .name("3rd Grade Math")
+                .gradeLevel("3rd Grade")
+                .totalPoints(new BigDecimal("50.00"))
+                .questionsJson("[]")
+                .build());
+        entityManager.persistAndFlush(ExamTemplate.builder()
+                .teacherId(teacherId)
+                .name("10th Grade Math")
+                .gradeLevel("10th Grade")
+                .totalPoints(new BigDecimal("100.00"))
+                .questionsJson("[]")
+                .build());
+        entityManager.clear();
+
+        List<ExamTemplate> results = examTemplateRepository.findByGradeLevel("3rd Grade");
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getName()).isEqualTo("3rd Grade Math");
+    }
+
+    @Test
+    @DisplayName("Should find exam templates by subject and grade level")
+    void shouldFindBySubjectAndGradeLevel() {
+        UUID teacherId = UUID.randomUUID();
+        entityManager.persistAndFlush(ExamTemplate.builder()
+                .teacherId(teacherId)
+                .name("3rd Grade Math")
+                .subject("Mathematics")
+                .gradeLevel("3rd Grade")
+                .totalPoints(new BigDecimal("50.00"))
+                .questionsJson("[]")
+                .build());
+        entityManager.persistAndFlush(ExamTemplate.builder()
+                .teacherId(teacherId)
+                .name("3rd Grade Science")
+                .subject("Science")
+                .gradeLevel("3rd Grade")
+                .totalPoints(new BigDecimal("100.00"))
+                .questionsJson("[]")
+                .build());
+        entityManager.clear();
+
+        List<ExamTemplate> results = examTemplateRepository.findBySubjectAndGradeLevel("Mathematics", "3rd Grade");
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getName()).isEqualTo("3rd Grade Math");
     }
 }

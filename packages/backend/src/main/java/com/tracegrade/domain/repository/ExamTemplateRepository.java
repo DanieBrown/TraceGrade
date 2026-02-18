@@ -12,4 +12,8 @@ public interface ExamTemplateRepository extends JpaRepository<ExamTemplate, UUID
     List<ExamTemplate> findByTeacherIdOrderByCreatedAtDesc(UUID teacherId);
 
     List<ExamTemplate> findByTeacherIdAndSubject(UUID teacherId, String subject);
+
+    List<ExamTemplate> findByGradeLevel(String gradeLevel);
+
+    List<ExamTemplate> findBySubjectAndGradeLevel(String subject, String gradeLevel);
 }

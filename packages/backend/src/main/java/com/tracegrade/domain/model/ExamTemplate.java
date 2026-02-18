@@ -51,6 +51,13 @@ public class ExamTemplate extends BaseEntity {
     @Column(name = "topic", length = 200)
     private String topic;
 
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Size(max = 50)
+    @Column(name = "grade_level", length = 50)
+    private String gradeLevel;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "difficulty_level", length = 20)
     private DifficultyLevel difficultyLevel;
