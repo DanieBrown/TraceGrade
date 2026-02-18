@@ -1,82 +1,33 @@
-import { useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import TopNav from './components/layout/TopNav'
+import PaperExamsPage from './pages/PaperExamsPage'
 
-function App() {
-  const [count, setCount] = useState(0)
-
+function Placeholder({ title }: { title: string }) {
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: 'white'
-    }}>
-      <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>TraceGrade</h1>
-      <p style={{ fontSize: '1.2rem', marginBottom: '2rem', opacity: 0.9 }}>
-        Teacher Productivity & Grade Management Platform
-      </p>
-
-      <div style={{
-        background: 'rgba(255, 255, 255, 0.1)',
-        padding: '2rem',
-        borderRadius: '1rem',
-        backdropFilter: 'blur(10px)',
-        maxWidth: '500px',
-        textAlign: 'center'
-      }}>
-        <p style={{ marginBottom: '1rem' }}>
-          Docker setup is working! 🎉
-        </p>
-        <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>
-          This is a placeholder page. Start building your application in the packages/frontend/src directory.
-        </p>
-
-        <div style={{ marginTop: '2rem' }}>
-          <button
-            onClick={() => setCount((count) => count + 1)}
-            style={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: '2px solid white',
-              color: 'white',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '0.5rem',
-              fontSize: '1rem',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'}
-            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-          >
-            Count is {count}
-          </button>
-          <p style={{ marginTop: '1rem', fontSize: '0.85rem', opacity: 0.7 }}>
-            Click to test hot reload - changes will appear instantly!
-          </p>
-        </div>
-      </div>
-
-      <div style={{
-        marginTop: '3rem',
-        padding: '1.5rem',
-        background: 'rgba(0, 0, 0, 0.2)',
-        borderRadius: '0.5rem',
-        maxWidth: '600px'
-      }}>
-        <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Next Steps:</h2>
-        <ul style={{ textAlign: 'left', lineHeight: '1.8', opacity: 0.9 }}>
-          <li>✅ Frontend running on <code>http://localhost:5173</code></li>
-          <li>✅ Backend API on <code>http://localhost:8080</code></li>
-          <li>✅ PostgreSQL database ready</li>
-          <li>✅ Redis cache ready</li>
-          <li>📖 Check <code>QUICKSTART.md</code> for usage</li>
-          <li>🚀 Start building in <code>packages/frontend/src</code></li>
-        </ul>
-      </div>
+    <div className="max-w-7xl mx-auto px-6 py-12">
+      <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+      <p className="mt-2 text-gray-500">Coming soon.</p>
     </div>
   )
 }
 
-export default App
+export default function App() {
+  return (
+    <BrowserRouter>
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <TopNav />
+        <main className="flex-1">
+          <Routes>
+            <Route path="/"            element={<Placeholder title="Dashboard" />} />
+            <Route path="/students"    element={<Placeholder title="Students" />} />
+            <Route path="/exams"       element={<Placeholder title="Exams" />} />
+            <Route path="/homework"    element={<Placeholder title="Homework" />} />
+            <Route path="/grades"      element={<Placeholder title="Grades" />} />
+            <Route path="/paper-exams" element={<PaperExamsPage />} />
+            <Route path="*"            element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
+  )
+}
