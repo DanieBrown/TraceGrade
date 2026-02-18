@@ -11,7 +11,7 @@ import jakarta.validation.Payload;
 
 @Documented
 @Constraint(validatedBy = FileUploadValidator.class)
-@Target({ElementType.FIELD, ElementType.PARAMETER})
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.TYPE_USE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidFileUpload {
 
