@@ -48,6 +48,11 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>sts</artifactId>
         </dependency>
+        <!-- AWS Secrets Manager (for OpenAI API key retrieval) -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>secretsmanager</artifactId>
+        </dependency>
         <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

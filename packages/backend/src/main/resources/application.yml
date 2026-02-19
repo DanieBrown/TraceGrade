@@ -103,6 +103,22 @@ storage:
     endpoint: ${S3_ENDPOINT:}
     presigned-url-expiration-minutes: 15
 
+# OpenAI Configuration
+openai:
+  key-source: ${OPENAI_KEY_SOURCE:env}
+  secret-name: ${OPENAI_SECRET_NAME:tracegrade/openai-api-key}
+  api-key: ${OPENAI_API_KEY:}
+  base-url: https://api.openai.com/v1
+  chat-model: ${OPENAI_CHAT_MODEL:gpt-4o}
+  vision-model: ${OPENAI_VISION_MODEL:gpt-4o}
+  timeout-seconds: ${OPENAI_TIMEOUT_SECONDS:30}
+  max-retries: ${OPENAI_MAX_RETRIES:3}
+  retry-base-delay-ms: ${OPENAI_RETRY_BASE_DELAY_MS:1000}
+  exam-max-tokens: ${OPENAI_EXAM_MAX_TOKENS:2000}
+  grading-max-tokens: ${OPENAI_GRADING_MAX_TOKENS:1000}
+  exam-temperature: 0.7
+  grading-temperature: 0.2
+
 # Logging Configuration
 logging:
   level:

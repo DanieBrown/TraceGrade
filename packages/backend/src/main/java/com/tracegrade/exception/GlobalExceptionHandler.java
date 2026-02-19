@@ -19,6 +19,8 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import com.tracegrade.dto.response.ApiError;
 import com.tracegrade.dto.response.ApiResponse;
 import com.tracegrade.dto.response.FieldError;
+import com.tracegrade.openai.exception.OpenAiException;
+import com.tracegrade.openai.exception.OpenAiRateLimitException;
 import com.tracegrade.rubric.DuplicateQuestionNumberException;
 
 import jakarta.validation.ConstraintViolationException;
@@ -212,6 +214,27 @@ public class GlobalExceptionHandler {
             DuplicateQuestionNumberException ex) {
         ApiError error = ApiError.of("DUPLICATE_QUESTION_NUMBER", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(error));
+    }
+
+    @ExceptionHandler(OpenAiRateLimitException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOpenAiRateLimit(
+            OpenAiRateLimitException ex) {
+        log.warn("OpenAI rate limit exhausted for operation [{}]: {}", ex.getOperation(), ex.getMessage());
+        ApiError error = ApiError.of("AI_RATE_LIMIT", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiResponse.error(error));
+    }
+
+    @ExceptionHandler(OpenAiException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOpenAiException(
+            OpenAiException ex) {
+        log.error("OpenAI API operation [{}] failed with status {}: {}",
+                ex.getOperation(), ex.getHttpStatus(), ex.getMessage(), ex);
+        ApiError error = ApiError.of("AI_ERROR", "AI service encountered an error");
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.error(error));
     }
 
     @ExceptionHandler(Exception.class)
