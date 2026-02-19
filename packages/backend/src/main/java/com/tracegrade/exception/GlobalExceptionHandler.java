@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import com.tracegrade.dto.response.ApiError;
 import com.tracegrade.dto.response.ApiResponse;
 import com.tracegrade.dto.response.FieldError;
+import com.tracegrade.rubric.DuplicateQuestionNumberException;
 
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -186,6 +187,13 @@ public class GlobalExceptionHandler {
         ApiError error = ApiError.of("UNSUPPORTED_MEDIA_TYPE",
                 "Content type '" + ex.getContentType() + "' is not supported");
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(ApiResponse.error(error));
+    }
+
+    @ExceptionHandler(DuplicateQuestionNumberException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDuplicateQuestionNumber(
+            DuplicateQuestionNumberException ex) {
+        ApiError error = ApiError.of("DUPLICATE_QUESTION_NUMBER", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(error));
     }
 
     @ExceptionHandler(Exception.class)
