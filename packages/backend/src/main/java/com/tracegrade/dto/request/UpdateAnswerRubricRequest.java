@@ -1,9 +1,7 @@
 package com.tracegrade.dto.request;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,12 +14,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CreateAnswerRubricRequest {
+public class UpdateAnswerRubricRequest {
 
-    // examTemplateId is provided via the URL path variable; this field is optional on the request body
-    private UUID examTemplateId;
-
-    @NotNull(message = "Question number is required")
     @Positive(message = "Question number must be positive")
     private Integer questionNumber;
 
@@ -29,7 +23,6 @@ public class CreateAnswerRubricRequest {
 
     private String answerImageUrl;
 
-    @NotNull(message = "Points available is required")
     @Positive(message = "Points available must be positive")
     private BigDecimal pointsAvailable;
 
