@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import com.tracegrade.dto.response.ApiError;
 import com.tracegrade.dto.response.ApiResponse;
@@ -90,6 +91,23 @@ public class GlobalExceptionHandler {
         ApiError error = ApiError.withDetails(
                 "VALIDATION_ERROR",
                 "Missing required parameter",
+                List.of(detail));
+
+        return ResponseEntity.badRequest().body(ApiResponse.error(error));
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingRequestPart(
+            MissingServletRequestPartException ex) {
+        FieldError detail = FieldError.builder()
+                .field(ex.getRequestPartName())
+                .code("REQUIRED")
+                .message("Request part '" + ex.getRequestPartName() + "' is required")
+                .build();
+
+        ApiError error = ApiError.withDetails(
+                "VALIDATION_ERROR",
+                "Missing required request part",
                 List.of(detail));
 
         return ResponseEntity.badRequest().body(ApiResponse.error(error));
