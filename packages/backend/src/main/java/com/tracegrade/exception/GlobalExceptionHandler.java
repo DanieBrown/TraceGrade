@@ -19,6 +19,7 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import com.tracegrade.dto.response.ApiError;
 import com.tracegrade.dto.response.ApiResponse;
 import com.tracegrade.dto.response.FieldError;
+import com.tracegrade.grading.GradingFailedException;
 import com.tracegrade.openai.exception.OpenAiException;
 import com.tracegrade.openai.exception.OpenAiRateLimitException;
 import com.tracegrade.rubric.DuplicateQuestionNumberException;
@@ -234,6 +235,16 @@ public class GlobalExceptionHandler {
         ApiError error = ApiError.of("AI_ERROR", "AI service encountered an error");
         return ResponseEntity
                 .status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.error(error));
+    }
+
+    @ExceptionHandler(GradingFailedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleGradingFailed(GradingFailedException ex) {
+        log.error("Grading failed for submissionId={}", ex.getSubmissionId(), ex);
+        ApiError error = ApiError.of("GRADING_FAILED",
+                "Grading could not be completed. The submission has been flagged for manual review.");
+        return ResponseEntity
+                .status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .body(ApiResponse.error(error));
     }
 
