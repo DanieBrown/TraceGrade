@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import FileUpload from '../features/submissions/FileUpload'
 import GradingResultCard from '../features/grading/GradingResultCard'
+import type { SavedScore } from '../features/grading/GradingResultCard'
+import GradingResultsList from '../features/grading/GradingResultsList'
+import type { GradedStudentRecord } from '../features/grading/GradingResultsList'
 import { useGrading } from '../features/grading/useGrading'
 
 // Placeholder exam data until the exam entity API is wired up
@@ -11,8 +14,6 @@ const DEMO_EXAMS = [
     tag: 'From Image',
     questions: 3,
     totalPoints: 20,
-    graded: 0,
-    total: 0,
   },
 ]
 
@@ -52,11 +53,17 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
 // ── Exam card ────────────────────────────────────────────────────────────────
 function ExamCard({
   exam,
+  gradedCount,
+  totalStudents,
   onGrade,
 }: {
   exam: (typeof DEMO_EXAMS)[0]
+  gradedCount: number
+  totalStudents: number
   onGrade: () => void
 }) {
+  const progressPct = totalStudents > 0 ? (gradedCount / totalStudents) * 100 : 0
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
       <div className="flex items-start justify-between gap-4">
@@ -83,13 +90,13 @@ function ExamCard({
         <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
           <span>Grading Progress</span>
           <span>
-            {exam.graded}/{exam.total} students ({exam.total === 0 ? 0 : Math.round((exam.graded / exam.total) * 100)}%)
+            {gradedCount}/{totalStudents} students ({Math.round(progressPct)}%)
           </span>
         </div>
-        <div className="w-full bg-gray-100 rounded-full h-1.5">
+        <div className="w-full bg-gray-100 rounded-full h-1.5" role="progressbar" aria-valuenow={gradedCount} aria-valuemin={0} aria-valuemax={totalStudents} aria-label={`${gradedCount} of ${totalStudents} students graded`}>
           <div
-            className="h-1.5 bg-indigo-500 rounded-full"
-            style={{ width: exam.total === 0 ? '0%' : `${(exam.graded / exam.total) * 100}%` }}
+            className="h-1.5 bg-indigo-500 rounded-full transition-all"
+            style={{ width: `${progressPct}%` }}
           />
         </div>
       </div>
@@ -102,12 +109,24 @@ function ExamCard({
 }
 
 // ── Grade panel ───────────────────────────────────────────────────────────────
-function GradePanel({ examTitle, onBack }: { examTitle: string; onBack: () => void }) {
+function GradePanel({
+  examTitle,
+  gradedStudents,
+  onBack,
+  onSaveGrades,
+}: {
+  examTitle: string
+  gradedStudents: GradedStudentRecord[]
+  onBack: () => void
+  onSaveGrades: (record: GradedStudentRecord) => void
+}) {
   const [selectedStudentId, setSelectedStudentId] = useState('')
   const [submissionId, setSubmissionId] = useState<string | null>(null)
   const { state: gradingState, grade, reset } = useGrading()
 
   const selectedStudent = DEMO_STUDENTS.find((s) => s.id === selectedStudentId)
+  const gradedStudentIds = new Set(gradedStudents.map((g) => g.studentId))
+  const ungradedStudents = DEMO_STUDENTS.filter((s) => !gradedStudentIds.has(s.id))
 
   // Reset grading state when the selected student changes
   useEffect(() => {
@@ -119,6 +138,33 @@ function GradePanel({ examTitle, onBack }: { examTitle: string; onBack: () => vo
   const handleUploadComplete = useCallback((sid: string) => {
     setSubmissionId((prev) => prev ?? sid)
   }, [])
+
+  function handleSaveGrades(savedScores: SavedScore[]) {
+    if (!selectedStudent || gradingState.phase !== 'success') return
+
+    const totalAdjusted = savedScores.reduce((s, sc) => s + sc.adjustedPoints, 0)
+    const totalAvailable = gradingState.parsedQuestions.reduce((s, q) => s + q.pointsAvailable, 0)
+
+    onSaveGrades({
+      studentId: selectedStudent.id,
+      studentName: selectedStudent.name,
+      submissionId: submissionId ?? '',
+      result: gradingState.result,
+      parsedQuestions: gradingState.parsedQuestions,
+      savedScores,
+      totalAdjusted,
+      totalAvailable,
+    })
+
+    setSubmissionId(null)
+    setSelectedStudentId('')
+    reset()
+  }
+
+  function handleCancel() {
+    setSubmissionId(null)
+    reset()
+  }
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6">
@@ -147,14 +193,18 @@ function GradePanel({ examTitle, onBack }: { examTitle: string; onBack: () => vo
           </p>
         </div>
         <p className="text-gray-500">
-          <span className="font-medium">Graded:</span> 0/0
+          <span className="font-medium">Graded:</span>{' '}
+          {gradedStudents.length}/{DEMO_STUDENTS.length}
         </p>
       </div>
 
       {/* Student selector */}
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-gray-700">Select Student to Grade</label>
+        <label htmlFor="student-select" className="text-sm font-medium text-gray-700">
+          Select Student to Grade
+        </label>
         <select
+          id="student-select"
           value={selectedStudentId}
           onChange={(e) => setSelectedStudentId(e.target.value)}
           className={[
@@ -163,11 +213,20 @@ function GradePanel({ examTitle, onBack }: { examTitle: string; onBack: () => vo
           ].join(' ')}
         >
           <option value="">Choose a student…</option>
-          {DEMO_STUDENTS.map((s) => (
+          {ungradedStudents.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
             </option>
           ))}
+          {gradedStudents.length > 0 && (
+            <optgroup label="Already graded">
+              {gradedStudents.map((g) => (
+                <option key={g.studentId} value={g.studentId}>
+                  {g.studentName} ✓
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
       </div>
 
@@ -175,7 +234,7 @@ function GradePanel({ examTitle, onBack }: { examTitle: string; onBack: () => vo
       {selectedStudent && (
         <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl p-5 space-y-4">
           <div className="flex items-start gap-2">
-            <span className="text-violet-600 text-lg">✦</span>
+            <span className="text-violet-600 text-lg" aria-hidden="true">✦</span>
             <div>
               <h3 className="text-sm font-semibold text-gray-900">
                 Upload Student's Handwritten Exam
@@ -204,15 +263,15 @@ function GradePanel({ examTitle, onBack }: { examTitle: string; onBack: () => vo
 
           {/* Loading state */}
           {gradingState.phase === 'loading' && (
-            <div className="flex items-center justify-center gap-3 py-6 text-indigo-700">
-              <span className="animate-spin text-xl">⟳</span>
+            <div className="flex items-center justify-center gap-3 py-6 text-indigo-700" role="status" aria-live="polite">
+              <span className="animate-spin text-xl" aria-hidden="true">⟳</span>
               <span className="text-sm font-medium">AI is grading the submission…</span>
             </div>
           )}
 
           {/* Error state */}
           {gradingState.phase === 'error' && (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-4 space-y-2">
+            <div className="rounded-lg bg-red-50 border border-red-200 p-4 space-y-2" role="alert">
               <p className="text-sm font-semibold text-red-700">Grading failed</p>
               <p className="text-xs text-red-600">{gradingState.message}</p>
               <button
@@ -229,12 +288,19 @@ function GradePanel({ examTitle, onBack }: { examTitle: string; onBack: () => vo
       {/* Grading result — rendered outside the upload area for visual prominence */}
       {gradingState.phase === 'success' && (
         <div className="space-y-2">
-          <p className="text-sm font-semibold text-gray-800">Grading Results</p>
           <GradingResultCard
             result={gradingState.result}
             parsedQuestions={gradingState.parsedQuestions}
+            studentName={selectedStudent?.name ?? 'Student'}
+            onSave={handleSaveGrades}
+            onCancel={handleCancel}
           />
         </div>
+      )}
+
+      {/* Graded results list */}
+      {gradedStudents.length > 0 && (
+        <GradingResultsList records={gradedStudents} />
       )}
     </div>
   )
@@ -244,8 +310,17 @@ function GradePanel({ examTitle, onBack }: { examTitle: string; onBack: () => vo
 export default function PaperExamsPage() {
   const [showExams] = useState(true) // false = empty state
   const [gradingExamId, setGradingExamId] = useState<string | null>(null)
+  const [gradedStudents, setGradedStudents] = useState<GradedStudentRecord[]>([])
 
   const gradingExam = DEMO_EXAMS.find((e) => e.id === gradingExamId) ?? null
+
+  function handleSaveGrades(record: GradedStudentRecord) {
+    setGradedStudents((prev) => {
+      // Replace if re-grading the same student
+      const filtered = prev.filter((g) => g.studentId !== record.studentId)
+      return [...filtered, record]
+    })
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
@@ -268,7 +343,7 @@ export default function PaperExamsPage() {
       {!gradingExam && (
         <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-indigo-600">↑</span>
+            <span className="text-indigo-600" aria-hidden="true">↑</span>
             <p className="text-sm font-semibold text-indigo-800">AI-Powered Features</p>
           </div>
           <ul className="space-y-1 text-xs text-indigo-700 list-disc list-inside">
@@ -284,7 +359,9 @@ export default function PaperExamsPage() {
       {gradingExam ? (
         <GradePanel
           examTitle={gradingExam.title}
+          gradedStudents={gradedStudents}
           onBack={() => setGradingExamId(null)}
+          onSaveGrades={handleSaveGrades}
         />
       ) : showExams ? (
         <div className="space-y-4">
@@ -292,6 +369,10 @@ export default function PaperExamsPage() {
             <ExamCard
               key={exam.id}
               exam={exam}
+              gradedCount={gradedStudents.filter((g) =>
+                DEMO_STUDENTS.some((s) => s.id === g.studentId),
+              ).length}
+              totalStudents={DEMO_STUDENTS.length}
               onGrade={() => setGradingExamId(exam.id)}
             />
           ))}
