@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -84,15 +85,13 @@ class CsrfProtectionTest {
         @Test
         @DisplayName("Should set XSRF-TOKEN cookie on GET requests")
         void shouldSetCsrfCookieOnGet() throws Exception {
-            // CookieCsrfTokenRepository maps ResponseCookie to a jakarta Cookie,
-            // so we check the Set-Cookie header for the token and path.
-            // Note: SameSite is configured via cookieCustomizer but
-            // MockHttpServletResponse does not render it in the header string.
+            // Spring Security 6.2.x CookieCsrfTokenRepository calls response.addCookie()
+            // via mapToCookie(). MockHttpServletResponse stores cookies in its cookies list,
+            // so we use cookie() matchers rather than header() matchers.
             mockMvc.perform(get("/test/csrf/get"))
                     .andExpect(status().isOk())
-                    .andExpect(header().exists("Set-Cookie"))
-                    .andExpect(header().string("Set-Cookie", containsString("XSRF-TOKEN")))
-                    .andExpect(header().string("Set-Cookie", containsString("Path=/")));
+                    .andExpect(cookie().exists("XSRF-TOKEN"))
+                    .andExpect(cookie().path("XSRF-TOKEN", "/"));
         }
 
         @Test

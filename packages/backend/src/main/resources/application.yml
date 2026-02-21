@@ -119,6 +119,10 @@ openai:
   exam-temperature: 0.7
   grading-temperature: 0.2
 
+# Grading Configuration
+grading:
+  confidence-threshold: ${GRADING_CONFIDENCE_THRESHOLD:0.80}
+
 # Logging Configuration
 logging:
   level:

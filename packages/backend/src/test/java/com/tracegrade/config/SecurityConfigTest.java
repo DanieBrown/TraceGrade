@@ -16,8 +16,11 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.tracegrade.filter.SanitizationProperties;
+import com.tracegrade.grading.GradingService;
 import com.tracegrade.ratelimit.RateLimitProperties;
 import com.tracegrade.ratelimit.RateLimitService;
+import com.tracegrade.rubric.AnswerRubricService;
+import com.tracegrade.submission.SubmissionUploadService;
 
 @WebMvcTest
 @Import({SecurityConfig.class, SecurityHeadersProperties.class,
@@ -37,6 +40,15 @@ class SecurityConfigTest {
 
     @MockBean
     private RateLimitService rateLimitService;
+
+    @MockBean
+    private GradingService gradingService;
+
+    @MockBean
+    private AnswerRubricService answerRubricService;
+
+    @MockBean
+    private SubmissionUploadService submissionUploadService;
 
     @Nested
     @DisplayName("Security Headers")

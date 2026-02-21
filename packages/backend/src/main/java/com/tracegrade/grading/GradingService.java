@@ -1,0 +1,35 @@
+package com.tracegrade.grading;
+
+import java.util.List;
+import java.util.UUID;
+
+import com.tracegrade.dto.response.GradingResultResponse;
+
+public interface GradingService {
+
+    /**
+     * Grades a student submission against its exam template's answer rubrics using
+     * the OpenAI Vision API. Idempotent: if a GradingResult already exists for the
+     * submission, the existing result is returned immediately.
+     *
+     * @param submissionId the UUID of the StudentSubmission to grade
+     * @return the persisted GradingResultResponse
+     * @throws com.tracegrade.exception.ResourceNotFoundException if the submission,
+     *         exam template, or rubrics are not found
+     * @throws GradingFailedException if the AI call fails after all retries;
+     *         a FAILED GradingResult is persisted before this is thrown
+     */
+    GradingResultResponse grade(UUID submissionId);
+
+    /**
+     * Returns the grading result for a submission.
+     *
+     * @throws com.tracegrade.exception.ResourceNotFoundException if no result exists
+     */
+    GradingResultResponse getResult(UUID submissionId);
+
+    /**
+     * Returns all grading results flagged for manual review that have not yet been reviewed.
+     */
+    List<GradingResultResponse> getPendingReviews();
+}
