@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import FileUpload from '../features/submissions/FileUpload'
+import GradingResultCard from '../features/grading/GradingResultCard'
+import { useGrading } from '../features/grading/useGrading'
 
 // Placeholder exam data until the exam entity API is wired up
 const DEMO_EXAMS = [
@@ -102,8 +104,21 @@ function ExamCard({
 // ── Grade panel ───────────────────────────────────────────────────────────────
 function GradePanel({ examTitle, onBack }: { examTitle: string; onBack: () => void }) {
   const [selectedStudentId, setSelectedStudentId] = useState('')
+  const [submissionId, setSubmissionId] = useState<string | null>(null)
+  const { state: gradingState, grade, reset } = useGrading()
 
   const selectedStudent = DEMO_STUDENTS.find((s) => s.id === selectedStudentId)
+
+  // Reset grading state when the selected student changes
+  useEffect(() => {
+    setSubmissionId(null)
+    reset()
+  }, [selectedStudentId, reset])
+
+  // Guard against duplicate calls if multiple files are uploaded
+  const handleUploadComplete = useCallback((sid: string) => {
+    setSubmissionId((prev) => prev ?? sid)
+  }, [])
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6">
@@ -174,6 +189,50 @@ function GradePanel({ examTitle, onBack }: { examTitle: string; onBack: () => vo
           <FileUpload
             assignmentId={DEMO_ASSIGNMENT_ID}
             studentId={selectedStudent.id}
+            onUploadComplete={handleUploadComplete}
+          />
+
+          {/* Grade button — appears after upload completes */}
+          {submissionId && gradingState.phase === 'idle' && (
+            <button
+              onClick={() => grade(submissionId)}
+              className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              ✦ Grade with AI
+            </button>
+          )}
+
+          {/* Loading state */}
+          {gradingState.phase === 'loading' && (
+            <div className="flex items-center justify-center gap-3 py-6 text-indigo-700">
+              <span className="animate-spin text-xl">⟳</span>
+              <span className="text-sm font-medium">AI is grading the submission…</span>
+            </div>
+          )}
+
+          {/* Error state */}
+          {gradingState.phase === 'error' && (
+            <div className="rounded-lg bg-red-50 border border-red-200 p-4 space-y-2">
+              <p className="text-sm font-semibold text-red-700">Grading failed</p>
+              <p className="text-xs text-red-600">{gradingState.message}</p>
+              <button
+                onClick={() => submissionId && grade(submissionId)}
+                className="text-xs text-red-500 hover:text-red-700 underline"
+              >
+                Retry grading
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Grading result — rendered outside the upload area for visual prominence */}
+      {gradingState.phase === 'success' && (
+        <div className="space-y-2">
+          <p className="text-sm font-semibold text-gray-800">Grading Results</p>
+          <GradingResultCard
+            result={gradingState.result}
+            parsedQuestions={gradingState.parsedQuestions}
           />
         </div>
       )}

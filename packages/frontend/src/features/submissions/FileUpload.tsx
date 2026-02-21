@@ -1,10 +1,11 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFileUpload } from './useFileUpload'
 import type { QueuedFile } from './useFileUpload'
 
 interface Props {
   assignmentId: string
   studentId: string
+  onUploadComplete?: (submissionId: string) => void
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -115,7 +116,7 @@ function FileRow({
 
 // ── main component ────────────────────────────────────────────────────────────
 
-export default function FileUpload({ assignmentId, studentId }: Props) {
+export default function FileUpload({ assignmentId, studentId, onUploadComplete }: Props) {
   const {
     queue,
     addFiles,
@@ -130,6 +131,15 @@ export default function FileUpload({ assignmentId, studentId }: Props) {
   } = useFileUpload(assignmentId, studentId)
 
   const [isDragOver, setIsDragOver] = useState(false)
+
+  // Notify parent once the first file completes uploading
+  useEffect(() => {
+    if (!onUploadComplete) return
+    const firstDone = queue.find((f) => f.status === 'done' && f.result?.submissionId)
+    if (firstDone?.result?.submissionId) {
+      onUploadComplete(firstDone.result.submissionId)
+    }
+  }, [queue, onUploadComplete])
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
 
