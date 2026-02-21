@@ -6,18 +6,25 @@ import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.tracegrade.dto.request.UpdateSubmissionStatusRequest;
 import com.tracegrade.dto.response.ApiResponse;
 import com.tracegrade.dto.response.BatchUploadResponse;
 import com.tracegrade.dto.response.FileUploadResponse;
+import com.tracegrade.dto.response.SubmissionStatusResponse;
 import com.tracegrade.validation.ValidFileUpload;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +36,7 @@ import lombok.RequiredArgsConstructor;
 public class StudentSubmissionController {
 
     private final SubmissionUploadService uploadService;
+    private final StudentSubmissionService submissionService;
 
     /**
      * Upload a single exam submission image.
@@ -67,6 +75,39 @@ public class StudentSubmissionController {
             @RequestPart("files") @NotEmpty List<@ValidFileUpload MultipartFile> files) {
 
         BatchUploadResponse response = uploadService.uploadBatch(assignmentId, studentId, files);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * Retrieve the current status and grading info for a submission.
+     *
+     * GET /api/submissions/{submissionId}
+     *
+     * @param submissionId the submission to look up
+     */
+    @GetMapping("/{submissionId}")
+    public ResponseEntity<ApiResponse<SubmissionStatusResponse>> getSubmission(
+            @PathVariable UUID submissionId) {
+
+        SubmissionStatusResponse response = submissionService.getSubmission(submissionId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * Update the processing status of a submission.
+     *
+     * PATCH /api/submissions/{submissionId}/status
+     * Content-Type: application/json
+     *
+     * @param submissionId the submission to update
+     * @param request      body containing the new status
+     */
+    @PatchMapping("/{submissionId}/status")
+    public ResponseEntity<ApiResponse<SubmissionStatusResponse>> updateStatus(
+            @PathVariable UUID submissionId,
+            @Valid @RequestBody UpdateSubmissionStatusRequest request) {
+
+        SubmissionStatusResponse response = submissionService.updateStatus(submissionId, request.getStatus());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
