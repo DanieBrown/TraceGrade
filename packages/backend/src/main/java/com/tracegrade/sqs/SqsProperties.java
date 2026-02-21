@@ -30,4 +30,10 @@ public class SqsProperties {
 
     /** Maximum number of receive attempts before a message is sent to the DLQ. */
     private int maxReceiveCount = 3;
+
+    /** Seconds to wait for messages during a long-poll receive (0-20). */
+    private int waitTimeSeconds = 20;
+
+    /** Maximum number of messages to retrieve per polling cycle (1-10). */
+    private int maxMessagesPerPoll = 10;
 }
