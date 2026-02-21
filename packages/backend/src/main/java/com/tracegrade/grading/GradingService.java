@@ -3,9 +3,21 @@ package com.tracegrade.grading;
 import java.util.List;
 import java.util.UUID;
 
+import com.tracegrade.dto.response.GradingEnqueuedResponse;
 import com.tracegrade.dto.response.GradingResultResponse;
 
 public interface GradingService {
+
+    /**
+     * Enqueues a grading job for async processing via SQS. If SQS is not configured,
+     * falls back to synchronous grading. Idempotent: if a GradingResult already exists,
+     * no new job is enqueued.
+     *
+     * @param submissionId the UUID of the StudentSubmission to grade
+     * @return a response indicating the job status (QUEUED, COMPLETED, or ALREADY_GRADED)
+     * @throws com.tracegrade.exception.ResourceNotFoundException if the submission is not found
+     */
+    GradingEnqueuedResponse enqueueGrading(UUID submissionId);
 
     /**
      * Grades a student submission against its exam template's answer rubrics using

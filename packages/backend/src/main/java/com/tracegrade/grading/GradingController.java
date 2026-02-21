@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tracegrade.dto.response.ApiResponse;
+import com.tracegrade.dto.response.GradingEnqueuedResponse;
 import com.tracegrade.dto.response.GradingResultResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -22,11 +23,11 @@ public class GradingController {
     private final GradingService gradingService;
 
     @PostMapping("/api/submissions/{submissionId}/grade")
-    public ResponseEntity<ApiResponse<GradingResultResponse>> grade(
+    public ResponseEntity<ApiResponse<GradingEnqueuedResponse>> enqueueGrading(
             @PathVariable UUID submissionId) {
 
-        GradingResultResponse response = gradingService.grade(submissionId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
+        GradingEnqueuedResponse response = gradingService.enqueueGrading(submissionId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.success(response));
     }
 
     @GetMapping("/api/submissions/{submissionId}/grade")
