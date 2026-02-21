@@ -2,10 +2,12 @@ package com.tracegrade.grading;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,12 +20,14 @@ import com.tracegrade.domain.model.SubmissionStatus;
 import com.tracegrade.domain.repository.AnswerRubricRepository;
 import com.tracegrade.domain.repository.GradingResultRepository;
 import com.tracegrade.domain.repository.StudentSubmissionRepository;
+import com.tracegrade.dto.response.GradingEnqueuedResponse;
 import com.tracegrade.dto.response.GradingResultResponse;
 import com.tracegrade.exception.ResourceNotFoundException;
 import com.tracegrade.openai.OpenAiService;
 import com.tracegrade.openai.dto.GradingRequest;
 import com.tracegrade.openai.dto.GradingResponse;
 import com.tracegrade.openai.exception.OpenAiException;
+import com.tracegrade.sqs.GradingJobPublisher;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,9 +45,50 @@ public class GradingServiceImpl implements GradingService {
     private final GradingProperties gradingProperties;
     private final ObjectMapper objectMapper;
 
+    /** Injected only when sqs.enabled=true; null otherwise (synchronous fallback). */
+    @Autowired(required = false)
+    private GradingJobPublisher gradingJobPublisher;
+
     // -------------------------------------------------------------------------
     // Public API
     // -------------------------------------------------------------------------
+
+    @Override
+    @Transactional
+    public GradingEnqueuedResponse enqueueGrading(UUID submissionId) {
+        if (gradingResultRepository.findBySubmissionId(submissionId).isPresent()) {
+            log.info("Grading result already exists for submissionId={}, skipping enqueue", submissionId);
+            return GradingEnqueuedResponse.builder()
+                    .submissionId(submissionId)
+                    .status("ALREADY_GRADED")
+                    .enqueuedAt(Instant.now())
+                    .build();
+        }
+
+        if (gradingJobPublisher != null) {
+            StudentSubmission submission = submissionRepository.findById(submissionId)
+                    .orElseThrow(() -> new ResourceNotFoundException("StudentSubmission", submissionId));
+            submission.setStatus(SubmissionStatus.PENDING);
+            submissionRepository.save(submission);
+
+            gradingJobPublisher.publishGradingJob(submissionId);
+
+            return GradingEnqueuedResponse.builder()
+                    .submissionId(submissionId)
+                    .status("QUEUED")
+                    .enqueuedAt(Instant.now())
+                    .build();
+        }
+
+        // SQS not configured — fall back to synchronous grading
+        log.debug("SQS not enabled; grading submissionId={} synchronously", submissionId);
+        GradingResultResponse result = grade(submissionId);
+        return GradingEnqueuedResponse.builder()
+                .submissionId(submissionId)
+                .status(result.getStatus())
+                .enqueuedAt(Instant.now())
+                .build();
+    }
 
     @Override
     @Transactional(noRollbackFor = GradingFailedException.class)

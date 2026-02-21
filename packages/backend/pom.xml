@@ -53,6 +53,11 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>secretsmanager</artifactId>
         </dependency>
+        <!-- AWS SQS (for async grading queue) -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>sqs</artifactId>
+        </dependency>
         <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
