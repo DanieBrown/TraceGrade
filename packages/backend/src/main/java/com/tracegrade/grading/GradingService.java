@@ -3,6 +3,7 @@ package com.tracegrade.grading;
 import java.util.List;
 import java.util.UUID;
 
+import com.tracegrade.dto.request.GradingReviewRequest;
 import com.tracegrade.dto.response.GradingEnqueuedResponse;
 import com.tracegrade.dto.response.GradingResultResponse;
 
@@ -44,4 +45,15 @@ public interface GradingService {
      * Returns all grading results flagged for manual review that have not yet been reviewed.
      */
     List<GradingResultResponse> getPendingReviews();
+
+    /**
+     * Records a teacher's review decision for a grading result. Updates finalScore,
+     * teacherOverride, reviewedAt, and optionally questionScores. Sets needsReview to false.
+     *
+     * @param gradeId the semantic grade UUID (not the JPA entity id)
+     * @param request the teacher's review decision
+     * @return the updated GradingResultResponse
+     * @throws com.tracegrade.exception.ResourceNotFoundException if no result with the given gradeId exists
+     */
+    GradingResultResponse reviewGrade(UUID gradeId, GradingReviewRequest request);
 }
