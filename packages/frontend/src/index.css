@@ -3,10 +3,96 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-base:     #06101e;
+    --bg-surface:  #0d1f38;
+    --bg-elevated: #122240;
+    --bg-card:     #0f2540;
+
+    --accent-gold:    #e8a428;
+    --accent-teal:    #00c9a7;
+    --accent-crimson: #e8455a;
+
+    --text-primary:   #dce8f2;
+    --text-secondary: #7ba4c0;
+    --text-muted:     #4a6b86;
+
+    --border:        rgba(120, 180, 220, 0.11);
+    --border-accent: rgba(232, 164, 40, 0.28);
+  }
+
+  html {
+    height: 100%;
+  }
+
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-      sans-serif;
+    height: 100%;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: 'Lora', Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #root {
+    height: 100%;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Syne', sans-serif;
+  }
+
+  /* Override any Tailwind text color utilities we use on headings */
+  select, option {
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
+  }
+}
+
+@layer utilities {
+  .bg-base     { background-color: var(--bg-base); }
+  .bg-surface  { background-color: var(--bg-surface); }
+  .bg-elevated { background-color: var(--bg-elevated); }
+  .bg-card     { background-color: var(--bg-card); }
+
+  .text-pri  { color: var(--text-primary); }
+  .text-sec  { color: var(--text-secondary); }
+  .text-mut  { color: var(--text-muted); }
+
+  .border-subtle { border-color: var(--border); }
+  .border-accent { border-color: var(--border-accent); }
+
+  /* Graph-paper grid texture */
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(120, 180, 220, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120, 180, 220, 0.04) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .font-display { font-family: 'Syne', sans-serif; }
+  .font-body    { font-family: 'Lora', Georgia, serif; }
+  .font-mono    { font-family: 'IBM Plex Mono', Menlo, monospace; }
+
+  /* Stat card glow on hover */
+  .card-glow:hover {
+    box-shadow: 0 0 0 1px rgba(232, 164, 40, 0.2), 0 8px 32px rgba(6, 16, 30, 0.6);
+  }
+
+  /* Confidence bar fill animation */
+  @keyframes grow-x {
+    from { width: 0; }
+  }
+  .animate-grow-x {
+    animation: grow-x 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* Subtle pulse for pending badge */
+  @keyframes soft-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.65; }
+  }
+  .pulse-soft {
+    animation: soft-pulse 2s ease-in-out infinite;
   }
 }

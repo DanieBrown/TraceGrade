@@ -2,12 +2,26 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import TopNav from './components/layout/TopNav'
 import PaperExamsPage from './pages/PaperExamsPage'
 import ManualReviewQueuePage from './pages/ManualReviewQueuePage'
+import DashboardPage from './pages/DashboardPage'
 
-function Placeholder({ title }: { title: string }) {
+function ComingSoon({ title }: { title: string }) {
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
-      <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
-      <p className="mt-2 text-gray-500">Coming soon.</p>
+    <div style={{ padding: '48px 40px' }}>
+      <p
+        className="font-mono"
+        style={{ fontSize: '10px', letterSpacing: '0.15em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '10px' }}
+      >
+        Coming Soon
+      </p>
+      <h1
+        className="font-display"
+        style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}
+      >
+        {title}
+      </h1>
+      <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif' }}>
+        This section is under construction and will be available soon.
+      </p>
     </div>
   )
 }
@@ -15,15 +29,15 @@ function Placeholder({ title }: { title: string }) {
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
         <TopNav />
-        <main className="flex-1">
+        <main style={{ flex: 1, overflowY: 'auto', backgroundColor: 'var(--bg-base)' }}>
           <Routes>
-            <Route path="/"            element={<Placeholder title="Dashboard" />} />
-            <Route path="/students"    element={<Placeholder title="Students" />} />
-            <Route path="/exams"       element={<Placeholder title="Exams" />} />
-            <Route path="/homework"    element={<Placeholder title="Homework" />} />
-            <Route path="/grades"      element={<Placeholder title="Grades" />} />
+            <Route path="/"            element={<DashboardPage />} />
+            <Route path="/students"    element={<ComingSoon title="Students" />} />
+            <Route path="/exams"       element={<ComingSoon title="Exams" />} />
+            <Route path="/homework"    element={<ComingSoon title="Homework" />} />
+            <Route path="/grades"      element={<ComingSoon title="Grades" />} />
             <Route path="/paper-exams" element={<PaperExamsPage />} />
             <Route path="/review"      element={<ManualReviewQueuePage />} />
             <Route path="*"            element={<Navigate to="/" replace />} />
