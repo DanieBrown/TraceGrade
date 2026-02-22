@@ -3,6 +3,7 @@ package com.tracegrade.dto.response;
 import java.time.Instant;
 import java.util.UUID;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,9 +13,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "Response returned after requesting AI grading for a submission")
 public class GradingEnqueuedResponse {
 
-    /** The submission this grading job is for. */
+    @Schema(description = "UUID of the submission this grading job is for")
     private UUID submissionId;
 
     /**
@@ -25,8 +27,10 @@ public class GradingEnqueuedResponse {
      *   <li>{@code ALREADY_GRADED} – a result already existed; no new job enqueued</li>
      * </ul>
      */
+    @Schema(description = "Grading job status: QUEUED (async), COMPLETED (sync), or ALREADY_GRADED",
+            example = "QUEUED", allowableValues = {"QUEUED", "COMPLETED", "ALREADY_GRADED"})
     private String status;
 
-    /** Timestamp when the enqueue request was processed. */
+    @Schema(description = "UTC timestamp when the enqueue request was processed")
     private Instant enqueuedAt;
 }
