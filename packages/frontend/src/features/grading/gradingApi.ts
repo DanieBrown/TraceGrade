@@ -28,6 +28,7 @@ export interface GradingResultResponse {
   teacherOverride: boolean
   reviewedBy: string | null
   reviewedAt: string | null
+  submissionImageUrl?: string | null
   processingTimeMs: number
   createdAt: string
   updatedAt: string

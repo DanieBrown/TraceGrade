@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { label: 'Homework',    to: '/homework',    icon: '📖' },
   { label: 'Grades',      to: '/grades',      icon: '📊' },
   { label: 'Paper Exams', to: '/paper-exams', icon: '📋' },
+  { label: 'Review Queue', to: '/review',     icon: '🔍' },
 ]
 
 export default function TopNav() {

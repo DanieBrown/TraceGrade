@@ -12,6 +12,8 @@ public interface GradingResultRepository extends JpaRepository<GradingResult, UU
 
     Optional<GradingResult> findBySubmissionId(UUID submissionId);
 
+    Optional<GradingResult> findByGradeId(UUID gradeId);
+
     List<GradingResult> findByNeedsReviewTrueAndReviewedAtIsNull();
 
     List<GradingResult> findByNeedsReviewTrueOrderByCreatedAtAsc();

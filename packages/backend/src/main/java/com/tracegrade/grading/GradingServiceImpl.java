@@ -20,6 +20,7 @@ import com.tracegrade.domain.model.SubmissionStatus;
 import com.tracegrade.domain.repository.AnswerRubricRepository;
 import com.tracegrade.domain.repository.GradingResultRepository;
 import com.tracegrade.domain.repository.StudentSubmissionRepository;
+import com.tracegrade.dto.request.GradingReviewRequest;
 import com.tracegrade.dto.response.GradingEnqueuedResponse;
 import com.tracegrade.dto.response.GradingResultResponse;
 import com.tracegrade.exception.ResourceNotFoundException;
@@ -113,6 +114,28 @@ public class GradingServiceImpl implements GradingService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public GradingResultResponse reviewGrade(UUID gradeId, GradingReviewRequest request) {
+        GradingResult result = gradingResultRepository.findByGradeId(gradeId)
+                .orElseThrow(() -> new ResourceNotFoundException("GradingResult", gradeId));
+
+        result.setFinalScore(request.getFinalScore());
+        result.setTeacherOverride(request.getTeacherOverride());
+        result.setReviewedAt(Instant.now());
+        result.setReviewedBy(null); // no authentication layer yet
+        result.setNeedsReview(false);
+
+        if (request.getQuestionScores() != null) {
+            result.setQuestionScores(request.getQuestionScores());
+        }
+
+        gradingResultRepository.save(result);
+        log.info("Review saved gradeId={} teacherOverride={} finalScore={}",
+                gradeId, request.getTeacherOverride(), request.getFinalScore());
+        return toResponse(result);
     }
 
     // -------------------------------------------------------------------------
@@ -303,10 +326,24 @@ public class GradingServiceImpl implements GradingService {
                 .teacherOverride(result.getTeacherOverride())
                 .reviewedBy(result.getReviewedBy())
                 .reviewedAt(result.getReviewedAt())
+                .submissionImageUrl(safeFirstImageUrl(result.getSubmission().getSubmissionImageUrls()))
                 .processingTimeMs(result.getProcessingTimeMs())
                 .createdAt(result.getCreatedAt())
                 .updatedAt(result.getUpdatedAt())
                 .build();
+    }
+
+    /** Returns the first image URL from a JSON array string, or null if unavailable. */
+    private String safeFirstImageUrl(String submissionImageUrls) {
+        try {
+            var node = objectMapper.readTree(submissionImageUrls);
+            if (node.isArray() && node.size() > 0) {
+                return node.get(0).asText();
+            }
+        } catch (Exception e) {
+            log.debug("Could not parse submissionImageUrls: {}", submissionImageUrls);
+        }
+        return null;
     }
 
     // -------------------------------------------------------------------------

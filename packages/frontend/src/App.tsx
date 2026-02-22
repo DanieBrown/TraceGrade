@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import TopNav from './components/layout/TopNav'
 import PaperExamsPage from './pages/PaperExamsPage'
+import ManualReviewQueuePage from './pages/ManualReviewQueuePage'
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -24,6 +25,7 @@ export default function App() {
             <Route path="/homework"    element={<Placeholder title="Homework" />} />
             <Route path="/grades"      element={<Placeholder title="Grades" />} />
             <Route path="/paper-exams" element={<PaperExamsPage />} />
+            <Route path="/review"      element={<ManualReviewQueuePage />} />
             <Route path="*"            element={<Navigate to="/" replace />} />
           </Routes>
         </main>

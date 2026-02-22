@@ -38,6 +38,9 @@ public class GradingResultResponse {
     private UUID    reviewedBy;
     private Instant reviewedAt;
 
+    /** First image URL from the student's submission; null if unavailable */
+    private String submissionImageUrl;
+
     private Integer processingTimeMs;
     private Instant createdAt;
     private Instant updatedAt;
