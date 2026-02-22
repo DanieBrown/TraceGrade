@@ -55,7 +55,7 @@ public class SecurityConfig {
             http.csrf(csrf -> csrf
                     .csrfTokenRepository(tokenRepository)
                     .csrfTokenRequestHandler(requestHandler)
-                    .ignoringRequestMatchers("/actuator/**")
+                    .ignoringRequestMatchers("/actuator/**", "/swagger-ui/**", "/v3/api-docs/**")
             );
 
             // Eagerly load deferred CSRF token so the cookie is set on every response
@@ -69,6 +69,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .anyRequest().permitAll() // Will be restricted when auth is implemented
                 )
                 .exceptionHandling(ex -> ex

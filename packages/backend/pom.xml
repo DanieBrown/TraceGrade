@@ -131,6 +131,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- SpringDoc OpenAPI (Swagger UI + OpenAPI 3.1 spec) -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.3.0</version>
+        </dependency>
+
         <!-- OWASP Java HTML Sanitizer for XSS prevention -->
         <dependency>
             <groupId>com.googlecode.owasp-java-html-sanitizer</groupId>
