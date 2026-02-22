@@ -123,6 +123,14 @@ openai:
 grading:
   confidence-threshold: ${GRADING_CONFIDENCE_THRESHOLD:0.80}
 
+# CloudWatch Metrics Configuration
+cloudwatch:
+  enabled: ${CLOUDWATCH_ENABLED:false}
+  namespace: ${CLOUDWATCH_NAMESPACE:TraceGrade/Grading}
+  region: ${AWS_REGION:us-east-1}
+  endpoint: ${CLOUDWATCH_ENDPOINT:}
+  step-seconds: ${CLOUDWATCH_STEP_SECONDS:60}
+
 # SQS Configuration (async grading queue)
 sqs:
   enabled: ${SQS_ENABLED:false}

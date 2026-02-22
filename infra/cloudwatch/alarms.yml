@@ -1,0 +1,241 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  TraceGrade – CloudWatch Alarms for the AI Grading Pipeline.
+  Deploy this stack once per environment (staging / production) after the
+  application is running and emitting metrics to CloudWatch.
+
+# ---------------------------------------------------------------------------
+# Parameters
+# ---------------------------------------------------------------------------
+Parameters:
+  Environment:
+    Type: String
+    Default: production
+    AllowedValues: [staging, production]
+    Description: Deployment environment (used to namespace alarm names)
+
+  AlarmEmail:
+    Type: String
+    Description: Email address that receives alarm notifications via SNS
+
+  GradingQueueName:
+    Type: String
+    Default: tracegrade-grading-queue
+    Description: Name of the main SQS grading queue
+
+  GradingDlqName:
+    Type: String
+    Default: tracegrade-grading-dlq
+    Description: Name of the SQS dead-letter queue for failed grading jobs
+
+  CloudWatchNamespace:
+    Type: String
+    Default: TraceGrade/Grading
+    Description: Must match cloudwatch.namespace in application.yml
+
+  # Thresholds (override per environment as needed)
+  DlqDepthThreshold:
+    Type: Number
+    Default: 5
+    Description: Trigger alarm when DLQ has this many visible messages
+
+  QueueBacklogThreshold:
+    Type: Number
+    Default: 50
+    Description: Trigger alarm when main queue backlog exceeds this value
+
+  GradingFailureThreshold:
+    Type: Number
+    Default: 5
+    Description: Grading failure count per 5-minute window that triggers alarm
+
+  OpenAiErrorThreshold:
+    Type: Number
+    Default: 3
+    Description: OpenAI API failure count per 5-minute window that triggers alarm
+
+  ReviewQueueBacklogThreshold:
+    Type: Number
+    Default: 20
+    Description: Number of newly-flagged reviews per hour that triggers alarm
+
+# ---------------------------------------------------------------------------
+# Resources
+# ---------------------------------------------------------------------------
+Resources:
+
+  # SNS topic — all alarms send notifications here
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "tracegrade-${Environment}-alarms"
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref AlarmEmail
+
+  # ------------------------------------------------------------------
+  # SQS alarms  (use native AWS/SQS metrics — no custom publishing needed)
+  # ------------------------------------------------------------------
+
+  # Dead-letter queue depth: messages here indicate repeated grading failures
+  DlqDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "TraceGrade-${Environment}-DLQ-Backlog"
+      AlarmDescription: >
+        Dead-letter queue has messages — grading jobs are failing after all
+        retry attempts. Investigate GradingWorker logs and OpenAI availability.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !Ref GradingDlqName
+      Statistic: Maximum
+      Period: 300        # 5 minutes
+      EvaluationPeriods: 1
+      Threshold: !Ref DlqDepthThreshold
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref AlarmTopic
+      OKActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  # Main queue backlog: indicates the grading worker cannot keep up
+  QueueBacklogAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "TraceGrade-${Environment}-Grading-Queue-Backlog"
+      AlarmDescription: >
+        Grading queue has a large backlog — the worker may be overloaded or
+        stopped. Check GradingWorker health and SQS consumer lag.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !Ref GradingQueueName
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: !Ref QueueBacklogThreshold
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref AlarmTopic
+      OKActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  # ------------------------------------------------------------------
+  # Custom application metric alarms  (namespace: TraceGrade/Grading)
+  # Published by GradingMetricsService via micrometer-registry-cloudwatch2
+  # ------------------------------------------------------------------
+
+  # Grading failure count: application-level AI grading errors
+  GradingFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "TraceGrade-${Environment}-Grading-Failures"
+      AlarmDescription: >
+        grading.jobs.completed[outcome=failure] count exceeds threshold.
+        The AI grading service is returning errors — check OpenAI API status
+        and application logs.
+      Namespace: !Ref CloudWatchNamespace
+      MetricName: grading.jobs.completed
+      Dimensions:
+        - Name: outcome
+          Value: failure
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: !Ref GradingFailureThreshold
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref AlarmTopic
+      OKActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  # OpenAI API errors: individual per-question call failures
+  OpenAiErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "TraceGrade-${Environment}-OpenAI-API-Errors"
+      AlarmDescription: >
+        openai.api.calls[outcome=failure] count exceeds threshold.
+        OpenAI Vision API calls are failing — grading accuracy may be degraded.
+        Check API key, quota limits, and network connectivity.
+      Namespace: !Ref CloudWatchNamespace
+      MetricName: openai.api.calls
+      Dimensions:
+        - Name: outcome
+          Value: failure
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: !Ref OpenAiErrorThreshold
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref AlarmTopic
+      OKActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  # SQS poll errors: worker cannot reach SQS
+  SqsPollErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "TraceGrade-${Environment}-SQS-Poll-Errors"
+      AlarmDescription: >
+        sqs.poll.errors count is non-zero.
+        The GradingWorker cannot receive messages from SQS — check network
+        connectivity, IAM permissions, and LocalStack/AWS health.
+      Namespace: !Ref CloudWatchNamespace
+      MetricName: sqs.poll.errors
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref AlarmTopic
+      OKActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  # High review queue backlog: too many submissions need human review
+  ReviewQueueBacklogAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "TraceGrade-${Environment}-Review-Queue-Backlog"
+      AlarmDescription: >
+        grading.reviews.flagged count per hour exceeds threshold.
+        Many submissions have low AI confidence and require manual review.
+        Teachers should process the review queue.
+      Namespace: !Ref CloudWatchNamespace
+      MetricName: grading.reviews.flagged
+      Statistic: Sum
+      Period: 3600       # 1 hour
+      EvaluationPeriods: 1
+      Threshold: !Ref ReviewQueueBacklogThreshold
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref AlarmTopic
+      OKActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+# ---------------------------------------------------------------------------
+# Outputs
+# ---------------------------------------------------------------------------
+Outputs:
+  AlarmTopicArn:
+    Value: !Ref AlarmTopic
+    Description: ARN of the SNS topic used for all alarm notifications
+
+  DlqDepthAlarmArn:
+    Value: !GetAtt DlqDepthAlarm.Arn
+    Description: ARN of the DLQ depth alarm
+
+  GradingFailureAlarmArn:
+    Value: !GetAtt GradingFailureAlarm.Arn
+    Description: ARN of the grading failure rate alarm
