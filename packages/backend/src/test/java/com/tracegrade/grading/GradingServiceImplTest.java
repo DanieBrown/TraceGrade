@@ -38,6 +38,11 @@ import com.tracegrade.openai.dto.GradingRequest;
 import com.tracegrade.openai.dto.GradingResponse;
 import com.tracegrade.openai.exception.OpenAiException;
 import com.tracegrade.openai.exception.OpenAiRateLimitException;
+import com.tracegrade.dto.request.GradingReviewRequest;
+import com.tracegrade.dto.response.GradingEnqueuedResponse;
+import com.tracegrade.sqs.GradingJobPublisher;
+
+import java.lang.reflect.Field;
 
 @SuppressWarnings("null")
 class GradingServiceImplTest {
@@ -52,6 +57,7 @@ class GradingServiceImplTest {
     private static final UUID SUBMISSION_ID  = UUID.randomUUID();
     private static final UUID TEMPLATE_ID    = UUID.randomUUID();
     private static final UUID RESULT_ID      = UUID.randomUUID();
+    private static final UUID GRADE_ID       = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
@@ -139,6 +145,31 @@ class GradingServiceImplTest {
 
     private void stubResultSave() {
         when(gradingResultRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    }
+
+    private GradingResult buildReviewableResult(StudentSubmission submission) {
+        GradingResult result = GradingResult.builder()
+                .submission(submission)
+                .gradeId(GRADE_ID)
+                .aiScore(new BigDecimal("90.00"))
+                .finalScore(new BigDecimal("90.00"))
+                .confidenceScore(new BigDecimal("95.00"))
+                .needsReview(true)
+                .questionScores("[{\"questionNumber\":1,\"pointsAwarded\":4.5}]")
+                .aiFeedback("Q1: Great answer.")
+                .teacherOverride(false)
+                .processingTimeMs(350)
+                .build();
+        result.setId(RESULT_ID);
+        return result;
+    }
+
+    private GradingReviewRequest buildReviewRequest(double finalScore, boolean teacherOverride, String questionScores) {
+        return GradingReviewRequest.builder()
+                .finalScore(BigDecimal.valueOf(finalScore))
+                .teacherOverride(teacherOverride)
+                .questionScores(questionScores)
+                .build();
     }
 
     // =========================================================================
@@ -547,6 +578,183 @@ class GradingServiceImplTest {
             List<GradingResultResponse> responses = service.getPendingReviews();
 
             assertThat(responses).isEmpty();
+        }
+    }
+
+    // =========================================================================
+    // enqueueGrading()
+    // =========================================================================
+
+    @Nested
+    @DisplayName("enqueueGrading()")
+    class EnqueueGradingTests {
+
+        @Test
+        @DisplayName("Should return ALREADY_GRADED status without touching the publisher when a result already exists")
+        void alreadyGraded_returnsAlreadyGradedStatus() {
+            StudentSubmission submission = buildSubmission(buildTemplate());
+            GradingResult existing = buildStoredResult(submission, false);
+            when(gradingResultRepository.findBySubmissionId(SUBMISSION_ID))
+                    .thenReturn(Optional.of(existing));
+
+            GradingEnqueuedResponse response = service.enqueueGrading(SUBMISSION_ID);
+
+            assertThat(response.getSubmissionId()).isEqualTo(SUBMISSION_ID);
+            assertThat(response.getStatus()).isEqualTo("ALREADY_GRADED");
+            assertThat(response.getEnqueuedAt()).isNotNull();
+            verify(submissionRepository, never()).findById(any());
+        }
+
+        @Test
+        @DisplayName("Should publish to SQS and return QUEUED status when the SQS publisher is configured")
+        void sqsEnabled_publishesJob_returnsQueued() throws Exception {
+            GradingJobPublisher mockPublisher = mock(GradingJobPublisher.class);
+            Field publisherField = GradingServiceImpl.class.getDeclaredField("gradingJobPublisher");
+            publisherField.setAccessible(true);
+            publisherField.set(service, mockPublisher);
+
+            StudentSubmission submission = buildSubmission(buildTemplate());
+            when(gradingResultRepository.findBySubmissionId(SUBMISSION_ID)).thenReturn(Optional.empty());
+            when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
+            stubSubmissionSave(submission);
+
+            GradingEnqueuedResponse response = service.enqueueGrading(SUBMISSION_ID);
+
+            assertThat(response.getSubmissionId()).isEqualTo(SUBMISSION_ID);
+            assertThat(response.getStatus()).isEqualTo("QUEUED");
+            assertThat(response.getEnqueuedAt()).isNotNull();
+            verify(mockPublisher).publishGradingJob(SUBMISSION_ID);
+            verify(openAiService, never()).gradeSubmission(any());
+        }
+
+        @Test
+        @DisplayName("Should throw ResourceNotFoundException when submission is missing and SQS is configured")
+        void sqsEnabled_submissionNotFound_throwsResourceNotFound() throws Exception {
+            GradingJobPublisher mockPublisher = mock(GradingJobPublisher.class);
+            Field publisherField = GradingServiceImpl.class.getDeclaredField("gradingJobPublisher");
+            publisherField.setAccessible(true);
+            publisherField.set(service, mockPublisher);
+
+            when(gradingResultRepository.findBySubmissionId(SUBMISSION_ID)).thenReturn(Optional.empty());
+            when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.enqueueGrading(SUBMISSION_ID))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("StudentSubmission");
+            verify(mockPublisher, never()).publishGradingJob(any());
+        }
+
+        @Test
+        @DisplayName("Should grade synchronously and return COMPLETED status when SQS is not configured")
+        void sqsNotEnabled_gradesSynchronously_returnsCompletedStatus() {
+            // gradingJobPublisher is null by default — synchronous fallback
+            ExamTemplate template = buildTemplate();
+            StudentSubmission submission = buildSubmission(template);
+            AnswerRubric rubric = buildRubric(template, 1);
+            GradingResponse aiResp = buildAiResponse(1, 0.92, false);
+
+            when(gradingResultRepository.findBySubmissionId(SUBMISSION_ID)).thenReturn(Optional.empty());
+            when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
+            when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
+                    .thenReturn(List.of(rubric));
+            when(openAiService.gradeSubmission(any())).thenReturn(aiResp);
+            stubSubmissionSave(submission);
+            stubResultSave();
+
+            GradingEnqueuedResponse response = service.enqueueGrading(SUBMISSION_ID);
+
+            assertThat(response.getSubmissionId()).isEqualTo(SUBMISSION_ID);
+            assertThat(response.getStatus()).isEqualTo("COMPLETED");
+            assertThat(response.getEnqueuedAt()).isNotNull();
+            verify(openAiService).gradeSubmission(any());
+        }
+    }
+
+    // =========================================================================
+    // reviewGrade()
+    // =========================================================================
+
+    @Nested
+    @DisplayName("reviewGrade()")
+    class ReviewGradeTests {
+
+        @Test
+        @DisplayName("Should throw ResourceNotFoundException when no GradingResult exists for the given gradeId")
+        void throwsNotFound_whenGradeIdDoesNotExist() {
+            when(gradingResultRepository.findByGradeId(GRADE_ID)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.reviewGrade(GRADE_ID, buildReviewRequest(85.0, true, null)))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("GradingResult");
+        }
+
+        @Test
+        @DisplayName("Should update finalScore and teacherOverride flag when a valid review is submitted")
+        void updatesScoreAndOverride_onValidReview() {
+            StudentSubmission submission = buildSubmission(buildTemplate());
+            GradingResult result = buildReviewableResult(submission);
+            when(gradingResultRepository.findByGradeId(GRADE_ID)).thenReturn(Optional.of(result));
+            stubResultSave();
+
+            GradingResultResponse response = service.reviewGrade(GRADE_ID, buildReviewRequest(75.0, true, null));
+
+            assertThat(response.getFinalScore()).isEqualByComparingTo("75.0");
+            assertThat(response.getTeacherOverride()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Should set needsReview to false and record a non-null reviewedAt timestamp")
+        void setsNeedsReviewFalse_andRecordsReviewedAt() {
+            StudentSubmission submission = buildSubmission(buildTemplate());
+            GradingResult result = buildReviewableResult(submission);
+            when(gradingResultRepository.findByGradeId(GRADE_ID)).thenReturn(Optional.of(result));
+            stubResultSave();
+
+            GradingResultResponse response = service.reviewGrade(GRADE_ID, buildReviewRequest(90.0, false, null));
+
+            assertThat(response.getNeedsReview()).isFalse();
+            assertThat(result.getReviewedAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Should preserve existing questionScores when the review request provides null scores")
+        void keepsExistingQuestionScores_whenRequestScoresIsNull() {
+            StudentSubmission submission = buildSubmission(buildTemplate());
+            GradingResult result = buildReviewableResult(submission);
+            String originalScores = result.getQuestionScores();
+            when(gradingResultRepository.findByGradeId(GRADE_ID)).thenReturn(Optional.of(result));
+            stubResultSave();
+
+            service.reviewGrade(GRADE_ID, buildReviewRequest(80.0, false, null));
+
+            assertThat(result.getQuestionScores()).isEqualTo(originalScores);
+        }
+
+        @Test
+        @DisplayName("Should update questionScores when the review request provides new scores")
+        void updatesQuestionScores_whenProvided() {
+            StudentSubmission submission = buildSubmission(buildTemplate());
+            GradingResult result = buildReviewableResult(submission);
+            String newScores = "[{\"questionNumber\":1,\"pointsAwarded\":3.0}]";
+            when(gradingResultRepository.findByGradeId(GRADE_ID)).thenReturn(Optional.of(result));
+            stubResultSave();
+
+            service.reviewGrade(GRADE_ID, buildReviewRequest(60.0, true, newScores));
+
+            assertThat(result.getQuestionScores()).isEqualTo(newScores);
+        }
+
+        @Test
+        @DisplayName("Should save the updated GradingResult to the repository after review")
+        void savesUpdatedResult() {
+            StudentSubmission submission = buildSubmission(buildTemplate());
+            GradingResult result = buildReviewableResult(submission);
+            when(gradingResultRepository.findByGradeId(GRADE_ID)).thenReturn(Optional.of(result));
+            stubResultSave();
+
+            service.reviewGrade(GRADE_ID, buildReviewRequest(85.0, true, null));
+
+            verify(gradingResultRepository).save(result);
         }
     }
 }
