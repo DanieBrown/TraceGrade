@@ -3,6 +3,7 @@ package com.tracegrade.sqs;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tracegrade.grading.GradingService;
+import com.tracegrade.monitoring.GradingMetricsService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,10 @@ public class GradingWorker {
     private final GradingService gradingService;
     private final ObjectMapper objectMapper;
 
+    /** Injected by Spring; null in unit tests that construct this class manually. */
+    @Autowired(required = false)
+    private GradingMetricsService gradingMetricsService;
+
     /**
      * Polls for up to {@code sqs.max-messages-per-poll} messages using SQS long
      * polling, then processes each one. The fixed delay starts after the previous
@@ -57,6 +63,9 @@ public class GradingWorker {
             messages = sqsClient.receiveMessage(request).messages();
         } catch (Exception e) {
             log.error("Failed to receive messages from SQS — will retry on next poll cycle", e);
+            if (gradingMetricsService != null) {
+                gradingMetricsService.recordSqsPollError();
+            }
             return;
         }
 

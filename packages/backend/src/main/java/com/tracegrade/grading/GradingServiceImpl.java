@@ -28,6 +28,7 @@ import com.tracegrade.openai.OpenAiService;
 import com.tracegrade.openai.dto.GradingRequest;
 import com.tracegrade.openai.dto.GradingResponse;
 import com.tracegrade.openai.exception.OpenAiException;
+import com.tracegrade.monitoring.GradingMetricsService;
 import com.tracegrade.sqs.GradingJobPublisher;
 
 import lombok.RequiredArgsConstructor;
@@ -49,6 +50,10 @@ public class GradingServiceImpl implements GradingService {
     /** Injected only when sqs.enabled=true; null otherwise (synchronous fallback). */
     @Autowired(required = false)
     private GradingJobPublisher gradingJobPublisher;
+
+    /** Injected by Spring; null in unit tests that construct this class manually. */
+    @Autowired(required = false)
+    private GradingMetricsService gradingMetricsService;
 
     // -------------------------------------------------------------------------
     // Public API
@@ -73,6 +78,10 @@ public class GradingServiceImpl implements GradingService {
             submissionRepository.save(submission);
 
             gradingJobPublisher.publishGradingJob(submissionId);
+
+            if (gradingMetricsService != null) {
+                gradingMetricsService.recordJobEnqueued();
+            }
 
             return GradingEnqueuedResponse.builder()
                     .submissionId(submissionId)
@@ -182,9 +191,15 @@ public class GradingServiceImpl implements GradingService {
 
             try {
                 aiResponses.add(openAiService.gradeSubmission(req));
+                if (gradingMetricsService != null) {
+                    gradingMetricsService.recordOpenAiSuccess();
+                }
             } catch (OpenAiException ex) {
                 log.error("AI grading failed for submissionId={} questionNumber={}: {}",
                         submissionId, rubric.getQuestionNumber(), ex.getMessage(), ex);
+                if (gradingMetricsService != null) {
+                    gradingMetricsService.recordOpenAiFailure();
+                }
                 int processingMs = (int) (System.currentTimeMillis() - startMs);
                 persistFailedResult(submission, processingMs);
                 throw new GradingFailedException(submissionId, ex);
@@ -214,6 +229,9 @@ public class GradingServiceImpl implements GradingService {
 
         gradingResultRepository.save(failedResult);
         log.warn("Persisted FAILED GradingResult for submissionId={}", submission.getId());
+        if (gradingMetricsService != null) {
+            gradingMetricsService.recordGradingFailure();
+        }
     }
 
     private GradingResultResponse aggregateAndPersist(StudentSubmission submission,
@@ -291,6 +309,10 @@ public class GradingServiceImpl implements GradingService {
 
         log.info("Grading completed submissionId={} aiScore={} needsReview={} processingMs={}",
                 submission.getId(), aiScore, needsReview, processingMs);
+
+        if (gradingMetricsService != null) {
+            gradingMetricsService.recordGradingSuccess(processingMs, avgConfidence.doubleValue(), needsReview);
+        }
 
         return toResponse(result);
     }
