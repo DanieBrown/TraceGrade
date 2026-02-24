@@ -94,6 +94,11 @@ export function toExamTemplateListItem(raw: unknown): ExamTemplateListItem | nul
     return null
   }
 
+  const assignmentId = toStringOrDefault(
+    rawTemplate.assignmentId ?? rawTemplate.assignmentUUID ?? rawTemplate.assignment_id,
+    id,
+  )
+
   const title = toStringOrDefault(rawTemplate.title ?? rawTemplate.name, DEFAULT_TITLE)
   const questionCount = toFiniteNonNegativeNumber(
     rawTemplate.questionCount ?? rawTemplate.questions,
@@ -107,6 +112,7 @@ export function toExamTemplateListItem(raw: unknown): ExamTemplateListItem | nul
 
   return {
     id,
+    assignmentId,
     title,
     questionCount,
     totalPoints,
