@@ -1,6 +1,7 @@
 package com.tracegrade.config;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -15,6 +16,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.tracegrade.dashboard.DashboardStatsController;
+import com.tracegrade.dashboard.DashboardStatsService;
+import com.tracegrade.examtemplate.ExamTemplateService;
 import com.tracegrade.filter.SanitizationProperties;
 import com.tracegrade.grading.GradingService;
 import com.tracegrade.ratelimit.RateLimitProperties;
@@ -22,7 +26,7 @@ import com.tracegrade.ratelimit.RateLimitService;
 import com.tracegrade.rubric.AnswerRubricService;
 import com.tracegrade.submission.SubmissionUploadService;
 
-@WebMvcTest
+@WebMvcTest(DashboardStatsController.class)
 @Import({SecurityConfig.class, SecurityHeadersProperties.class,
          CsrfProperties.class, CsrfAccessDeniedHandler.class,
          RateLimitProperties.class, SanitizationProperties.class})
@@ -49,6 +53,12 @@ class SecurityConfigTest {
 
     @MockBean
     private SubmissionUploadService submissionUploadService;
+
+    @MockBean
+    private DashboardStatsService dashboardStatsService;
+
+    @MockBean
+    private ExamTemplateService examTemplateService;
 
     @Nested
     @DisplayName("Security Headers")
@@ -123,6 +133,25 @@ class SecurityConfigTest {
         @DisplayName("Should not redirect when https-redirect-enabled is false")
         void shouldNotRedirectWhenDisabled() throws Exception {
             mockMvc.perform(get("/any-path"))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("Endpoint Authorization")
+    class EndpointAuthorizationTests {
+
+        @Test
+        @DisplayName("Should require authentication for exam-template endpoints")
+        void shouldRequireAuthenticationForExamTemplateEndpoints() throws Exception {
+            mockMvc.perform(get("/api/exam-templates"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("Should allow authenticated access path for exam-template endpoints")
+        void shouldAllowAuthenticatedAccessPathForExamTemplateEndpoints() throws Exception {
+            mockMvc.perform(get("/api/exam-templates").with(user("teacher-user")))
                     .andExpect(status().isNotFound());
         }
     }

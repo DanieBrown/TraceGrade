@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -176,6 +177,13 @@ public class GlobalExceptionHandler {
         ApiError error = ApiError.of("CONFLICT", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(error));
     }
+
+        @ExceptionHandler(AccessDeniedException.class)
+        public ResponseEntity<ApiResponse<Void>> handleAccessDenied(
+                        AccessDeniedException ex) {
+                ApiError error = ApiError.of("FORBIDDEN", "Access denied");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(error));
+        }
 
     @ExceptionHandler(InputSanitizationException.class)
     public ResponseEntity<ApiResponse<Void>> handleSanitizationRejection(

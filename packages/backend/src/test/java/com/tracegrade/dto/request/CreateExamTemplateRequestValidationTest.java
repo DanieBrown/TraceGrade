@@ -27,7 +27,6 @@ class CreateExamTemplateRequestValidationTest {
 
     private CreateExamTemplateRequest.CreateExamTemplateRequestBuilder validBuilder() {
         return CreateExamTemplateRequest.builder()
-                .teacherId(UUID.randomUUID())
                 .name("Math Exam")
                 .totalPoints(new BigDecimal("100.00"))
                 .questionsJson("[{\"q\":1}]");
@@ -74,15 +73,6 @@ class CreateExamTemplateRequestValidationTest {
         var request = validBuilder().name("a".repeat(200)).build();
         Set<ConstraintViolation<CreateExamTemplateRequest>> violations = validator.validate(request);
         assertThat(violations).isEmpty();
-    }
-
-    @Test
-    @DisplayName("Should fail when teacherId is null")
-    void shouldFailWhenTeacherIdNull() {
-        var request = validBuilder().teacherId(null).build();
-        Set<ConstraintViolation<CreateExamTemplateRequest>> violations = validator.validate(request);
-        assertThat(violations).isNotEmpty();
-        assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("teacherId"));
     }
 
     @Test
