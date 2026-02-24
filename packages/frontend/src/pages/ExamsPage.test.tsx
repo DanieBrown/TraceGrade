@@ -11,6 +11,10 @@ vi.mock('../features/exams/examsApi', () => ({
   isExamTemplateListEmpty: (items: unknown[]) => items.length === 0,
 }))
 
+vi.mock('./PaperExamsPage', () => ({
+  default: () => <h1>Paper Exams Mock Page</h1>,
+}))
+
 describe('ExamsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -124,6 +128,6 @@ describe('App routing non-regression', () => {
     window.history.pushState({}, '', '/paper-exams')
     render(<App />)
 
-    expect(await screen.findByRole('heading', { name: 'Paper Exams', level: 1 })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Paper Exams Mock Page' })).toBeInTheDocument()
   })
 })
