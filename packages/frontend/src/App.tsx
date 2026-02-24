@@ -3,6 +3,7 @@ import TopNav from './components/layout/TopNav'
 import PaperExamsPage from './pages/PaperExamsPage'
 import ManualReviewQueuePage from './pages/ManualReviewQueuePage'
 import DashboardPage from './pages/DashboardPage'
+import ExamsPage from './pages/ExamsPage'
 
 function ComingSoon({ title }: { title: string }) {
   return (
@@ -35,7 +36,7 @@ export default function App() {
           <Routes>
             <Route path="/"            element={<DashboardPage />} />
             <Route path="/students"    element={<ComingSoon title="Students" />} />
-            <Route path="/exams"       element={<ComingSoon title="Exams" />} />
+            <Route path="/exams"       element={<ExamsPage />} />
             <Route path="/homework"    element={<ComingSoon title="Homework" />} />
             <Route path="/grades"      element={<ComingSoon title="Grades" />} />
             <Route path="/paper-exams" element={<PaperExamsPage />} />
