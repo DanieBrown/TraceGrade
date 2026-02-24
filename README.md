@@ -131,6 +131,19 @@ TraceGrade/
 - **Response Fields**: `totalStudents`, `classCount` (currently `0`), `gradedThisWeek`, `pendingReviews`, `classAverage` (one decimal), `letterGrade` (`A|B|C|D|F`)
 - **Scope Boundary**: FEAT-025 covers backend API delivery only; FEAT-026 frontend dashboard wiring to consume this endpoint is explicitly out of scope.
 
+### FEAT-028 Exams Page UI (Frontend)
+- **Route**: `/exams` — dedicated Exams page for viewing and managing exam templates in a structured list/card UI
+- **Entry Points**: 
+  - Navigate from top navigation menu (Exams link in TopNav)
+  - Direct URL access via browser refresh to `/exams`
+- **Supported UI States**:
+  - **Loading State**: Displayed while exam template data is being fetched from the backend
+  - **Error State**: Displayed when the API call fails (network error, timeout, or server error); includes retry control
+  - **Empty State**: Displayed when no exam templates exist; provides clear CTA for creating the first exam
+  - **Populated State**: Displays exam template list with structured cards, each showing title, question count (if available), and total points (if available)
+- **Per-Item Actions**: Each exam card includes a primary action (open/manage/view) for proceeding into exam workflow
+- **Non-Regression**: Existing `PaperExamsPage` (`/paper-exams`) route and behavior remain completely intact; FEAT-028 is isolated to the new `/exams` route and does not affect paper exam grading workflows
+
 ### Planned Features (Post-MVP)
 - **AI Exam Generation**: Generate custom exams using AI based on topic, difficulty, and learning objectives
 - **Handwritten Answer Grading**: Upload photos of student work and get automatic grading via GPT-4 Vision
@@ -208,6 +221,27 @@ For detailed Docker documentation, see [DOCKER.md](DOCKER.md).
 - **Frontend**: Jest/Vitest for unit tests, Playwright/Cypress for E2E
 - **Backend**: JUnit 5 for unit tests, TestContainers for integration tests
 - **Target Coverage**: 80%+ code coverage
+
+### FEAT-028 Exams Page Verification Checklist
+
+The Exams page (FEAT-028) includes automated and manual verification checks aligned to acceptance criteria (AC-001 through AC-006):
+
+| Criteria | Verification | Status |
+|----------|--------------|--------|
+| **AC-001: Route & Navigation** | Navigate to `/exams` from TopNav; confirm Exams page renders. Direct URL access to `/exams` via browser refresh also works. | `npm run build` validates route wiring |
+| **AC-002: List & Metadata** | With exam template data available, confirm each item shows title, question count (if available), and total points (if available) | Manual: load populated Exams page; verify metadata rendering |
+| **AC-003: State Branches** | Confirm loading, error, and empty states render correctly when API is pending, fails, or returns zero results | Manual: simulate pending/error/empty responses; verify each state appears |
+| **AC-004: Per-Item Actions** | Each exam card includes a primary open/manage action; action is clickable and keyboard-focusable | Manual: navigate exam cards with keyboard; click action control |
+| **AC-005: Paper Exams Non-Regression** | Navigate to `/paper-exams` after FEAT-028 changes; verify existing page still renders and all interactions remain available | Manual: access `/paper-exams` route; test existing paper exam workflow |
+| **AC-006: Missing Field Handling** | Provide exam data missing optional fields (e.g., no question count); confirm page remains stable without runtime errors | Manual: verify long titles do not break layout; missing metadata is handled safely |
+
+**Run checks locally**:
+```bash
+cd packages/frontend
+npm run lint           # Frontend linting
+npm run type-check    # TypeScript validation
+npm run build         # Build validation (includes route wiring)
+```
 
 ## Deployment
 
