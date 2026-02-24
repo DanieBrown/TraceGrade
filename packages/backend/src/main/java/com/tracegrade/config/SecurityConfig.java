@@ -88,6 +88,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/csrf/token").permitAll()
+                        .requestMatchers("/api/exam-templates/**").authenticated()
                         .requestMatchers(dashboardStatsMatcher).access(this::authorizeDashboardSchoolAccess)
                         .anyRequest().permitAll()
                 )
