@@ -170,6 +170,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(error));
     }
 
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDuplicateResource(
+            DuplicateResourceException ex) {
+        ApiError error = ApiError.of("CONFLICT", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(error));
+    }
+
     @ExceptionHandler(InputSanitizationException.class)
     public ResponseEntity<ApiResponse<Void>> handleSanitizationRejection(
             InputSanitizationException ex) {
