@@ -225,3 +225,5 @@ mockups/*
 strategy/*
 specs/*
 .github/agents/*
+.agents-work/*
+copilot-instructions.md

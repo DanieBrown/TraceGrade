@@ -13,6 +13,8 @@ public interface StudentRepository extends JpaRepository<Student, UUID> {
 
     List<Student> findBySchoolIdAndIsActiveTrue(UUID schoolId);
 
+    long countBySchoolIdAndIsActiveTrue(UUID schoolId);
+
     List<Student> findBySchoolId(UUID schoolId);
 
     Optional<Student> findByIdAndSchoolId(UUID id, UUID schoolId);

@@ -16,10 +16,10 @@ CREATE TABLE students (
 CREATE UNIQUE INDEX uq_students_school_email
     ON students(school_id, email);
 
--- Enforce unique student number per school (when present)
+-- Enforce unique student number per school
+-- Note: unique indexes treat NULL student_number values as distinct, so multiple NULLs remain allowed.
 CREATE UNIQUE INDEX uq_students_school_number
-    ON students(school_id, student_number)
-    WHERE student_number IS NOT NULL;
+    ON students(school_id, student_number);
 
 CREATE INDEX idx_students_school_active
     ON students(school_id, is_active);

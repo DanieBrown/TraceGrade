@@ -125,6 +125,12 @@ TraceGrade/
 - **Grade Calculations**: Real-time calculation of weighted averages
 - **Reporting**: Export grade reports as CSV
 
+### FEAT-025 Dashboard Stats API (Backend)
+- **Endpoint**: `GET /api/schools/{schoolId}/dashboard/stats`
+- **Auth/Response**: Bearer-secured endpoint returning `ApiResponse<DashboardStatsResponse>`
+- **Response Fields**: `totalStudents`, `classCount` (currently `0`), `gradedThisWeek`, `pendingReviews`, `classAverage` (one decimal), `letterGrade` (`A|B|C|D|F`)
+- **Scope Boundary**: FEAT-025 covers backend API delivery only; FEAT-026 frontend dashboard wiring to consume this endpoint is explicitly out of scope.
+
 ### Planned Features (Post-MVP)
 - **AI Exam Generation**: Generate custom exams using AI based on topic, difficulty, and learning objectives
 - **Handwritten Answer Grading**: Upload photos of student work and get automatic grading via GPT-4 Vision
