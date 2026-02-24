@@ -20,6 +20,7 @@ describe('examsApi', () => {
 
     expect(mapped).toEqual({
       id: 'exam-1',
+      assignmentId: 'exam-1',
       title: 'Midterm',
       questionCount: 0,
       totalPoints: 0,
@@ -42,6 +43,7 @@ describe('examsApi', () => {
 
     expect(mapped).toEqual({
       id: 'exam-2',
+      assignmentId: 'exam-2',
       title: 'Final',
       questionCount: 10.5,
       totalPoints: 0,
@@ -67,6 +69,7 @@ describe('examsApi', () => {
     expect(templates).toEqual([
       {
         id: 'exam-a',
+        assignmentId: 'exam-a',
         title: 'Quiz A',
         questionCount: 8,
         totalPoints: 20,
