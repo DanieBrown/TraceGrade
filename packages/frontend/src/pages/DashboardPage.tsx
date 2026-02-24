@@ -1,15 +1,13 @@
+import { useEffect, useState } from 'react'
+import { fetchDashboardStats, isValidSchoolId, type DashboardStatsResponse } from '../features/dashboard/dashboardApi'
+
 // ── DashboardPage ─────────────────────────────────────────────────────────────
 // Rich dashboard surfacing key teacher metrics from the PRD.
-// Uses representative demo data until API endpoints are wired.
+// Summary metrics are wired to live school-scoped API data.
 
-const DEMO_STATS = {
-  totalStudents: 87,
-  classCount: 3,
-  gradedThisWeek: 42,
-  pendingReviews: 3,
-  classAverage: 82.4,
-  letterGrade: 'B',
-}
+type LoadState = 'loading' | 'error' | 'done'
+
+const GRADE_DISTRIBUTION_STUDENT_COUNT = 87
 
 const GRADE_DISTRIBUTION = [
   { label: 'A',  range: '90–100',  count: 24, pct: 28, color: 'var(--accent-teal)' },
@@ -77,6 +75,17 @@ const CLASSES = [
   { name: 'Calculus — Period 5',      students: 27, avg: 79.6, graded: 24, total: 27 },
   { name: 'Chemistry — Period 2',     students: 30, avg: 83.7, graded: 15, total: 30 },
 ]
+
+function isEmptyDashboardStats(stats: DashboardStatsResponse): boolean {
+  return (
+    stats.totalStudents === 0
+    && stats.classCount === 0
+    && stats.gradedThisWeek === 0
+    && stats.pendingReviews === 0
+    && stats.classAverage === 0
+    && stats.letterGrade === 'F'
+  )
+}
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -218,6 +227,49 @@ function GradeBar({ item, delay }: { item: typeof GRADE_DISTRIBUTION[0]; delay: 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const [loadState, setLoadState] = useState<LoadState>('loading')
+  const [stats, setStats] = useState<DashboardStatsResponse | null>(null)
+
+  const schoolId = import.meta.env.VITE_SCHOOL_ID?.trim() ?? ''
+
+  useEffect(() => {
+    if (!schoolId || !isValidSchoolId(schoolId)) {
+      setLoadState('error')
+      return
+    }
+
+    let isMounted = true
+
+    fetchDashboardStats(schoolId)
+      .then((response) => {
+        if (!isMounted) return
+        setStats(response)
+        setLoadState('done')
+      })
+      .catch(() => {
+        if (!isMounted) return
+        setLoadState('error')
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [schoolId])
+
+  const isEmptyState = loadState === 'done' && stats !== null && isEmptyDashboardStats(stats)
+  const pendingReviews = stats?.pendingReviews ?? 0
+
+  const reviewQuickActionDescription =
+    loadState === 'loading'
+      ? 'Loading review queue metrics…'
+      : loadState === 'error'
+        ? 'Unable to load review queue metrics. Refresh to retry.'
+        : isEmptyState
+          ? 'No submissions are currently waiting for review'
+          : `${pendingReviews} submissions need your attention`
+
+  const reviewQuickActionBadge = loadState === 'done' && !isEmptyState ? pendingReviews : 0
+
   const now = new Date()
   const hour = now.getHours()
   const greeting =
@@ -246,13 +298,30 @@ export default function DashboardPage() {
         >
           {greeting}, Admin.
         </h1>
-        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif' }}>
-          You have{' '}
-          <span style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>
-            {DEMO_STATS.pendingReviews} submissions
-          </span>{' '}
-          waiting for manual review across {DEMO_STATS.classCount} classes.
-        </p>
+        {loadState === 'loading' && (
+          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif' }}>
+            Loading live dashboard stats…
+          </p>
+        )}
+        {loadState === 'error' && (
+          <p style={{ fontSize: '14px', color: 'var(--accent-crimson)', fontFamily: 'Lora, serif' }}>
+            Unable to load dashboard metrics. Check school configuration and refresh to retry.
+          </p>
+        )}
+        {loadState === 'done' && isEmptyState && (
+          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif' }}>
+            No activity yet for this school. Once classes and submissions are active, live metrics will appear here.
+          </p>
+        )}
+        {loadState === 'done' && !isEmptyState && stats && (
+          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif' }}>
+            You have{' '}
+            <span style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>
+              {stats.pendingReviews} submissions
+            </span>{' '}
+            waiting for manual review across {stats.classCount} classes.
+          </p>
+        )}
       </div>
 
       {/* ── Stat cards ── */}
@@ -264,32 +333,97 @@ export default function DashboardPage() {
           marginBottom: '28px',
         }}
       >
-        <StatCard
-          label="Total Students"
-          value={DEMO_STATS.totalStudents}
-          sub={`Across ${DEMO_STATS.classCount} active classes`}
-          badge={{ text: 'Active', color: 'var(--accent-teal)' }}
-        />
-        <StatCard
-          label="Graded This Week"
-          value={DEMO_STATS.gradedThisWeek}
-          sub="AI-graded submissions"
-          badge={{ text: 'AI', color: '#5bc5f5' }}
-        />
-        <StatCard
-          label="Pending Reviews"
-          value={DEMO_STATS.pendingReviews}
-          sub="Confidence below 95%"
-          accent={DEMO_STATS.pendingReviews > 0 ? 'var(--accent-gold)' : 'var(--accent-teal)'}
-          badge={{ text: 'Needs Action', color: 'var(--accent-gold)' }}
-        />
-        <StatCard
-          label="Class Average"
-          value={`${DEMO_STATS.classAverage}%`}
-          sub={`Letter grade — ${DEMO_STATS.letterGrade}`}
-          accent="var(--accent-teal)"
-          badge={{ text: DEMO_STATS.letterGrade, color: 'var(--accent-teal)' }}
-        />
+        {loadState === 'loading' && (
+          <div
+            className="rounded-xl p-5 flex items-center gap-3"
+            style={{
+              gridColumn: '1 / -1',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-muted)',
+            }}
+          >
+            <svg
+              className="animate-spin h-5 w-5"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+            <span className="font-display text-sm">Loading dashboard summary…</span>
+          </div>
+        )}
+
+        {loadState === 'error' && (
+          <div
+            role="alert"
+            className="rounded-xl p-5"
+            style={{
+              gridColumn: '1 / -1',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            <p className="font-display" style={{ fontSize: '14px', fontWeight: 700, color: 'var(--accent-crimson)', marginBottom: '4px' }}>
+              Dashboard summary is unavailable
+            </p>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif' }}>
+              Check your connection and school configuration, then refresh the page to retry.
+            </p>
+          </div>
+        )}
+
+        {loadState === 'done' && isEmptyState && (
+          <div
+            className="rounded-xl p-5"
+            style={{
+              gridColumn: '1 / -1',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            <p className="font-display" style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
+              No dashboard activity yet
+            </p>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif' }}>
+              This school has no active classes, students, or graded submissions yet.
+            </p>
+          </div>
+        )}
+
+        {loadState === 'done' && !isEmptyState && stats && (
+          <>
+            <StatCard
+              label="Total Students"
+              value={stats.totalStudents}
+              sub={`Across ${stats.classCount} active classes`}
+              badge={{ text: 'Active', color: 'var(--accent-teal)' }}
+            />
+            <StatCard
+              label="Graded This Week"
+              value={stats.gradedThisWeek}
+              sub="AI-graded submissions"
+              badge={{ text: 'AI', color: '#5bc5f5' }}
+            />
+            <StatCard
+              label="Pending Reviews"
+              value={stats.pendingReviews}
+              sub="Confidence below 95%"
+              accent={stats.pendingReviews > 0 ? 'var(--accent-gold)' : 'var(--accent-teal)'}
+              badge={{ text: 'Needs Action', color: 'var(--accent-gold)' }}
+            />
+            <StatCard
+              label="Class Average"
+              value={`${stats.classAverage.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`}
+              sub={`Letter grade — ${stats.letterGrade}`}
+              accent="var(--accent-teal)"
+              badge={{ text: stats.letterGrade, color: 'var(--accent-teal)' }}
+            />
+          </>
+        )}
       </div>
 
       {/* ── Main content row ── */}
@@ -321,7 +455,7 @@ export default function DashboardPage() {
                 className="font-display"
                 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}
               >
-                All Classes · {DEMO_STATS.totalStudents} Students
+                All Classes · {GRADE_DISTRIBUTION_STUDENT_COUNT} Students
               </h2>
             </div>
             <span
@@ -606,11 +740,11 @@ export default function DashboardPage() {
           },
           {
             label: 'Review Queue',
-            desc: `${DEMO_STATS.pendingReviews} submissions need your attention`,
+            desc: reviewQuickActionDescription,
             href: '/review',
             icon: '⚑',
             accent: 'var(--accent-gold)',
-            badge: DEMO_STATS.pendingReviews,
+            badge: reviewQuickActionBadge,
           },
           {
             label: 'View Grades',
