@@ -1,16 +1,28 @@
 package com.tracegrade.config;
 
+import java.util.function.Supplier;
+import java.util.UUID;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.servlet.util.matcher.MvcRequestMatcher;
+import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Security configuration for TraceGrade.
@@ -35,7 +47,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                                                                   HandlerMappingIntrospector introspector) throws Exception {
+                MvcRequestMatcher dashboardStatsMatcher = new MvcRequestMatcher(
+                                introspector, "/api/schools/{schoolId}/dashboard/stats");
+                dashboardStatsMatcher.setMethod(HttpMethod.GET);
+
         // CSRF protection
         if (csrfProperties.isEnabled()) {
             CookieCsrfTokenRepository tokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
@@ -70,10 +87,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-                        .anyRequest().permitAll() // Will be restricted when auth is implemented
+                        .requestMatchers("/api/csrf/token").permitAll()
+                        .requestMatchers(dashboardStatsMatcher).access(this::authorizeDashboardSchoolAccess)
+                        .anyRequest().permitAll()
                 )
                 .exceptionHandling(ex -> ex
-                        .accessDeniedHandler(csrfAccessDeniedHandler));
+                        .accessDeniedHandler(csrfAccessDeniedHandler)
+                        .authenticationEntryPoint((request, response, authException) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED)));
 
         // Security headers
         http.headers(headers -> headers
@@ -99,4 +120,42 @@ public class SecurityConfig {
 
         return http.build();
     }
+
+        private AuthorizationDecision authorizeDashboardSchoolAccess(
+                        Supplier<Authentication> authenticationSupplier,
+                        RequestAuthorizationContext context) {
+                Authentication authentication = authenticationSupplier.get();
+                if (authentication == null || !authentication.isAuthenticated()) {
+                        return new AuthorizationDecision(false);
+                }
+
+                String requestedSchoolId = context.getVariables().get("schoolId");
+                if (requestedSchoolId == null || requestedSchoolId.isBlank()) {
+                        return new AuthorizationDecision(false);
+                }
+
+                if (!isValidUuid(requestedSchoolId)) {
+                        return new AuthorizationDecision(true);
+                }
+
+                if (requestedSchoolId.equals(authentication.getName())) {
+                        return new AuthorizationDecision(true);
+                }
+
+                boolean hasMatchingSchoolAuthority = authentication.getAuthorities().stream()
+                                .map(GrantedAuthority::getAuthority)
+                                .anyMatch(authority -> authority.equals("SCHOOL_" + requestedSchoolId)
+                                                || authority.equals("SCHOOL:" + requestedSchoolId));
+
+                return new AuthorizationDecision(hasMatchingSchoolAuthority);
+        }
+
+        private boolean isValidUuid(String value) {
+                try {
+                        UUID.fromString(value);
+                        return true;
+                } catch (IllegalArgumentException ex) {
+                        return false;
+                }
+        }
 }
