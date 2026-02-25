@@ -1,8 +1,10 @@
 package com.tracegrade.config;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,11 +17,15 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.servlet.util.matcher.MvcRequestMatcher;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,13 +43,21 @@ public class SecurityConfig {
     private final SecurityHeadersProperties securityHeadersProperties;
     private final CsrfProperties csrfProperties;
     private final CsrfAccessDeniedHandler csrfAccessDeniedHandler;
+    private final CorsProperties corsProperties;
+
+    /** Present only when the {@code dev} profile is active. */
+    private final Optional<DevAuthenticationFilter> devAuthenticationFilter;
 
     public SecurityConfig(SecurityHeadersProperties securityHeadersProperties,
                           CsrfProperties csrfProperties,
-                          CsrfAccessDeniedHandler csrfAccessDeniedHandler) {
+                          CsrfAccessDeniedHandler csrfAccessDeniedHandler,
+                          CorsProperties corsProperties,
+                          @Autowired(required = false) DevAuthenticationFilter devAuthenticationFilter) {
         this.securityHeadersProperties = securityHeadersProperties;
         this.csrfProperties = csrfProperties;
         this.csrfAccessDeniedHandler = csrfAccessDeniedHandler;
+        this.corsProperties = corsProperties;
+        this.devAuthenticationFilter = Optional.ofNullable(devAuthenticationFilter);
     }
 
     @Bean
@@ -52,6 +66,10 @@ public class SecurityConfig {
                 MvcRequestMatcher dashboardStatsMatcher = new MvcRequestMatcher(
                                 introspector, "/api/schools/{schoolId}/dashboard/stats");
                 dashboardStatsMatcher.setMethod(HttpMethod.GET);
+
+        // CORS must be configured first so preflight OPTIONS requests
+        // get proper headers before any other filter can reject them.
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
         // CSRF protection
         if (csrfProperties.isEnabled()) {
@@ -85,17 +103,26 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/**").permitAll()
+                        // Public endpoints — no authentication required
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/csrf/token").permitAll()
+                        // Protected endpoints with custom authorization
                         .requestMatchers("/api/exam-templates/**").authenticated()
                         .requestMatchers(dashboardStatsMatcher).access(this::authorizeDashboardSchoolAccess)
-                        .anyRequest().permitAll()
+                        // All other actuator endpoints require authentication
+                        .requestMatchers("/actuator/**").authenticated()
+                        // Default: deny unauthenticated access (fail-closed)
+                        .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
                         .accessDeniedHandler(csrfAccessDeniedHandler)
                         .authenticationEntryPoint((request, response, authException) ->
                                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED)));
+
+        // In dev profile, inject synthetic auth before the security filter runs
+        devAuthenticationFilter.ifPresent(filter ->
+                http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class));
 
         // Security headers
         http.headers(headers -> headers
@@ -122,11 +149,26 @@ public class SecurityConfig {
         return http.build();
     }
 
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(corsProperties.getAllowedOrigins());
+        configuration.setAllowedMethods(corsProperties.getAllowedMethods());
+        configuration.setAllowedHeaders(corsProperties.getAllowedHeaders());
+        configuration.setAllowCredentials(corsProperties.isAllowCredentials());
+        configuration.setMaxAge(corsProperties.getMaxAge());
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", configuration);
+        return source;
+    }
+
         private AuthorizationDecision authorizeDashboardSchoolAccess(
                         Supplier<Authentication> authenticationSupplier,
                         RequestAuthorizationContext context) {
                 Authentication authentication = authenticationSupplier.get();
-                if (authentication == null || !authentication.isAuthenticated()) {
+                if (authentication == null || !authentication.isAuthenticated()
+                                || authentication instanceof org.springframework.security.authentication.AnonymousAuthenticationToken) {
                         return new AuthorizationDecision(false);
                 }
 
@@ -136,7 +178,8 @@ public class SecurityConfig {
                 }
 
                 if (!isValidUuid(requestedSchoolId)) {
-                        return new AuthorizationDecision(true);
+                        // Fail closed: deny access for malformed identifiers
+                        return new AuthorizationDecision(false);
                 }
 
                 if (requestedSchoolId.equals(authentication.getName())) {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import AddStudentModal from '../features/students/AddStudentModal'
 import StudentsList from '../features/students/StudentsList'
 import { EmptyStudentsState, ErrorStudentsState, LoadingStudentsState } from '../features/students/StudentsStates'
 import { fetchStudents, getStudentsLoadErrorDetails, isStudentListEmpty } from '../features/students/studentsApi'
@@ -11,6 +12,7 @@ export default function StudentsPage() {
   const [items, setItems] = useState<StudentListItem[]>([])
   const [errorMessage, setErrorMessage] = useState('There was a problem connecting to the server.')
   const [canRetry, setCanRetry] = useState(true)
+  const [showAddModal, setShowAddModal] = useState(false)
   const latestRequestIdRef = useRef(0)
   const isMountedRef = useRef(true)
 
@@ -58,13 +60,13 @@ export default function StudentsPage() {
         </div>
         <button
           type="button"
-          disabled
-          className="inline-flex cursor-not-allowed items-center justify-center self-start rounded-lg px-5 py-2.5 font-display text-sm font-semibold opacity-60"
+          onClick={() => setShowAddModal(true)}
+          className="inline-flex items-center justify-center self-start rounded-lg px-5 py-2.5 font-display text-sm font-semibold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] active:scale-95"
           style={{
             background: 'var(--accent-gold)',
             color: 'var(--bg-base)',
           }}
-          aria-label="Add student unavailable"
+          aria-label="Add student"
         >
           + Add Student
         </button>
@@ -80,9 +82,21 @@ export default function StudentsPage() {
         />
       )}
 
-      {loadState === 'done' && isStudentListEmpty(items) && <EmptyStudentsState />}
+      {loadState === 'done' && isStudentListEmpty(items) && (
+        <EmptyStudentsState onAddStudent={() => setShowAddModal(true)} />
+      )}
 
       {loadState === 'done' && !isStudentListEmpty(items) && <StudentsList items={items} />}
+
+      {showAddModal && (
+        <AddStudentModal
+          onClose={() => setShowAddModal(false)}
+          onStudentAdded={() => {
+            setShowAddModal(false)
+            void loadStudents()
+          }}
+        />
+      )}
     </main>
   )
 }

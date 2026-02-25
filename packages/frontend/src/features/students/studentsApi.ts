@@ -227,6 +227,28 @@ export async function fetchStudents(): Promise<StudentListItem[]> {
     .filter((item): item is StudentListItem => item !== null)
 }
 
+export interface CreateStudentPayload {
+  firstName: string
+  lastName: string
+  email: string
+  studentNumber?: string
+}
+
+export async function createStudent(payload: CreateStudentPayload): Promise<StudentListItem> {
+  const endpoint = resolveStudentsEndpoint()
+  const response = await api.post<ApiResponse<unknown> | unknown>(endpoint, payload)
+
+  const data = isRecord(response.data) ? response.data : null
+  const innerData = data?.data ?? data
+  const item = toStudentListItem(innerData)
+
+  if (!item) {
+    throw new Error('Failed to parse created student response')
+  }
+
+  return item
+}
+
 export function isStudentListEmpty(items: StudentListItem[]): boolean {
   return items.length === 0
 }

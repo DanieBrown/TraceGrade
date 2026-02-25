@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,9 +27,11 @@ import com.tracegrade.ratelimit.RateLimitService;
 import com.tracegrade.rubric.AnswerRubricService;
 import com.tracegrade.submission.SubmissionUploadService;
 
-@WebMvcTest(DashboardStatsController.class)
+@WebMvcTest({DashboardStatsController.class, com.tracegrade.examtemplate.ExamTemplateController.class})
+@ActiveProfiles("test")
 @Import({SecurityConfig.class, SecurityHeadersProperties.class,
          CsrfProperties.class, CsrfAccessDeniedHandler.class,
+         CorsProperties.class,
          RateLimitProperties.class, SanitizationProperties.class})
 @TestPropertySource(properties = {
         "security-headers.https-redirect-enabled=false",
@@ -132,14 +135,32 @@ class SecurityConfigTest {
         @Test
         @DisplayName("Should not redirect when https-redirect-enabled is false")
         void shouldNotRedirectWhenDisabled() throws Exception {
+            // With anyRequest().authenticated(), an unauthenticated request
+            // to an unknown path returns 401 (not a 302 redirect to HTTPS).
             mockMvc.perform(get("/any-path"))
-                    .andExpect(status().isNotFound());
+                    .andExpect(status().isUnauthorized());
         }
     }
 
     @Nested
     @DisplayName("Endpoint Authorization")
     class EndpointAuthorizationTests {
+
+        @Test
+        @DisplayName("Should require authentication for unknown endpoints (fail-closed)")
+        void shouldRequireAuthenticationForUnknownEndpoints() throws Exception {
+            mockMvc.perform(get("/api/some-unknown-endpoint"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("Should allow unauthenticated access to CSRF token endpoint")
+        void shouldAllowCsrfTokenEndpointWithoutAuth() throws Exception {
+            int status = mockMvc.perform(get("/api/csrf/token"))
+                    .andReturn().getResponse().getStatus();
+            // Should not be 401 or 403 — this endpoint is explicitly public
+            org.assertj.core.api.Assertions.assertThat(status).isNotIn(401, 403);
+        }
 
         @Test
         @DisplayName("Should require authentication for exam-template endpoints")
@@ -151,8 +172,13 @@ class SecurityConfigTest {
         @Test
         @DisplayName("Should allow authenticated access path for exam-template endpoints")
         void shouldAllowAuthenticatedAccessPathForExamTemplateEndpoints() throws Exception {
-            mockMvc.perform(get("/api/exam-templates").with(user("teacher-user")))
-                    .andExpect(status().isNotFound());
+            // Use a valid UUID so resolveTeacherId() succeeds. The service is a mock,
+            // so the response may vary; we only verify the security layer doesn't block.
+            int status = mockMvc.perform(get("/api/exam-templates")
+                            .with(user("00000000-0000-4000-a000-000000000099")))
+                    .andReturn().getResponse().getStatus();
+            // Not 401 (unauthenticated) and not 403 (forbidden) means security passed
+            org.assertj.core.api.Assertions.assertThat(status).isNotIn(401, 403);
         }
     }
 }

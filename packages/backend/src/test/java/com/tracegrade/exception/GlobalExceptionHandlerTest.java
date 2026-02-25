@@ -18,6 +18,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.validation.annotation.Validated;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tracegrade.config.CsrfAccessDeniedHandler;
+import com.tracegrade.config.CorsProperties;
 import com.tracegrade.config.CsrfProperties;
 import com.tracegrade.config.SecurityConfig;
 import com.tracegrade.config.SecurityHeadersProperties;
@@ -43,6 +45,7 @@ import jakarta.validation.constraints.Min;
 @WebMvcTest(controllers = GlobalExceptionHandlerTest.TestController.class)
 @Import({SecurityConfig.class, SecurityHeadersProperties.class,
          CsrfProperties.class, CsrfAccessDeniedHandler.class,
+         CorsProperties.class,
          RateLimitProperties.class, SanitizationProperties.class,
          GlobalExceptionHandler.class})
 @TestPropertySource(properties = {
@@ -52,6 +55,7 @@ import jakarta.validation.constraints.Min;
         "csrf.enabled=true",
         "csrf.cookie-secure=false"
 })
+@WithMockUser
 class GlobalExceptionHandlerTest {
 
     @Autowired

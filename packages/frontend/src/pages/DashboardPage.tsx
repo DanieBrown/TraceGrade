@@ -729,6 +729,85 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Quick actions ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '16px' }}>
+        {[
+          {
+            label: 'Add Students',
+            desc: 'Enroll new students into your school',
+            href: '/students',
+            icon: '+',
+            accent: '#5bc5f5',
+          },
+          {
+            label: 'Create Homework',
+            desc: 'Create a new homework assignment',
+            href: '/homework',
+            icon: '📋',
+            accent: 'var(--accent-gold)',
+          },
+          {
+            label: 'Create Exam',
+            desc: 'Build exam templates for AI grading',
+            href: '/exams',
+            icon: '✎',
+            accent: 'var(--accent-teal)',
+          },
+        ].map(action => (
+          <a
+            key={action.href}
+            href={action.href}
+            className="rounded-xl p-5 card-glow"
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '14px',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border)',
+              textDecoration: 'none',
+              transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
+            }}
+            onMouseEnter={e => {
+              const el = e.currentTarget as HTMLElement
+              el.style.borderColor = `${action.accent}40`
+            }}
+            onMouseLeave={e => {
+              const el = e.currentTarget as HTMLElement
+              el.style.borderColor = 'var(--border)'
+            }}
+          >
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                background: `${action.accent}14`,
+                border: `1px solid ${action.accent}28`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: action.accent,
+                fontSize: '16px',
+                flexShrink: 0,
+              }}
+            >
+              {action.icon}
+            </div>
+            <div style={{ flex: 1 }}>
+              <p
+                className="font-display"
+                style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)', marginBottom: '4px' }}
+              >
+                {action.label}
+              </p>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif', lineHeight: 1.4 }}>
+                {action.desc}
+              </p>
+            </div>
+          </a>
+        ))}
+      </div>
+
+      {/* ── Grading quick actions ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
         {[
           {

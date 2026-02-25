@@ -26,11 +26,15 @@ echo "DLQ ARN: $DLQ_ARN"
 echo "Creating SQS grading queue: $QUEUE_NAME"
 QUEUE_URL=$(awslocal sqs create-queue \
   --queue-name "$QUEUE_NAME" \
-  --attributes \
-    VisibilityTimeout="$VISIBILITY_TIMEOUT" \
-    "RedrivePolicy={\"deadLetterTargetArn\":\"$DLQ_ARN\",\"maxReceiveCount\":\"$MAX_RECEIVE_COUNT\"}" \
+  --attributes VisibilityTimeout="$VISIBILITY_TIMEOUT" \
   --query 'QueueUrl' \
   --output text)
+
+echo "Setting RedrivePolicy on $QUEUE_NAME (maxReceiveCount=$MAX_RECEIVE_COUNT)"
+REDRIVE_POLICY="{\"deadLetterTargetArn\":\"$DLQ_ARN\",\"maxReceiveCount\":\"$MAX_RECEIVE_COUNT\"}"
+awslocal sqs set-queue-attributes \
+  --queue-url "$QUEUE_URL" \
+  --attributes "RedrivePolicy=$REDRIVE_POLICY"
 
 echo "Queue URL: $QUEUE_URL"
 echo "SQS queues '$QUEUE_NAME' and '$DLQ_NAME' configured with DLQ redrive policy (maxReceiveCount=$MAX_RECEIVE_COUNT)"

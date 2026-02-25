@@ -26,10 +26,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.tracegrade.config.CsrfAccessDeniedHandler;
+import com.tracegrade.config.CorsProperties;
 import com.tracegrade.config.CsrfProperties;
 import com.tracegrade.config.SecurityConfig;
 import com.tracegrade.config.SecurityHeadersProperties;
@@ -45,6 +47,7 @@ import com.tracegrade.ratelimit.RateLimitService;
 @WebMvcTest(StudentSubmissionController.class)
 @Import({SecurityConfig.class, SecurityHeadersProperties.class,
          CsrfProperties.class, CsrfAccessDeniedHandler.class,
+         CorsProperties.class,
          RateLimitProperties.class, SanitizationProperties.class})
 @TestPropertySource(properties = {
         "security-headers.https-redirect-enabled=false",
@@ -52,6 +55,7 @@ import com.tracegrade.ratelimit.RateLimitService;
         "sanitization.enabled=false",
         "csrf.enabled=false"
 })
+@WithMockUser
 @SuppressWarnings("null") // Hamcrest is() / csrf() vs @NonNull MockMvc API contracts
 class StudentSubmissionControllerTest {
 

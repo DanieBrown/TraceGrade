@@ -3,6 +3,7 @@ package com.tracegrade.config;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
@@ -22,6 +23,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,8 +38,10 @@ import com.tracegrade.ratelimit.RateLimitProperties;
 import com.tracegrade.ratelimit.RateLimitService;
 
 @WebMvcTest(controllers = CsrfProtectionTest.TestController.class)
+@ActiveProfiles("test")
 @Import({SecurityConfig.class, SecurityHeadersProperties.class,
          CsrfProperties.class, CsrfAccessDeniedHandler.class,
+         CorsProperties.class,
          RateLimitProperties.class, SanitizationProperties.class})
 @TestPropertySource(properties = {
         "security-headers.https-redirect-enabled=false",
@@ -85,10 +89,8 @@ class CsrfProtectionTest {
         @Test
         @DisplayName("Should set XSRF-TOKEN cookie on GET requests")
         void shouldSetCsrfCookieOnGet() throws Exception {
-            // Spring Security 6.2.x CookieCsrfTokenRepository calls response.addCookie()
-            // via mapToCookie(). MockHttpServletResponse stores cookies in its cookies list,
-            // so we use cookie() matchers rather than header() matchers.
-            mockMvc.perform(get("/test/csrf/get"))
+            mockMvc.perform(get("/test/csrf/get")
+                            .with(user("test-user")))
                     .andExpect(status().isOk())
                     .andExpect(cookie().exists("XSRF-TOKEN"))
                     .andExpect(cookie().path("XSRF-TOKEN", "/"));
@@ -97,7 +99,8 @@ class CsrfProtectionTest {
         @Test
         @DisplayName("Should not require CSRF token for GET requests")
         void shouldNotRequireCsrfForGet() throws Exception {
-            mockMvc.perform(get("/test/csrf/get"))
+            mockMvc.perform(get("/test/csrf/get")
+                            .with(user("test-user")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success", is(true)));
         }
@@ -111,6 +114,7 @@ class CsrfProtectionTest {
         @DisplayName("Should reject POST without CSRF token")
         void shouldRejectPostWithoutToken() throws Exception {
             mockMvc.perform(post("/test/csrf/post")
+                            .with(user("test-user"))
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.success", is(false)))
@@ -121,6 +125,7 @@ class CsrfProtectionTest {
         @DisplayName("Should accept POST with valid CSRF token")
         void shouldAcceptPostWithValidToken() throws Exception {
             mockMvc.perform(post("/test/csrf/post")
+                            .with(user("test-user"))
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
@@ -131,6 +136,7 @@ class CsrfProtectionTest {
         @DisplayName("Should reject PUT without CSRF token")
         void shouldRejectPutWithoutToken() throws Exception {
             mockMvc.perform(put("/test/csrf/put")
+                            .with(user("test-user"))
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isForbidden());
         }
@@ -139,6 +145,7 @@ class CsrfProtectionTest {
         @DisplayName("Should accept PUT with valid CSRF token")
         void shouldAcceptPutWithValidToken() throws Exception {
             mockMvc.perform(put("/test/csrf/put")
+                            .with(user("test-user"))
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk());
@@ -147,7 +154,8 @@ class CsrfProtectionTest {
         @Test
         @DisplayName("Should reject DELETE without CSRF token")
         void shouldRejectDeleteWithoutToken() throws Exception {
-            mockMvc.perform(delete("/test/csrf/delete"))
+            mockMvc.perform(delete("/test/csrf/delete")
+                            .with(user("test-user")))
                     .andExpect(status().isForbidden());
         }
 
@@ -155,6 +163,7 @@ class CsrfProtectionTest {
         @DisplayName("Should accept DELETE with valid CSRF token")
         void shouldAcceptDeleteWithValidToken() throws Exception {
             mockMvc.perform(delete("/test/csrf/delete")
+                            .with(user("test-user"))
                             .with(csrf()))
                     .andExpect(status().isOk());
         }
@@ -163,6 +172,7 @@ class CsrfProtectionTest {
         @DisplayName("Should reject POST with invalid CSRF token")
         void shouldRejectPostWithInvalidToken() throws Exception {
             mockMvc.perform(post("/test/csrf/post")
+                            .with(user("test-user"))
                             .with(csrf().useInvalidToken())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isForbidden())
@@ -177,14 +187,16 @@ class CsrfProtectionTest {
         @Test
         @DisplayName("Should not require CSRF for HEAD requests")
         void shouldNotRequireForHead() throws Exception {
-            mockMvc.perform(head("/test/csrf/get"))
+            mockMvc.perform(head("/test/csrf/get")
+                            .with(user("test-user")))
                     .andExpect(status().isOk());
         }
 
         @Test
         @DisplayName("Should not require CSRF for OPTIONS requests")
         void shouldNotRequireForOptions() throws Exception {
-            mockMvc.perform(options("/test/csrf/get"))
+            mockMvc.perform(options("/test/csrf/get")
+                            .with(user("test-user")))
                     .andExpect(status().isOk());
         }
 
@@ -206,6 +218,7 @@ class CsrfProtectionTest {
         @DisplayName("Should return standard ApiResponse format for CSRF errors")
         void shouldReturnApiResponseFormat() throws Exception {
             mockMvc.perform(post("/test/csrf/post")
+                            .with(user("test-user"))
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.success", is(false)))

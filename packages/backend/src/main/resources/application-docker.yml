@@ -82,15 +82,15 @@ server:
     enabled: true
     mime-types: application/json,application/xml,text/html,text/xml,text/plain
   error:
-    include-message: always
-    include-binding-errors: always
+    include-message: never
+    include-binding-errors: never
 
 # Actuator Configuration
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info
       base-path: /actuator
   endpoint:
     health:
@@ -107,8 +107,8 @@ logging:
     root: INFO
     com.tracegrade: DEBUG
     org.springframework.web: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.SQL: INFO
+    org.hibernate.type.descriptor.sql.BasicBinder: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
@@ -119,19 +119,19 @@ logging:
 
 # JWT Configuration
 jwt:
-  secret: ${JWT_SECRET:your-super-secret-jwt-key-change-this-in-production}
+  secret: ${JWT_SECRET:?JWT_SECRET must be set}
   expiration: ${JWT_EXPIRATION:86400000} # 24 hours in milliseconds
 
 # Security Headers Configuration
 security-headers:
-  https-redirect-enabled: ${SECURITY_HTTPS_REDIRECT:true}
+  https-redirect-enabled: ${SECURITY_HTTPS_REDIRECT:false}
   content-security-policy: >-
     default-src 'self';
     script-src 'self';
     style-src 'self' 'unsafe-inline';
     img-src 'self' data: blob:;
     font-src 'self' data:;
-    connect-src 'self';
+    connect-src 'self' http://localhost:5173 http://localhost:8080 http://localhost:3000;
     frame-ancestors 'self';
     base-uri 'self';
     form-action 'self'

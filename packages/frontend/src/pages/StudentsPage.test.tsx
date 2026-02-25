@@ -64,7 +64,7 @@ describe('StudentsPage', () => {
     )
 
     expect(await screen.findByText('No students found')).toBeInTheDocument()
-    expect(screen.getByText('Students added to the system will appear here.')).toBeInTheDocument()
+    expect(screen.getByText('Add your first student to get started.')).toBeInTheDocument()
   })
 
   it('renders populated list and handles missing optional fields safely', async () => {

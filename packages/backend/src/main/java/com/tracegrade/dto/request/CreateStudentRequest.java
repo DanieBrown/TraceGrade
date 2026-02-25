@@ -3,7 +3,6 @@ package com.tracegrade.dto.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,8 +20,7 @@ import java.util.UUID;
 @Schema(description = "Request body for enrolling a new student")
 public class CreateStudentRequest {
 
-    @NotNull
-    @Schema(description = "UUID of the school this student belongs to", requiredMode = Schema.RequiredMode.REQUIRED, example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+    @Schema(description = "UUID of the school this student belongs to (set automatically from the URL path)", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
     private UUID schoolId;
 
     @NotBlank

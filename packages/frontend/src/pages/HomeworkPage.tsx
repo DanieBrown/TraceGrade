@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import CreateHomeworkModal from '../features/homework/CreateHomeworkModal'
 import HomeworkList from '../features/homework/HomeworkList'
 import {
   EmptyHomeworkState,
@@ -19,6 +20,7 @@ export default function HomeworkPage() {
   const [items, setItems] = useState<HomeworkListItem[]>([])
   const [errorMessage, setErrorMessage] = useState('There was a problem connecting to the server.')
   const [canRetry, setCanRetry] = useState(true)
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const latestRequestIdRef = useRef(0)
   const isMountedRef = useRef(true)
 
@@ -66,13 +68,13 @@ export default function HomeworkPage() {
         </div>
         <button
           type="button"
-          disabled
-          className="inline-flex cursor-not-allowed items-center justify-center self-start rounded-lg px-5 py-2.5 font-display text-sm font-semibold opacity-60"
+          onClick={() => setShowCreateModal(true)}
+          className="inline-flex items-center justify-center self-start rounded-lg px-5 py-2.5 font-display text-sm font-semibold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] active:scale-95"
           style={{
             background: 'var(--accent-gold)',
             color: 'var(--bg-base)',
           }}
-          aria-label="Create homework unavailable"
+          aria-label="Create homework"
         >
           + Create Homework
         </button>
@@ -88,9 +90,21 @@ export default function HomeworkPage() {
         />
       )}
 
-      {loadState === 'done' && isHomeworkListEmpty(items) && <EmptyHomeworkState />}
+      {loadState === 'done' && isHomeworkListEmpty(items) && (
+        <EmptyHomeworkState onCreateHomework={() => setShowCreateModal(true)} />
+      )}
 
       {loadState === 'done' && !isHomeworkListEmpty(items) && <HomeworkList items={items} />}
+
+      {showCreateModal && (
+        <CreateHomeworkModal
+          onClose={() => setShowCreateModal(false)}
+          onHomeworkCreated={() => {
+            setShowCreateModal(false)
+            void loadHomework()
+          }}
+        />
+      )}
     </main>
   )
 }

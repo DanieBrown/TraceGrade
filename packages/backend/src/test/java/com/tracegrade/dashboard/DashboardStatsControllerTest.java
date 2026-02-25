@@ -18,10 +18,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.tracegrade.config.CsrfAccessDeniedHandler;
+import com.tracegrade.config.CorsProperties;
 import com.tracegrade.config.CsrfProperties;
 import com.tracegrade.config.SecurityConfig;
 import com.tracegrade.config.SecurityHeadersProperties;
@@ -32,8 +34,10 @@ import com.tracegrade.ratelimit.RateLimitProperties;
 import com.tracegrade.ratelimit.RateLimitService;
 
 @WebMvcTest(DashboardStatsController.class)
+@ActiveProfiles("test")
 @Import({SecurityConfig.class, SecurityHeadersProperties.class,
          CsrfProperties.class, CsrfAccessDeniedHandler.class,
+         CorsProperties.class,
          RateLimitProperties.class, SanitizationProperties.class})
 @TestPropertySource(properties = {
         "security-headers.https-redirect-enabled=false",
@@ -153,11 +157,12 @@ class DashboardStatsControllerTest {
     }
 
     @Test
-    @DisplayName("GET dashboard stats returns 400 when schoolId is invalid UUID")
-    void returnsBadRequestWhenSchoolIdInvalid() throws Exception {
+    @DisplayName("GET dashboard stats returns 403 when schoolId is invalid UUID (fail-closed)")
+    void returnsForbiddenWhenSchoolIdInvalid() throws Exception {
+        // Invalid UUIDs are denied at the authorization layer before reaching the controller.
         mockMvc.perform(get("/api/schools/{schoolId}/dashboard/stats", "invalid-uuid")
                         .with(user(UUID.randomUUID().toString())))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isForbidden());
 
         verifyNoInteractions(dashboardStatsService);
     }
