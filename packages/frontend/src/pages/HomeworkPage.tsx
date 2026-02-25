@@ -1,4 +1,62 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import HomeworkList from '../features/homework/HomeworkList'
+import {
+  EmptyHomeworkState,
+  ErrorHomeworkState,
+  LoadingHomeworkState,
+} from '../features/homework/HomeworkStates'
+import {
+  fetchHomeworkItems,
+  getHomeworkLoadErrorDetails,
+  isHomeworkListEmpty,
+} from '../features/homework/homeworkApi'
+import type { HomeworkListItem } from '../features/homework/homeworkTypes'
+
+type LoadState = 'loading' | 'error' | 'done'
+
 export default function HomeworkPage() {
+  const [loadState, setLoadState] = useState<LoadState>('loading')
+  const [items, setItems] = useState<HomeworkListItem[]>([])
+  const [errorMessage, setErrorMessage] = useState('There was a problem connecting to the server.')
+  const [canRetry, setCanRetry] = useState(true)
+  const latestRequestIdRef = useRef(0)
+  const isMountedRef = useRef(true)
+
+  const loadHomework = useCallback(async () => {
+    const requestId = ++latestRequestIdRef.current
+    setLoadState('loading')
+
+    try {
+      const homeworkItems = await fetchHomeworkItems()
+      if (!isMountedRef.current || requestId !== latestRequestIdRef.current) {
+        return
+      }
+
+      setItems(homeworkItems)
+      setErrorMessage('There was a problem connecting to the server.')
+      setCanRetry(true)
+      setLoadState('done')
+    } catch (error) {
+      if (!isMountedRef.current || requestId !== latestRequestIdRef.current) {
+        return
+      }
+
+      const details = getHomeworkLoadErrorDetails(error)
+      setErrorMessage(details.message)
+      setCanRetry(details.retryable)
+      setLoadState('error')
+    }
+  }, [])
+
+  useEffect(() => {
+    isMountedRef.current = true
+    void loadHomework()
+
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [loadHomework])
+
   return (
     <main className="flex-1 overflow-y-auto bg-base" style={{ padding: '40px', maxWidth: '1200px' }}>
       <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -20,14 +78,19 @@ export default function HomeworkPage() {
         </button>
       </header>
 
-      <section
-        className="rounded-xl border bg-surface px-6 py-10 text-center"
-        style={{ borderColor: 'var(--border)' }}
-        aria-live="polite"
-      >
-        <h2 className="font-display text-lg font-semibold text-pri">Homework page ready</h2>
-        <p className="mt-2 font-body text-sm text-sec">Homework data will appear here once loading is implemented.</p>
-      </section>
+      {loadState === 'loading' && <LoadingHomeworkState />}
+
+      {loadState === 'error' && (
+        <ErrorHomeworkState
+          onRetry={() => void loadHomework()}
+          message={errorMessage}
+          canRetry={canRetry}
+        />
+      )}
+
+      {loadState === 'done' && isHomeworkListEmpty(items) && <EmptyHomeworkState />}
+
+      {loadState === 'done' && !isHomeworkListEmpty(items) && <HomeworkList items={items} />}
     </main>
   )
 }
