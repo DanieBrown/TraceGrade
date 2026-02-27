@@ -89,11 +89,15 @@ class CsrfProtectionTest {
         @Test
         @DisplayName("Should set XSRF-TOKEN cookie on GET requests")
         void shouldSetCsrfCookieOnGet() throws Exception {
+            // Spring Security 6.2+ writes the CSRF cookie via response.addHeader("Set-Cookie", ...)
+            // using ResponseCookie (for SameSite support). Spring Test 6.1.x MockHttpServletResponse
+            // does not expose those Set-Cookie headers through getCookie(), so we assert on the
+            // header directly instead of using cookie().exists().
             mockMvc.perform(get("/test/csrf/get")
                             .with(user("test-user")))
                     .andExpect(status().isOk())
-                    .andExpect(cookie().exists("XSRF-TOKEN"))
-                    .andExpect(cookie().path("XSRF-TOKEN", "/"));
+                    .andExpect(header().string("Set-Cookie", containsString("XSRF-TOKEN=")))
+                    .andExpect(header().string("Set-Cookie", containsString("Path=/")));
         }
 
         @Test

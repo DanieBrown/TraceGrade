@@ -16,8 +16,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tracegrade.grading.GradingService;
 
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -28,6 +31,7 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+@ExtendWith(MockitoExtension.class)
 @SuppressWarnings("null")
 class GradingWorkerTest {
 
@@ -50,7 +54,8 @@ class GradingWorkerTest {
         sqsProperties.setWaitTimeSeconds(20);
         sqsProperties.setMaxMessagesPerPoll(10);
 
-        worker = new GradingWorker(sqsClient, sqsProperties, gradingService, new ObjectMapper());
+        worker = new GradingWorker(sqsClient, sqsProperties, gradingService,
+                new ObjectMapper().registerModule(new JavaTimeModule()));
     }
 
     // -------------------------------------------------------------------------
@@ -230,7 +235,7 @@ class GradingWorkerTest {
                 .submissionId(submissionId)
                 .enqueuedAt(Instant.now())
                 .build();
-        String body = new ObjectMapper().writeValueAsString(job);
+        String body = new ObjectMapper().registerModule(new JavaTimeModule()).writeValueAsString(job);
         return Message.builder()
                 .messageId(UUID.randomUUID().toString())
                 .receiptHandle(receiptHandle)

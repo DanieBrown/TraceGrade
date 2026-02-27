@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import com.tracegrade.domain.model.Class;
 import com.tracegrade.domain.model.School;
@@ -20,6 +21,10 @@ import com.tracegrade.domain.model.SchoolType;
 
 @DataJpaTest
 @ActiveProfiles("test")
+@TestPropertySource(properties = {
+        "spring.flyway.enabled=false",
+        "spring.jpa.hibernate.ddl-auto=create-drop"
+})
 class ClassRepositoryTest {
 
     @Autowired
