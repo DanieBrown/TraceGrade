@@ -103,7 +103,8 @@ services:
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-tracegrade_redis_password}
 
       # JWT Configuration
-      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env or environment}
+      # Dev-only fallback secret for local Docker usage; replace before real JWT auth/non-local environments.
+      JWT_SECRET: ${JWT_SECRET:-tracegrade_dev_jwt_secret_change_me}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
 
       # Server Configuration
@@ -181,7 +182,8 @@ services:
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@tracegrade.local}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?Set PGADMIN_PASSWORD in .env}
+      # Dev-only fallback password for local tools profile; set PGADMIN_PASSWORD explicitly outside local development.
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-tracegrade_pgadmin_dev_password_change_me}
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     ports:
       - "127.0.0.1:${PGADMIN_PORT:-5050}:80"

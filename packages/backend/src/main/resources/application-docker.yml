@@ -119,7 +119,8 @@ logging:
 
 # JWT Configuration
 jwt:
-  secret: ${JWT_SECRET:?JWT_SECRET must be set}
+  # Dev-only fallback secret for local Docker profile; replace before real JWT auth/non-local environments.
+  secret: ${JWT_SECRET:tracegrade_dev_jwt_secret_change_me}
   expiration: ${JWT_EXPIRATION:86400000} # 24 hours in milliseconds
 
 # Security Headers Configuration
