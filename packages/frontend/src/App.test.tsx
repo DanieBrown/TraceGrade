@@ -34,6 +34,10 @@ vi.mock('./pages/GradesPage', () => ({
   default: () => <h1>Grades Mock Page</h1>,
 }))
 
+vi.mock('./pages/SettingsPage', () => ({
+  default: () => <h1>Settings Mock Page</h1>,
+}))
+
 describe('App routes', () => {
   afterEach(() => {
     cleanup()
@@ -47,6 +51,7 @@ describe('App routes', () => {
     ['/review', 'Review Mock Page'],
     ['/homework', 'Homework Mock Page'],
     ['/grades', 'Grades Mock Page'],
+    ['/settings', 'Settings Mock Page'],
   ])('renders %s route without regressions', (route, headingText) => {
     window.history.pushState({}, '', route)
 

@@ -1,14 +1,26 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { GradingResultResponse } from '../features/grading/gradingApi'
+import { getTeacherThreshold } from '../features/settings/settingsApi'
 import { fetchPendingReviews } from '../features/review/reviewApi'
 import ReviewQueueItem from '../features/review/ReviewQueueItem'
 
 type LoadState = 'loading' | 'error' | 'done'
 
+function formatThresholdPercent(threshold: number): string {
+  const percentValue = threshold * 100
+  const rounded = Number.isInteger(percentValue)
+    ? String(percentValue)
+    : percentValue.toFixed(2).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1')
+
+  return `${rounded}%`
+}
+
 export default function ManualReviewQueuePage() {
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [items, setItems] = useState<GradingResultResponse[]>([])
   const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set())
+  const [thresholdLabel, setThresholdLabel] = useState<string | null>(null)
 
   useEffect(() => {
     fetchPendingReviews()
@@ -17,6 +29,30 @@ export default function ManualReviewQueuePage() {
         setLoadState('done')
       })
       .catch(() => setLoadState('error'))
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    getTeacherThreshold()
+      .then((threshold) => {
+        if (!isMounted || !threshold) {
+          return
+        }
+
+        setThresholdLabel(formatThresholdPercent(threshold.effectiveThreshold))
+      })
+      .catch(() => {
+        if (!isMounted) {
+          return
+        }
+
+        setThresholdLabel(null)
+      })
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   function handleReviewed(updated: GradingResultResponse) {
@@ -67,8 +103,11 @@ export default function ManualReviewQueuePage() {
               )}
             </h1>
             <p className="font-body text-sm" style={{ color: 'var(--text-secondary)' }}>
-              Submissions where AI confidence was below 95%. Review each one and approve or
-              adjust before grades are finalised.
+              Submissions where AI confidence was below {thresholdLabel ?? 'your configured threshold'}. Review each one and approve or
+              adjust before grades are finalised.{' '}
+              <Link to="/settings" className="text-accent-gold hover:underline" style={{ color: 'var(--accent-gold)' }}>
+                Adjust this in Settings.
+              </Link>
             </p>
           </div>
         </div>

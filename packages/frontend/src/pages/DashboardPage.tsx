@@ -1,11 +1,22 @@
 import { useEffect, useState } from 'react'
 import { fetchDashboardStats, isValidSchoolId, type DashboardStatsResponse } from '../features/dashboard/dashboardApi'
+import { getTeacherThreshold } from '../features/settings/settingsApi'
 
 // ── DashboardPage ─────────────────────────────────────────────────────────────
 // Rich dashboard surfacing key teacher metrics from the PRD.
 // Summary metrics are wired to live school-scoped API data.
 
 type LoadState = 'loading' | 'error' | 'done'
+
+function formatThresholdPercent(threshold: number): string {
+  const percentValue = threshold * 100
+
+  if (Number.isInteger(percentValue)) {
+    return `${percentValue}%`
+  }
+
+  return `${percentValue.toFixed(2).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1')}%`
+}
 
 const GRADE_DISTRIBUTION_STUDENT_COUNT = 87
 
@@ -229,6 +240,7 @@ function GradeBar({ item, delay }: { item: typeof GRADE_DISTRIBUTION[0]; delay: 
 export default function DashboardPage() {
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [stats, setStats] = useState<DashboardStatsResponse | null>(null)
+  const [reviewThresholdLabel, setReviewThresholdLabel] = useState<string | null>(null)
 
   const schoolId = import.meta.env.VITE_SCHOOL_ID?.trim() ?? ''
 
@@ -255,6 +267,30 @@ export default function DashboardPage() {
       isMounted = false
     }
   }, [schoolId])
+
+  useEffect(() => {
+    let isMounted = true
+
+    getTeacherThreshold()
+      .then((threshold) => {
+        if (!isMounted || !threshold) {
+          return
+        }
+
+        setReviewThresholdLabel(formatThresholdPercent(threshold.effectiveThreshold))
+      })
+      .catch(() => {
+        if (!isMounted) {
+          return
+        }
+
+        setReviewThresholdLabel(null)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const isEmptyState = loadState === 'done' && stats !== null && isEmptyDashboardStats(stats)
   const pendingReviews = stats?.pendingReviews ?? 0
@@ -411,7 +447,7 @@ export default function DashboardPage() {
             <StatCard
               label="Pending Reviews"
               value={stats.pendingReviews}
-              sub="Confidence below 95%"
+              sub={reviewThresholdLabel ? `Confidence below ${reviewThresholdLabel}` : 'Confidence below your configured threshold'}
               accent={stats.pendingReviews > 0 ? 'var(--accent-gold)' : 'var(--accent-teal)'}
               badge={{ text: 'Needs Action', color: 'var(--accent-gold)' }}
             />

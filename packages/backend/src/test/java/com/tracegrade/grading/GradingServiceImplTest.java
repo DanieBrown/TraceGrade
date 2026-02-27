@@ -28,9 +28,12 @@ import com.tracegrade.domain.model.ExamTemplate;
 import com.tracegrade.domain.model.GradingResult;
 import com.tracegrade.domain.model.StudentSubmission;
 import com.tracegrade.domain.model.SubmissionStatus;
+import com.tracegrade.domain.model.User;
+import com.tracegrade.domain.model.UserRole;
 import com.tracegrade.domain.repository.AnswerRubricRepository;
 import com.tracegrade.domain.repository.GradingResultRepository;
 import com.tracegrade.domain.repository.StudentSubmissionRepository;
+import com.tracegrade.domain.repository.UserRepository;
 import com.tracegrade.dto.response.GradingResultResponse;
 import com.tracegrade.exception.ResourceNotFoundException;
 import com.tracegrade.openai.OpenAiService;
@@ -50,6 +53,7 @@ class GradingServiceImplTest {
     private StudentSubmissionRepository submissionRepository;
     private GradingResultRepository     gradingResultRepository;
     private AnswerRubricRepository      rubricRepository;
+        private UserRepository              userRepository;
     private OpenAiService               openAiService;
     private GradingProperties           gradingProperties;
     private GradingServiceImpl          service;
@@ -64,12 +68,13 @@ class GradingServiceImplTest {
         submissionRepository    = mock(StudentSubmissionRepository.class);
         gradingResultRepository = mock(GradingResultRepository.class);
         rubricRepository        = mock(AnswerRubricRepository.class);
+        userRepository          = mock(UserRepository.class);
         openAiService           = mock(OpenAiService.class);
         gradingProperties       = new GradingProperties();
         gradingProperties.setConfidenceThreshold(0.80);
         service = new GradingServiceImpl(
                 submissionRepository, gradingResultRepository,
-                rubricRepository, openAiService,
+                rubricRepository, userRepository, openAiService,
                 gradingProperties, new ObjectMapper()
         );
     }
@@ -296,6 +301,67 @@ class GradingServiceImplTest {
             when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
             when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
                     .thenReturn(List.of(rubric));
+            when(openAiService.gradeSubmission(any())).thenReturn(aiResp);
+            stubSubmissionSave(submission);
+            stubResultSave();
+
+            GradingResultResponse response = service.grade(SUBMISSION_ID);
+
+            assertThat(response.getNeedsReview()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Should use teacher override threshold before default threshold")
+        void success_teacherOverrideThreshold_precedenceApplied() {
+            UUID teacherId = UUID.randomUUID();
+            ExamTemplate template = buildTemplate();
+            template.setTeacherId(teacherId);
+            StudentSubmission submission = buildSubmission(template);
+            AnswerRubric rubric = buildRubric(template, 1);
+            GradingResponse aiResp = buildAiResponse(1, 0.90, false);
+
+            User teacher = User.builder()
+                    .email("teacher@test.com")
+                    .passwordHash("hash")
+                    .firstName("Test")
+                    .lastName("Teacher")
+                    .role(UserRole.TEACHER)
+                    .isActive(true)
+                    .confidenceThreshold(new BigDecimal("0.95"))
+                    .build();
+            teacher.setId(teacherId);
+
+            when(gradingResultRepository.findBySubmissionId(SUBMISSION_ID)).thenReturn(Optional.empty());
+            when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
+            when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
+                    .thenReturn(List.of(rubric));
+            when(userRepository.findByIdAndRoleAndIsActiveTrue(teacherId, UserRole.TEACHER))
+                    .thenReturn(Optional.of(teacher));
+            when(openAiService.gradeSubmission(any())).thenReturn(aiResp);
+            stubSubmissionSave(submission);
+            stubResultSave();
+
+            GradingResultResponse response = service.grade(SUBMISSION_ID);
+
+            assertThat(response.getNeedsReview()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Should fall back to default threshold when teacher record is missing")
+        void success_missingTeacher_fallsBackToDefaultThreshold() {
+            UUID teacherId = UUID.randomUUID();
+            ExamTemplate template = buildTemplate();
+            template.setTeacherId(teacherId);
+            StudentSubmission submission = buildSubmission(template);
+            AnswerRubric rubric = buildRubric(template, 1);
+            GradingResponse aiResp = buildAiResponse(1, 0.79, false);
+
+            when(gradingResultRepository.findBySubmissionId(SUBMISSION_ID)).thenReturn(Optional.empty());
+            when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
+            when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
+                    .thenReturn(List.of(rubric));
+            when(userRepository.findByIdAndRoleAndIsActiveTrue(teacherId, UserRole.TEACHER))
+                    .thenReturn(Optional.empty());
             when(openAiService.gradeSubmission(any())).thenReturn(aiResp);
             stubSubmissionSave(submission);
             stubResultSave();

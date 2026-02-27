@@ -7,6 +7,7 @@ import ExamsPage from './pages/ExamsPage'
 import StudentsPage from './pages/StudentsPage'
 import HomeworkPage from './pages/HomeworkPage'
 import GradesPage from './pages/GradesPage'
+import SettingsPage from './pages/SettingsPage'
 
 function ComingSoon({ title }: { title: string }) {
   return (
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="/grades"      element={<GradesPage />} />
             <Route path="/paper-exams" element={<PaperExamsPage />} />
             <Route path="/review"      element={<ManualReviewQueuePage />} />
+            <Route path="/settings"    element={<SettingsPage />} />
             <Route path="*"            element={<Navigate to="/" replace />} />
           </Routes>
         </main>

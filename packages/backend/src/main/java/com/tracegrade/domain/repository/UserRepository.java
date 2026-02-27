@@ -1,6 +1,7 @@
 package com.tracegrade.domain.repository;
 
 import com.tracegrade.domain.model.User;
+import com.tracegrade.domain.model.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,4 +14,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmail(String email);
 
     Optional<User> findByEmailIgnoreCase(String email);
+
+    Optional<User> findByIdAndRoleAndIsActiveTrue(UUID id, UserRole role);
 }
