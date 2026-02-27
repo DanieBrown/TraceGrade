@@ -17,9 +17,12 @@ import com.tracegrade.domain.model.AnswerRubric;
 import com.tracegrade.domain.model.GradingResult;
 import com.tracegrade.domain.model.StudentSubmission;
 import com.tracegrade.domain.model.SubmissionStatus;
+import com.tracegrade.domain.model.User;
+import com.tracegrade.domain.model.UserRole;
 import com.tracegrade.domain.repository.AnswerRubricRepository;
 import com.tracegrade.domain.repository.GradingResultRepository;
 import com.tracegrade.domain.repository.StudentSubmissionRepository;
+import com.tracegrade.domain.repository.UserRepository;
 import com.tracegrade.dto.request.GradingReviewRequest;
 import com.tracegrade.dto.response.GradingEnqueuedResponse;
 import com.tracegrade.dto.response.GradingResultResponse;
@@ -40,9 +43,12 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("null")
 public class GradingServiceImpl implements GradingService {
 
+    private static final double SAFE_DEFAULT_CONFIDENCE_THRESHOLD = 0.80;
+
     private final StudentSubmissionRepository submissionRepository;
     private final GradingResultRepository gradingResultRepository;
     private final AnswerRubricRepository rubricRepository;
+    private final UserRepository userRepository;
     private final OpenAiService openAiService;
     private final GradingProperties gradingProperties;
     private final ObjectMapper objectMapper;
@@ -238,6 +244,8 @@ public class GradingServiceImpl implements GradingService {
                                                       List<AnswerRubric> rubrics,
                                                       List<GradingResponse> aiResponses,
                                                       int processingMs) {
+        double effectiveThreshold = resolveEffectiveThreshold(submission);
+
         BigDecimal totalAwarded = BigDecimal.ZERO;
         BigDecimal totalAvailable = BigDecimal.ZERO;
         double totalConfidence = 0.0;
@@ -250,7 +258,7 @@ public class GradingServiceImpl implements GradingService {
             totalAvailable = totalAvailable.add(r.getPointsAvailable());
             totalConfidence += r.getConfidenceScore();
 
-            if (r.getConfidenceScore() < gradingProperties.getConfidenceThreshold() || r.isIllegible()) {
+            if (r.getConfidenceScore() < effectiveThreshold || r.isIllegible()) {
                 needsReview = true;
             }
 
@@ -320,6 +328,53 @@ public class GradingServiceImpl implements GradingService {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private double resolveEffectiveThreshold(StudentSubmission submission) {
+        double defaultThreshold = resolveConfiguredDefaultThreshold();
+
+        if (submission.getExamTemplate() == null || submission.getExamTemplate().getTeacherId() == null) {
+            return defaultThreshold;
+        }
+
+        UUID teacherId = submission.getExamTemplate().getTeacherId();
+        User teacher = userRepository.findByIdAndRoleAndIsActiveTrue(teacherId, UserRole.TEACHER)
+                .orElse(null);
+
+        if (teacher == null) {
+            log.warn("Active teacher not found for teacherId={} while resolving grading threshold; using default threshold={}",
+                    teacherId, defaultThreshold);
+            return defaultThreshold;
+        }
+
+        BigDecimal teacherThreshold = teacher.getConfidenceThreshold();
+        if (teacherThreshold == null) {
+            return defaultThreshold;
+        }
+
+        double thresholdValue = teacherThreshold.doubleValue();
+        if (isValidThreshold(thresholdValue)) {
+            return thresholdValue;
+        }
+
+        log.warn("Invalid teacher confidence threshold={} for teacherId={}; using default threshold={}",
+                teacherThreshold, teacherId, defaultThreshold);
+        return defaultThreshold;
+    }
+
+    private double resolveConfiguredDefaultThreshold() {
+        double configuredThreshold = gradingProperties.getConfidenceThreshold();
+        if (isValidThreshold(configuredThreshold)) {
+            return configuredThreshold;
+        }
+
+        log.warn("Invalid configured grading confidence-threshold={} in grading flow, using safe fallback={}",
+                configuredThreshold, SAFE_DEFAULT_CONFIDENCE_THRESHOLD);
+        return SAFE_DEFAULT_CONFIDENCE_THRESHOLD;
+    }
+
+    private boolean isValidThreshold(double value) {
+        return Double.isFinite(value) && value >= 0.0 && value <= 1.0;
+    }
 
     private String extractFirstImageUrl(String submissionImageUrls, UUID submissionId) {
         try {
