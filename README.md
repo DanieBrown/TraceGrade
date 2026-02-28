@@ -231,6 +231,8 @@ For detailed Docker documentation, see [DOCKER.md](DOCKER.md).
 4. Run the backend: `mvn spring-boot:run` or `./gradlew bootRun`
 5. Run the frontend: `pnpm install && pnpm dev`
 
+If your existing dev database still contains Flyway history entry `V8__seed_demo_teacher.sql`, run the one-time remediation steps in [DOCKER.md](DOCKER.md) before restarting the backend.
+
 ## Testing
 
 - **Frontend**: Jest/Vitest for unit tests, Playwright/Cypress for E2E
