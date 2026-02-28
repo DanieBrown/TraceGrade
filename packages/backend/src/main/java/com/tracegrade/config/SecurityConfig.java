@@ -75,6 +75,14 @@ public class SecurityConfig {
                 MvcRequestMatcher enrollmentItemMatcher = new MvcRequestMatcher(
                                 introspector, "/api/schools/{schoolId}/classes/{classId}/enrollments/{enrollmentId}");
 
+                // Grade category collection: GET (list) and POST (create)
+                MvcRequestMatcher gradeCategoryCollectionMatcher = new MvcRequestMatcher(
+                                introspector, "/api/schools/{schoolId}/classes/{classId}/categories");
+
+                // Grade category item: PUT (update) and DELETE
+                MvcRequestMatcher gradeCategoryItemMatcher = new MvcRequestMatcher(
+                                introspector, "/api/schools/{schoolId}/classes/{classId}/categories/{categoryId}");
+
         // CORS must be configured first so preflight OPTIONS requests
         // get proper headers before any other filter can reject them.
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
@@ -120,6 +128,8 @@ public class SecurityConfig {
                         .requestMatchers(dashboardStatsMatcher).access(this::authorizeDashboardSchoolAccess)
                         .requestMatchers(enrollmentCollectionMatcher).access(this::authorizeDashboardSchoolAccess)
                         .requestMatchers(enrollmentItemMatcher).access(this::authorizeDashboardSchoolAccess)
+                        .requestMatchers(gradeCategoryCollectionMatcher).access(this::authorizeDashboardSchoolAccess)
+                        .requestMatchers(gradeCategoryItemMatcher).access(this::authorizeDashboardSchoolAccess)
                         // All other actuator endpoints require authentication
                         .requestMatchers("/actuator/**").authenticated()
                         // Default: deny unauthenticated access (fail-closed)
