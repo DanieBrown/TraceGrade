@@ -227,6 +227,37 @@ Flyway migrations run automatically when the backend starts. To add new migratio
 2. Name it: `V{version}__{description}.sql` (e.g., `V1__initial_schema.sql`)
 3. Restart backend: `docker compose restart backend`
 
+#### One-time remediation for legacy `V8__seed_demo_teacher.sql` history
+
+If your dev or Docker database was created before the dev seed migration moved to `V9`, remove the old Flyway history row once, then restart backend migrations.
+
+1. Stop backend to prevent concurrent migrations:
+   ```bash
+   docker compose stop backend
+   ```
+
+2. Verify whether the legacy history row exists:
+   ```bash
+   docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT installed_rank, version, description, script, success FROM flyway_schema_history WHERE script = '\''V8__seed_demo_teacher.sql'\'';"'
+   ```
+
+3. Run one-time cleanup (safe no-op if row does not exist):
+   ```bash
+   docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "DELETE FROM flyway_schema_history WHERE version = '\''8'\'' AND script = '\''V8__seed_demo_teacher.sql'\'';"'
+   ```
+
+4. Start backend and allow Flyway to apply `V8__add_user_confidence_threshold.sql` and `V9__seed_demo_teacher.sql`:
+   ```bash
+   docker compose up -d backend
+   ```
+
+5. Confirm post-remediation history:
+   ```bash
+   docker compose exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT version, script, success FROM flyway_schema_history WHERE version IN ('\''8'\'', '\''9'\'') ORDER BY installed_rank;"'
+   ```
+
+For local (non-Docker) dev databases, run the same two SQL statements (`SELECT ... WHERE script = 'V8__seed_demo_teacher.sql'` then `DELETE ...`) against your local PostgreSQL instance before restarting the backend.
+
 ## Troubleshooting
 
 ### Port Conflicts

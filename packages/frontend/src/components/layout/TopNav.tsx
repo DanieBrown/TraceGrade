@@ -81,6 +81,7 @@ const LogOutIcon: SvgIcon = ({ size = 16 }) => (
 
 const NAV_LINKS = [
   { label: 'Dashboard',    to: '/',            Icon: GridIcon,      end: true  },
+  { label: 'Classes',      to: '/classes',     Icon: BookOpenIcon,  end: false },
   { label: 'Students',     to: '/students',    Icon: UsersIcon,     end: false },
   { label: 'Exams',        to: '/exams',       Icon: FileTextIcon,  end: false },
   { label: 'Homework',     to: '/homework',    Icon: BookOpenIcon,  end: false },

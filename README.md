@@ -144,6 +144,21 @@ TraceGrade/
 - **Per-Item Actions**: Each exam card includes a primary action (open/manage/view) for proceeding into exam workflow
 - **Non-Regression**: Existing `PaperExamsPage` (`/paper-exams`) route and behavior remain completely intact; FEAT-028 is isolated to the new `/exams` route and does not affect paper exam grading workflows
 
+### FEAT-043 Classes Management UI (Frontend)
+- **Route**: `/classes` — dedicated Classes page for teachers to manage active classes.
+- **Entry Points**:
+  - Navigate from top navigation (Dashboard → Classes → Students)
+  - Direct URL access via browser refresh to `/classes`
+- **Supported Teacher Flows**:
+  - View active classes with `name`, `subject`, `period`, and `school year`
+  - Create a class from `+ New Class` and see it in the list without full app reload
+  - Edit an existing class with pre-filled values and save updates
+  - Archive a class with confirmation so it is removed from the active list view
+- **Supported UI States**:
+  - **Loading State** while class data is being fetched or mutations are in progress
+  - **Error State** with actionable feedback and retry support when requests fail
+  - **Empty State** with helpful copy and create CTA when no classes exist
+
 ### Planned Features (Post-MVP)
 - **AI Exam Generation**: Generate custom exams using AI based on topic, difficulty, and learning objectives
 - **Handwritten Answer Grading**: Upload photos of student work and get automatic grading via GPT-4 Vision
@@ -215,6 +230,8 @@ For detailed Docker documentation, see [DOCKER.md](DOCKER.md).
 3. Configure environment variables (see `.env.example`)
 4. Run the backend: `mvn spring-boot:run` or `./gradlew bootRun`
 5. Run the frontend: `pnpm install && pnpm dev`
+
+If your existing dev database still contains Flyway history entry `V8__seed_demo_teacher.sql`, run the one-time remediation steps in [DOCKER.md](DOCKER.md) before restarting the backend.
 
 ## Testing
 
