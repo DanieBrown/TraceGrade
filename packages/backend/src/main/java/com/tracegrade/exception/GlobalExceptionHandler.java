@@ -2,6 +2,7 @@ package com.tracegrade.exception;
 
 import java.util.List;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -175,6 +176,20 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDuplicateResource(
             DuplicateResourceException ex) {
         ApiError error = ApiError.of("CONFLICT", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(error));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex) {
+        String msg = ex.getMessage() != null ? ex.getMessage().toLowerCase() : "";
+        if (msg.contains("uq_active_class_enrollment")) {
+            ApiError error = ApiError.of("DUPLICATE_RESOURCE",
+                    "Student is already actively enrolled in this class");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(error));
+        }
+        log.warn("DataIntegrityViolationException (unmapped constraint): {}", ex.getMessage());
+        ApiError error = ApiError.of("CONFLICT", "Data integrity violation");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(error));
     }
 

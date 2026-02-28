@@ -67,6 +67,14 @@ public class SecurityConfig {
                                 introspector, "/api/schools/{schoolId}/dashboard/stats");
                 dashboardStatsMatcher.setMethod(HttpMethod.GET);
 
+                // Enrollment collection: GET (list) and POST (enroll) -- no HTTP method filter
+                MvcRequestMatcher enrollmentCollectionMatcher = new MvcRequestMatcher(
+                                introspector, "/api/schools/{schoolId}/classes/{classId}/enrollments");
+
+                // Enrollment item: DELETE (drop) -- no HTTP method filter
+                MvcRequestMatcher enrollmentItemMatcher = new MvcRequestMatcher(
+                                introspector, "/api/schools/{schoolId}/classes/{classId}/enrollments/{enrollmentId}");
+
         // CORS must be configured first so preflight OPTIONS requests
         // get proper headers before any other filter can reject them.
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
@@ -110,6 +118,8 @@ public class SecurityConfig {
                         // Protected endpoints with custom authorization
                         .requestMatchers("/api/exam-templates/**").authenticated()
                         .requestMatchers(dashboardStatsMatcher).access(this::authorizeDashboardSchoolAccess)
+                        .requestMatchers(enrollmentCollectionMatcher).access(this::authorizeDashboardSchoolAccess)
+                        .requestMatchers(enrollmentItemMatcher).access(this::authorizeDashboardSchoolAccess)
                         // All other actuator endpoints require authentication
                         .requestMatchers("/actuator/**").authenticated()
                         // Default: deny unauthenticated access (fail-closed)
