@@ -3,6 +3,7 @@ import TopNav from './components/layout/TopNav'
 import PaperExamsPage from './pages/PaperExamsPage'
 import ManualReviewQueuePage from './pages/ManualReviewQueuePage'
 import DashboardPage from './pages/DashboardPage'
+import ClassesPage from './pages/ClassesPage'
 import ExamsPage from './pages/ExamsPage'
 import StudentsPage from './pages/StudentsPage'
 import HomeworkPage from './pages/HomeworkPage'
@@ -39,6 +40,7 @@ export default function App() {
         <main style={{ flex: 1, overflowY: 'auto', backgroundColor: 'var(--bg-base)' }}>
           <Routes>
             <Route path="/"            element={<DashboardPage />} />
+            <Route path="/classes"     element={<ClassesPage />} />
             <Route path="/students"    element={<StudentsPage />} />
             <Route path="/exams"       element={<ExamsPage />} />
             <Route path="/homework"    element={<HomeworkPage />} />
