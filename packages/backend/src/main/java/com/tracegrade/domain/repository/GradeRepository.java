@@ -1,5 +1,6 @@
 package com.tracegrade.domain.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,6 +14,8 @@ import com.tracegrade.domain.model.Grade;
 public interface GradeRepository extends JpaRepository<Grade, UUID> {
 
     List<Grade> findByAssignmentId(UUID assignmentId);
+
+    List<Grade> findByAssignmentIdIn(Collection<UUID> assignmentIds);
 
     Optional<Grade> findByIdAndAssignmentId(UUID id, UUID assignmentId);
 
