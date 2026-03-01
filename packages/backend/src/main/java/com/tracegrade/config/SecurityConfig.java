@@ -91,6 +91,18 @@ public class SecurityConfig {
                 MvcRequestMatcher assignmentItemMatcher = new MvcRequestMatcher(
                                 introspector, "/api/schools/{schoolId}/classes/{classId}/assignments/{assignmentId}");
 
+                // Grade collection: GET (list) and POST (create)
+                MvcRequestMatcher gradeCollectionMatcher = new MvcRequestMatcher(
+                                introspector, "/api/schools/{schoolId}/classes/{classId}/assignments/{assignmentId}/grades");
+
+                // Grade bulk: POST (bulk create)
+                MvcRequestMatcher gradeBulkMatcher = new MvcRequestMatcher(
+                                introspector, "/api/schools/{schoolId}/classes/{classId}/assignments/{assignmentId}/grades/bulk");
+
+                // Grade item: GET (single), PUT (update) and DELETE
+                MvcRequestMatcher gradeItemMatcher = new MvcRequestMatcher(
+                                introspector, "/api/schools/{schoolId}/classes/{classId}/assignments/{assignmentId}/grades/{gradeId}");
+
         // CORS must be configured first so preflight OPTIONS requests
         // get proper headers before any other filter can reject them.
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
@@ -140,6 +152,9 @@ public class SecurityConfig {
                         .requestMatchers(gradeCategoryItemMatcher).access(this::authorizeDashboardSchoolAccess)
                         .requestMatchers(assignmentCollectionMatcher).access(this::authorizeDashboardSchoolAccess)
                         .requestMatchers(assignmentItemMatcher).access(this::authorizeDashboardSchoolAccess)
+                        .requestMatchers(gradeCollectionMatcher).access(this::authorizeDashboardSchoolAccess)
+                        .requestMatchers(gradeBulkMatcher).access(this::authorizeDashboardSchoolAccess)
+                        .requestMatchers(gradeItemMatcher).access(this::authorizeDashboardSchoolAccess)
                         // All other actuator endpoints require authentication
                         .requestMatchers("/actuator/**").authenticated()
                         // Default: deny unauthenticated access (fail-closed)
