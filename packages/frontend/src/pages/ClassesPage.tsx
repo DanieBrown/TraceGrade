@@ -15,6 +15,7 @@ import {
   isClassListEmpty,
   updateClass,
 } from '../features/classes/classesApi'
+import { isValidAssignmentId } from '../features/batch-grading/domain/assignmentContext'
 import type { ClassListItem, CreateClassPayload } from '../features/classes/classesTypes'
 import EnrollmentModal from '../features/enrollments/EnrollmentModal'
 
@@ -253,6 +254,23 @@ export default function ClassesPage() {
               setMutationError('')
               setEnrollingClass(item)
             }}
+          onBatchGrade={(item) => {
+            const assignmentId = item.assignmentId?.trim() ?? ''
+
+            if (!isValidAssignmentId(assignmentId)) {
+              setMutationError(
+                'Batch grading requires valid assignment context. Open this class from an assignment workflow or use a Batch Grading link with ?assignmentId=<uuid>.',
+              )
+              return
+            }
+
+            const classId = encodeURIComponent(item.id)
+            const className = encodeURIComponent(item.name)
+            const encodedAssignmentId = encodeURIComponent(assignmentId)
+            window.location.assign(
+              `/classes/${classId}/batch-grading?className=${className}&assignmentId=${encodedAssignmentId}`,
+            )
+          }}
           onArchive={(item) => {
             setMutationError('')
             setArchivingClass(item)

@@ -5,11 +5,19 @@ interface ClassesListProps {
   items: ClassListItem[]
   onEdit: (item: ClassListItem) => void
   onEnroll: (item: ClassListItem) => void
+  onBatchGrade: (item: ClassListItem) => void
   onArchive: (item: ClassListItem) => void
   isMutating?: boolean
 }
 
-export default function ClassesList({ items, onEdit, onEnroll, onArchive, isMutating = false }: ClassesListProps) {
+export default function ClassesList({
+  items,
+  onEdit,
+  onEnroll,
+  onBatchGrade,
+  onArchive,
+  isMutating = false,
+}: ClassesListProps) {
   return (
     <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" aria-label="Classes">
       {items.map((item) => (
@@ -18,6 +26,7 @@ export default function ClassesList({ items, onEdit, onEnroll, onArchive, isMuta
             item={item}
             onEdit={onEdit}
             onEnroll={onEnroll}
+            onBatchGrade={onBatchGrade}
             onArchive={onArchive}
             isBusy={isMutating}
           />

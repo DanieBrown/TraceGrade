@@ -159,6 +159,28 @@ TraceGrade/
   - **Error State** with actionable feedback and retry support when requests fail
   - **Empty State** with helpful copy and create CTA when no classes exist
 
+### FEAT-047 Batch Grading UI (Frontend)
+- **Entry Point**: `Classes` page card action `Batch Grade` opens class-scoped workflow route:
+  - `/classes/:classId/batch-grading?className=<name>&assignmentId=<assignment-uuid>`
+- **Workflow Steps**: `Upload` → `Map Students` → `Processing` → `Summary`
+- **Mapping Rules**:
+  - every uploaded file must be mapped to one enrolled student
+  - duplicate student assignments are blocked
+  - non-enrolled student mappings are blocked
+  - submit stays disabled until mapping validation passes
+- **Processing States** (per student row): `queued`, `processing`, `completed`, `failed`
+- **Summary Metrics**:
+  - pass rate
+  - fail rate
+  - average score (completed rows with score only)
+  - flagged review count
+- **Failed-only Retry**:
+  - `Retry Failed` resubmits only failed rows
+  - completed rows are never resubmitted
+- **Refresh / Reconnect Restore**:
+  - in-progress and recent terminal state restore from `sessionStorage`
+  - restore is class-scoped and expires with TTL (default 30 minutes)
+
 ### Planned Features (Post-MVP)
 - **AI Exam Generation**: Generate custom exams using AI based on topic, difficulty, and learning objectives
 - **Handwritten Answer Grading**: Upload photos of student work and get automatic grading via GPT-4 Vision

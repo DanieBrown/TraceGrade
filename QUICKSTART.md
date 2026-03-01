@@ -156,8 +156,16 @@ All services should show "healthy" status.
 
 1. **Explore the API**: Visit http://localhost:8080/actuator/health
 2. **View the Frontend**: Open http://localhost:5173
-3. **Read the Docs**: Check out [DOCKER.md](DOCKER.md) for advanced usage
-4. **Start Developing**: The frontend has hot-reload enabled, so changes appear instantly!
+3. **Run Batch Grading (FEAT-047)**:
+	 - Open `Classes`
+	 - Select `Batch Grade` on a class card
+	 - Ensure route includes `assignmentId` query param:
+		 - `/classes/<classId>/batch-grading?className=<className>&assignmentId=<assignment-uuid>`
+	 - Complete flow: Upload → Map Students → Processing → Summary
+	 - Use `Retry Failed` to resubmit failed rows only
+	 - Refresh during processing to verify session restore behavior
+4. **Read the Docs**: Check out [DOCKER.md](DOCKER.md) for advanced usage
+5. **Start Developing**: The frontend has hot-reload enabled, so changes appear instantly!
 
 ---
 

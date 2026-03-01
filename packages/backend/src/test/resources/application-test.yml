@@ -8,10 +8,13 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
+
+  main:
+    lazy-initialization: true
 
   flyway:
     enabled: true

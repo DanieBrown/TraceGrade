@@ -4,6 +4,7 @@ export interface ClassListItem {
   subject: string
   period: string
   schoolYear: string
+  assignmentId?: string | null
   isActive: boolean
 }
 
@@ -28,6 +29,9 @@ export interface RawClassItem {
   schoolYear?: unknown
   school_year?: unknown
   academicYear?: unknown
+  assignmentId?: unknown
+  activeAssignmentId?: unknown
+  currentAssignmentId?: unknown
   isActive?: unknown
   active?: unknown
 }

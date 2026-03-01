@@ -219,6 +219,24 @@ cd packages/backend
 ./mvnw spring-boot:run
 ```
 
+### FEAT-047 Batch Grading Local Verification
+
+After starting frontend/backend containers, verify batch grading behavior from class context:
+
+1. Open `http://localhost:5173/classes`
+2. Click `Batch Grade` on a class card
+3. Confirm URL has `assignmentId` query param:
+   ```
+   /classes/<classId>/batch-grading?className=<className>&assignmentId=<assignment-uuid>
+   ```
+4. Validate flow states:
+   - Upload: loading/empty/error states
+   - Mapping: unmapped, duplicate, and non-enrolled mappings block submit
+   - Processing: per-row statuses (`queued`, `processing`, `completed`, `failed`)
+   - Summary: pass/fail rates, average score, flagged review count
+5. Trigger mixed outcomes and confirm `Retry Failed` only resubmits failed rows
+6. Refresh during processing and confirm progress restoration from session state
+
 ### Database Migrations
 
 Flyway migrations run automatically when the backend starts. To add new migrations:
