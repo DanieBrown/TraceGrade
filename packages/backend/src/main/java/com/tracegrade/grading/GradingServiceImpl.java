@@ -19,6 +19,7 @@ import com.tracegrade.domain.model.StudentSubmission;
 import com.tracegrade.domain.model.SubmissionStatus;
 import com.tracegrade.domain.model.User;
 import com.tracegrade.domain.model.UserRole;
+import com.tracegrade.auditlog.AuditLogService;
 import com.tracegrade.domain.repository.AnswerRubricRepository;
 import com.tracegrade.domain.repository.GradingResultRepository;
 import com.tracegrade.domain.repository.StudentSubmissionRepository;
@@ -52,6 +53,7 @@ public class GradingServiceImpl implements GradingService {
     private final OpenAiService openAiService;
     private final GradingProperties gradingProperties;
     private final ObjectMapper objectMapper;
+    private final AuditLogService auditLogService;
 
     /** Injected only when sqs.enabled=true; null otherwise (synchronous fallback). */
     @Autowired(required = false)
@@ -137,6 +139,8 @@ public class GradingServiceImpl implements GradingService {
         GradingResult result = gradingResultRepository.findByGradeId(gradeId)
                 .orElseThrow(() -> new ResourceNotFoundException("GradingResult", gradeId));
 
+        BigDecimal previousFinalScore = result.getFinalScore();
+
         result.setFinalScore(request.getFinalScore());
         result.setTeacherOverride(request.getTeacherOverride());
         result.setReviewedAt(Instant.now());
@@ -150,6 +154,13 @@ public class GradingServiceImpl implements GradingService {
         gradingResultRepository.save(result);
         log.info("Review saved gradeId={} teacherOverride={} finalScore={}",
                 gradeId, request.getTeacherOverride(), request.getFinalScore());
+
+        try {
+            auditLogService.logTeacherOverride(result, previousFinalScore, request.getOverrideReason());
+        } catch (Exception e) {
+            log.warn("Audit log failed for TEACHER_OVERRIDE gradeId={}: {}", gradeId, e.getMessage(), e);
+        }
+
         return toResponse(result);
     }
 
@@ -235,6 +246,13 @@ public class GradingServiceImpl implements GradingService {
 
         gradingResultRepository.save(failedResult);
         log.warn("Persisted FAILED GradingResult for submissionId={}", submission.getId());
+
+        try {
+            auditLogService.logAiGradingFailure(submission);
+        } catch (Exception e) {
+            log.warn("Audit log failed for AI_GRADING_FAILURE submissionId={}: {}", submission.getId(), e.getMessage(), e);
+        }
+
         if (gradingMetricsService != null) {
             gradingMetricsService.recordGradingFailure();
         }
@@ -311,6 +329,12 @@ public class GradingServiceImpl implements GradingService {
                 .build();
 
         gradingResultRepository.save(result);
+
+        try {
+            auditLogService.logAiGradingSuccess(result);
+        } catch (Exception e) {
+            log.warn("Audit log failed for AI_GRADING_SUCCESS submissionId={}: {}", submission.getId(), e.getMessage(), e);
+        }
 
         submission.setStatus(SubmissionStatus.COMPLETED);
         submissionRepository.save(submission);

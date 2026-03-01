@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,4 +35,9 @@ public class GradingReviewRequest {
     @Schema(description = "Updated per-question scores as a JSON array; omit to keep the existing AI scores",
             example = "[{\"question\":1,\"score\":4},{\"question\":2,\"score\":3}]")
     private String questionScores;
+
+    /** Optional free-text reason for overriding the AI score; null if not provided */
+    @Size(max = 4000, message = "Override reason must not exceed 4000 characters")
+    @Schema(description = "Optional reason for overriding AI score")
+    private String overrideReason;
 }
