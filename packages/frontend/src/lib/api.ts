@@ -61,4 +61,50 @@ api.interceptors.response.use(
   }
 );
 
+/**
+ * Request interceptor: attach the JWT Bearer token from localStorage
+ * as the Authorization header on every request when a token is present.
+ * Runs after the CSRF interceptor is registered (LIFO order means this
+ * interceptor executes first, which is harmless — they set independent headers).
+ */
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+});
+
+/**
+ * Response interceptor: on a 401 Unauthorized response, clear the stored
+ * JWT and perform a hard redirect to /login.
+ * Runs after the CSRF 403-retry interceptor (FIFO order) and only handles
+ * status 401, so it never interferes with the CSRF retry logic.
+ *
+ * Auth endpoints (/auth/login, /auth/register) intentionally return 401 for
+ * invalid credentials — those responses must reach the page component so the
+ * error message can be displayed. We skip the redirect/logout for those URLs.
+ */
+api.interceptors.response.use(
+  (response) => response,
+  (error: unknown) => {
+    if (
+      error !== null &&
+      typeof error === 'object' &&
+      'response' in error &&
+      (error as { response?: { status?: number } }).response?.status === 401
+    ) {
+      // Let auth endpoints propagate the 401 to their callers unchanged
+      const requestUrl = (error as { config?: { url?: string } })?.config?.url ?? '';
+      if (requestUrl.includes('/auth/')) {
+        return Promise.reject(error);
+      }
+      localStorage.removeItem('auth_token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;
+

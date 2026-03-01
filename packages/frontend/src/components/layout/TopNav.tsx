@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { logout } from '../../features/auth/authApi'
 
 // ── Inline SVG icons ──────────────────────────────────────────────────────────
 
@@ -94,6 +95,7 @@ const NAV_LINKS = [
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
 export default function TopNav() {
+  const navigate = useNavigate()
   return (
     <aside
       className="bg-grid flex-shrink-0 flex flex-col"
@@ -255,6 +257,7 @@ export default function TopNav() {
           </div>
           <button
             title="Logout"
+            onClick={() => { logout(); navigate('/login'); }}
             style={{
               background: 'none',
               border: 'none',

@@ -1,5 +1,5 @@
 import { cleanup, render, screen, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
 vi.mock('./pages/DashboardPage', () => ({
@@ -39,8 +39,13 @@ vi.mock('./pages/SettingsPage', () => ({
 }))
 
 describe('App routes', () => {
+  beforeEach(() => {
+    localStorage.setItem('auth_token', 'test-token')
+  })
+
   afterEach(() => {
     cleanup()
+    localStorage.removeItem('auth_token')
   })
 
   it.each([

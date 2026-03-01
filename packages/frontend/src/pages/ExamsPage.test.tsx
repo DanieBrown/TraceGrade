@@ -18,10 +18,12 @@ vi.mock('./PaperExamsPage', () => ({
 describe('ExamsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.setItem('auth_token', 'test-token')
   })
 
   afterEach(() => {
     cleanup()
+    localStorage.removeItem('auth_token')
   })
 
   it('renders loading state while templates are being fetched', () => {
@@ -107,10 +109,12 @@ describe('ExamsPage', () => {
 describe('App routing non-regression', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.setItem('auth_token', 'test-token')
   })
 
   afterEach(() => {
     cleanup()
+    localStorage.removeItem('auth_token')
   })
 
   it('renders Exams page on /exams route', async () => {
