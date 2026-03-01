@@ -27,6 +27,7 @@ const BASE_CLASS: ClassListItem = {
   subject: 'Science',
   period: '2',
   schoolYear: '2026-2027',
+  assignmentId: '123e4567-e89b-12d3-a456-426614174000',
   isActive: true,
 }
 
@@ -108,6 +109,39 @@ describe('ClassesPage', () => {
     expect(screen.getAllByText('Year: 2026-2027')).toHaveLength(2)
     expect(screen.getByText('Chemistry A')).toBeInTheDocument()
     expect(screen.getByText('Period: 3')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Batch grade Biology 101' })).toBeInTheDocument()
+  })
+
+  it('blocks Batch Grade entry and shows guidance when assignment context is missing', async () => {
+    fetchClassesMock.mockResolvedValueOnce([{ ...BASE_CLASS, assignmentId: null }])
+
+    render(<ClassesPage />)
+
+    expect(await screen.findByText('Biology 101')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Batch grade Biology 101' }))
+
+    expect(
+      await screen.findByText(
+        'Batch grading requires valid assignment context. Open this class from an assignment workflow or use a Batch Grading link with ?assignmentId=<uuid>.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('blocks Batch Grade entry and shows guidance when assignment context is not a UUID', async () => {
+    fetchClassesMock.mockResolvedValueOnce([{ ...BASE_CLASS, assignmentId: 'assignment-not-a-uuid' }])
+
+    render(<ClassesPage />)
+
+    expect(await screen.findByText('Biology 101')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Batch grade Biology 101' }))
+
+    expect(
+      await screen.findByText(
+        'Batch grading requires valid assignment context. Open this class from an assignment workflow or use a Batch Grading link with ?assignmentId=<uuid>.',
+      ),
+    ).toBeInTheDocument()
   })
 
   it('creates a class from New Class flow and prepends it to list', async () => {

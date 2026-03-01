@@ -22,6 +22,10 @@ vi.mock('./pages/PaperExamsPage', () => ({
   default: () => <h1>Paper Exams Mock Page</h1>,
 }))
 
+vi.mock('./pages/BatchGradingPage', () => ({
+  default: () => <h1>Batch Grading Mock Page</h1>,
+}))
+
 vi.mock('./pages/ManualReviewQueuePage', () => ({
   default: () => <h1>Review Mock Page</h1>,
 }))
@@ -54,6 +58,7 @@ describe('App routes', () => {
     ['/students', 'Students Mock Page'],
     ['/exams', 'Exams Mock Page'],
     ['/paper-exams', 'Paper Exams Mock Page'],
+    ['/classes/class-1/batch-grading', 'Batch Grading Mock Page'],
     ['/review', 'Review Mock Page'],
     ['/homework', 'Homework Mock Page'],
     ['/grades', 'Grades Mock Page'],

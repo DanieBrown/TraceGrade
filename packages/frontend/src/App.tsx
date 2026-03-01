@@ -12,6 +12,7 @@ import StudentsPage from './pages/StudentsPage'
 import HomeworkPage from './pages/HomeworkPage'
 import GradesPage from './pages/GradesPage'
 import SettingsPage from './pages/SettingsPage'
+import BatchGradingPage from './pages/BatchGradingPage'
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
           <Route path='/homework' element={<HomeworkPage />} />
           <Route path='/grades' element={<GradesPage />} />
           <Route path='/paper-exams' element={<PaperExamsPage />} />
+          <Route path='/classes/:classId/batch-grading' element={<BatchGradingPage />} />
           <Route path='/review' element={<ManualReviewQueuePage />} />
           <Route path='/settings' element={<SettingsPage />} />
           <Route path='*' element={<Navigate to='/' replace />} />

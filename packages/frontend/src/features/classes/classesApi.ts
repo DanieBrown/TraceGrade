@@ -181,6 +181,10 @@ export function toClassListItem(raw: unknown): ClassListItem | null {
     return null
   }
 
+  const assignmentId = toNullableString(
+    rawClass.assignmentId ?? rawClass.activeAssignmentId ?? rawClass.currentAssignmentId,
+  )
+
   return {
     id,
     name: toStringOrDefault(rawClass.name ?? rawClass.className, DEFAULT_CLASS_NAME),
@@ -190,6 +194,7 @@ export function toClassListItem(raw: unknown): ClassListItem | null {
       rawClass.schoolYear ?? rawClass.school_year ?? rawClass.academicYear,
       DEFAULT_SCHOOL_YEAR,
     ),
+    ...(assignmentId ? { assignmentId } : {}),
     isActive: toBoolean(rawClass.isActive ?? rawClass.active, true),
   }
 }
