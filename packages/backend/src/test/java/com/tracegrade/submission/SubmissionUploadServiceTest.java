@@ -25,6 +25,8 @@ import com.tracegrade.domain.repository.StudentSubmissionRepository;
 import com.tracegrade.dto.response.BatchUploadResponse;
 import com.tracegrade.dto.response.FileUploadResponse;
 import com.tracegrade.exception.StorageException;
+import com.tracegrade.imageprocessing.ImagePreprocessingService;
+import com.tracegrade.imageprocessing.PreprocessedImage;
 import com.tracegrade.storage.StorageService;
 import com.tracegrade.storage.StorageType;
 
@@ -33,6 +35,7 @@ class SubmissionUploadServiceTest {
 
     private StorageService storageService;
     private StudentSubmissionRepository submissionRepository;
+    private ImagePreprocessingService preprocessingService;
     private SubmissionUploadService service;
 
     private static final UUID ASSIGNMENT_ID = UUID.randomUUID();
@@ -44,7 +47,8 @@ class SubmissionUploadServiceTest {
     void setUp() {
         storageService = mock(StorageService.class);
         submissionRepository = mock(StudentSubmissionRepository.class);
-        service = new SubmissionUploadService(storageService, submissionRepository);
+        preprocessingService = mock(ImagePreprocessingService.class);
+        service = new SubmissionUploadService(storageService, submissionRepository, preprocessingService);
     }
 
     @Nested
@@ -52,11 +56,14 @@ class SubmissionUploadServiceTest {
     class SingleUploadTests {
 
         @Test
-        @DisplayName("Should upload file to S3 and persist submission entity")
+        @DisplayName("Should preprocess file, upload to S3, and persist submission entity")
         void uploadSingleSuccess() {
             MockMultipartFile file = new MockMultipartFile(
                     "file", "exam.jpg", "image/jpeg", "jpeg content".getBytes());
 
+            PreprocessedImage preprocessed = new PreprocessedImage("exam.jpg", "processed".getBytes(), "image/jpeg", "jpg");
+            when(preprocessingService.preprocess(eq("exam.jpg"), any(), eq("image/jpeg")))
+                    .thenReturn(List.of(preprocessed));
             when(storageService.upload(eq(StorageType.SUBMISSION_IMAGE), eq("exam.jpg"), any(), eq("image/jpeg")))
                     .thenReturn(STORAGE_KEY);
             when(storageService.getPublicUrl(STORAGE_KEY)).thenReturn(FILE_URL);
@@ -72,7 +79,8 @@ class SubmissionUploadServiceTest {
             assertThat(response.getStatus()).isEqualTo(SubmissionStatus.PENDING.name());
             assertThat(response.getUploadedAt()).isNotNull();
 
-            verify(storageService).upload(StorageType.SUBMISSION_IMAGE, "exam.jpg", "jpeg content".getBytes(), "image/jpeg");
+            verify(preprocessingService).preprocess("exam.jpg", "jpeg content".getBytes(), "image/jpeg");
+            verify(storageService).upload(StorageType.SUBMISSION_IMAGE, "exam.jpg", "processed".getBytes(), "image/jpeg");
             verify(submissionRepository).save(any(StudentSubmission.class));
         }
 
@@ -81,14 +89,16 @@ class SubmissionUploadServiceTest {
         void uploadWithNullContentType() {
             MockMultipartFile file = new MockMultipartFile("file", "scan.png", null, "png content".getBytes());
 
-            when(storageService.upload(eq(StorageType.SUBMISSION_IMAGE), eq("scan.png"), any(), eq("application/octet-stream")))
-                    .thenReturn(STORAGE_KEY);
-            when(storageService.getPublicUrl(STORAGE_KEY)).thenReturn(FILE_URL);
+            PreprocessedImage preprocessed = new PreprocessedImage("scan.png", "processed".getBytes(), "image/png", "png");
+            when(preprocessingService.preprocess(eq("scan.png"), any(), eq("application/octet-stream")))
+                    .thenReturn(List.of(preprocessed));
+            when(storageService.upload(any(), any(), any(), any())).thenReturn(STORAGE_KEY);
+            when(storageService.getPublicUrl(any())).thenReturn(FILE_URL);
             when(submissionRepository.save(any())).thenReturn(buildSavedSubmission(FILE_URL, "png"));
 
             service.uploadSingle(ASSIGNMENT_ID, STUDENT_ID, file);
 
-            verify(storageService).upload(StorageType.SUBMISSION_IMAGE, "scan.png", "png content".getBytes(), "application/octet-stream");
+            verify(preprocessingService).preprocess("scan.png", "png content".getBytes(), "application/octet-stream");
         }
 
         @Test
@@ -96,6 +106,8 @@ class SubmissionUploadServiceTest {
         void uploadWithNoExtensionFilename() {
             MockMultipartFile file = new MockMultipartFile("file", "scanimage", "image/jpeg", "jpeg content".getBytes());
 
+            PreprocessedImage preprocessed = new PreprocessedImage("scanimage", "processed".getBytes(), "image/jpeg", "jpg");
+            when(preprocessingService.preprocess(any(), any(), any())).thenReturn(List.of(preprocessed));
             when(storageService.upload(any(), any(), any(), any())).thenReturn(STORAGE_KEY);
             when(storageService.getPublicUrl(any())).thenReturn(FILE_URL);
 
@@ -108,10 +120,42 @@ class SubmissionUploadServiceTest {
         }
 
         @Test
+        @DisplayName("PDF upload: multiple preprocessed pages are all stored and URLs are joined")
+        void uploadPdfMultiPage() {
+            MockMultipartFile file = new MockMultipartFile("file", "exam.pdf", "application/pdf", "pdf content".getBytes());
+
+            PreprocessedImage page1 = new PreprocessedImage("exam_page1.png", "png1".getBytes(), "image/png", "png");
+            PreprocessedImage page2 = new PreprocessedImage("exam_page2.png", "png2".getBytes(), "image/png", "png");
+            when(preprocessingService.preprocess(eq("exam.pdf"), any(), eq("application/pdf")))
+                    .thenReturn(List.of(page1, page2));
+
+            String key1 = "submissions/uuid1_page1.png";
+            String key2 = "submissions/uuid2_page2.png";
+            String url1 = "https://bucket/" + key1;
+            String url2 = "https://bucket/" + key2;
+            when(storageService.upload(eq(StorageType.SUBMISSION_IMAGE), eq("exam_page1.png"), any(), any())).thenReturn(key1);
+            when(storageService.upload(eq(StorageType.SUBMISSION_IMAGE), eq("exam_page2.png"), any(), any())).thenReturn(key2);
+            when(storageService.getPublicUrl(key1)).thenReturn(url1);
+            when(storageService.getPublicUrl(key2)).thenReturn(url2);
+
+            StudentSubmission saved = buildSavedSubmission(url1, "pdf");
+            when(submissionRepository.save(any())).thenReturn(saved);
+
+            FileUploadResponse response = service.uploadSingle(ASSIGNMENT_ID, STUDENT_ID, file);
+
+            // First URL returned as the primary fileUrl
+            assertThat(response.getFileUrl()).isEqualTo(url1);
+            // Both pages stored
+            verify(storageService, times(2)).upload(eq(StorageType.SUBMISSION_IMAGE), any(), any(), any());
+        }
+
+        @Test
         @DisplayName("Should throw StorageException when S3 upload fails")
         void uploadStorageFailure() {
             MockMultipartFile file = new MockMultipartFile("file", "exam.jpg", "image/jpeg", "bytes".getBytes());
 
+            PreprocessedImage preprocessed = new PreprocessedImage("exam.jpg", "processed".getBytes(), "image/jpeg", "jpg");
+            when(preprocessingService.preprocess(any(), any(), any())).thenReturn(List.of(preprocessed));
             when(storageService.upload(any(), any(), any(), any()))
                     .thenThrow(new StorageException("upload", "S3 unreachable"));
 
@@ -144,6 +188,11 @@ class SubmissionUploadServiceTest {
             MockMultipartFile file1 = new MockMultipartFile("files", "page1.jpg", "image/jpeg", "bytes1".getBytes());
             MockMultipartFile file2 = new MockMultipartFile("files", "page2.jpg", "image/jpeg", "bytes2".getBytes());
 
+            PreprocessedImage proc1 = new PreprocessedImage("page1.jpg", "p1".getBytes(), "image/jpeg", "jpg");
+            PreprocessedImage proc2 = new PreprocessedImage("page2.jpg", "p2".getBytes(), "image/jpeg", "jpg");
+            when(preprocessingService.preprocess(eq("page1.jpg"), any(), any())).thenReturn(List.of(proc1));
+            when(preprocessingService.preprocess(eq("page2.jpg"), any(), any())).thenReturn(List.of(proc2));
+
             String key1 = "submissions/uuid1_page1.jpg";
             String key2 = "submissions/uuid2_page2.jpg";
             String url1 = "https://bucket/" + key1;
@@ -173,6 +222,8 @@ class SubmissionUploadServiceTest {
             MockMultipartFile file1 = new MockMultipartFile("files", "page1.jpg", "image/jpeg", "bytes".getBytes());
             MockMultipartFile file2 = new MockMultipartFile("files", "page2.jpg", "image/jpeg", "bytes".getBytes());
 
+            PreprocessedImage proc = new PreprocessedImage("page1.jpg", "p1".getBytes(), "image/jpeg", "jpg");
+            when(preprocessingService.preprocess(any(), any(), any())).thenReturn(List.of(proc));
             when(storageService.upload(any(), any(), any(), any()))
                     .thenThrow(new StorageException("upload", "S3 error"));
 
@@ -192,3 +243,4 @@ class SubmissionUploadServiceTest {
                 .build();
     }
 }
+

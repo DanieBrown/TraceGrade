@@ -23,6 +23,7 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import com.tracegrade.dto.response.ApiError;
 import com.tracegrade.dto.response.ApiResponse;
 import com.tracegrade.dto.response.FieldError;
+import com.tracegrade.imageprocessing.PreprocessingException;
 import com.tracegrade.grading.GradingFailedException;
 import com.tracegrade.openai.exception.OpenAiException;
 import com.tracegrade.openai.exception.OpenAiRateLimitException;
@@ -211,6 +212,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleSanitizationRejection(
             InputSanitizationException ex) {
         ApiError error = ApiError.of("INVALID_INPUT", ex.getMessage());
+        return ResponseEntity.badRequest().body(ApiResponse.error(error));
+    }
+
+    @ExceptionHandler(PreprocessingException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePreprocessingException(
+            PreprocessingException ex) {
+        log.warn("Image preprocessing failed for format [{}]: {}", ex.getFormat(), ex.getMessage());
+        ApiError error = ApiError.of("PREPROCESSING_ERROR", ex.getMessage());
         return ResponseEntity.badRequest().body(ApiResponse.error(error));
     }
 

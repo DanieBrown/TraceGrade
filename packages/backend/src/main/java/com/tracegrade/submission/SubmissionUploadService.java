@@ -2,8 +2,10 @@ package com.tracegrade.submission;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,8 @@ import com.tracegrade.domain.repository.StudentSubmissionRepository;
 import com.tracegrade.dto.response.BatchUploadResponse;
 import com.tracegrade.dto.response.FileUploadResponse;
 import com.tracegrade.exception.StorageException;
+import com.tracegrade.imageprocessing.ImagePreprocessingService;
+import com.tracegrade.imageprocessing.PreprocessedImage;
 import com.tracegrade.storage.StorageService;
 import com.tracegrade.storage.StorageType;
 
@@ -28,6 +32,7 @@ public class SubmissionUploadService {
 
     private final StorageService storageService;
     private final StudentSubmissionRepository submissionRepository;
+    private final ImagePreprocessingService preprocessingService;
 
     @Transactional
     public FileUploadResponse uploadSingle(UUID assignmentId, UUID studentId, MultipartFile file) {
@@ -44,14 +49,23 @@ public class SubmissionUploadService {
 
         log.info("Uploading submission for assignmentId={} studentId={} fileName={}", assignmentId, studentId, originalFilename);
 
-        String storageKey = storageService.upload(StorageType.SUBMISSION_IMAGE, originalFilename, content, contentType);
-        String fileUrl = storageService.getPublicUrl(storageKey);
+        List<PreprocessedImage> processed = preprocessingService.preprocess(originalFilename, content, contentType);
+
+        List<String> fileUrls = new ArrayList<>(processed.size());
+        for (PreprocessedImage img : processed) {
+            String storageKey = storageService.upload(StorageType.SUBMISSION_IMAGE, img.filename(), img.content(), img.contentType());
+            fileUrls.add(storageService.getPublicUrl(storageKey));
+        }
+
+        String submissionImageUrls = fileUrls.stream()
+                .map(url -> "\"" + url + "\"")
+                .collect(Collectors.joining(",", "[", "]"));
 
         Instant now = Instant.now();
         StudentSubmission submission = StudentSubmission.builder()
                 .assignmentId(assignmentId)
                 .studentId(studentId)
-                .submissionImageUrls("[\"" + fileUrl + "\"]")
+                .submissionImageUrls(submissionImageUrls)
                 .originalFormat(format)
                 .status(SubmissionStatus.PENDING)
                 .submittedAt(now)
@@ -62,7 +76,7 @@ public class SubmissionUploadService {
 
         return FileUploadResponse.builder()
                 .submissionId(saved.getId())
-                .fileUrl(fileUrl)
+                .fileUrl(fileUrls.get(0))
                 .fileName(originalFilename)
                 .status(saved.getStatus().name())
                 .uploadedAt(saved.getSubmittedAt())
@@ -90,3 +104,4 @@ public class SubmissionUploadService {
         return ext.length() > 10 ? ext.substring(0, 10) : ext;
     }
 }
+
