@@ -42,6 +42,7 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 @Configuration
 @EnableWebSecurity
+@org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     private final SecurityHeadersProperties securityHeadersProperties;
@@ -167,6 +168,8 @@ public class SecurityConfig {
                         .requestMatchers(gradeItemMatcher).access(this::authorizeDashboardSchoolAccess)
                         // All other actuator endpoints require authentication
                         .requestMatchers("/actuator/**").authenticated()
+                        // Audit log — ADMIN role required (defense-in-depth; method-level @PreAuthorize also present)
+                        .requestMatchers("/api/audit/**").hasRole("ADMIN")
                         // Default: deny unauthenticated access (fail-closed)
                         .anyRequest().authenticated()
                 )

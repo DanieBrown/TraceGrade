@@ -23,6 +23,7 @@ import org.mockito.ArgumentCaptor;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tracegrade.auditlog.AuditLogService;
 import com.tracegrade.domain.model.AnswerRubric;
 import com.tracegrade.domain.model.ExamTemplate;
 import com.tracegrade.domain.model.GradingResult;
@@ -56,6 +57,7 @@ class GradingServiceImplTest {
         private UserRepository              userRepository;
     private OpenAiService               openAiService;
     private GradingProperties           gradingProperties;
+    private AuditLogService             auditLogService;
     private GradingServiceImpl          service;
 
     private static final UUID SUBMISSION_ID  = UUID.randomUUID();
@@ -72,10 +74,11 @@ class GradingServiceImplTest {
         openAiService           = mock(OpenAiService.class);
         gradingProperties       = new GradingProperties();
         gradingProperties.setConfidenceThreshold(0.80);
+        auditLogService         = mock(AuditLogService.class);
         service = new GradingServiceImpl(
                 submissionRepository, gradingResultRepository,
                 rubricRepository, userRepository, openAiService,
-                gradingProperties, new ObjectMapper()
+                gradingProperties, new ObjectMapper(), auditLogService
         );
     }
 
