@@ -7,6 +7,10 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import com.tracegrade.auth.JwtAuthenticationFilter;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.core.Authentication;
@@ -48,16 +52,21 @@ public class SecurityConfig {
     /** Present only when the {@code dev} profile is active. */
     private final Optional<DevAuthenticationFilter> devAuthenticationFilter;
 
+    /** Present only when the {@code dev} and {@code docker} profiles are NOT active. */
+    private final Optional<JwtAuthenticationFilter> jwtAuthenticationFilter;
+
     public SecurityConfig(SecurityHeadersProperties securityHeadersProperties,
                           CsrfProperties csrfProperties,
                           CsrfAccessDeniedHandler csrfAccessDeniedHandler,
                           CorsProperties corsProperties,
-                          @Autowired(required = false) DevAuthenticationFilter devAuthenticationFilter) {
+                          @Autowired(required = false) DevAuthenticationFilter devAuthenticationFilter,
+                          @Autowired(required = false) JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.securityHeadersProperties = securityHeadersProperties;
         this.csrfProperties = csrfProperties;
         this.csrfAccessDeniedHandler = csrfAccessDeniedHandler;
         this.corsProperties = corsProperties;
         this.devAuthenticationFilter = Optional.ofNullable(devAuthenticationFilter);
+        this.jwtAuthenticationFilter = Optional.ofNullable(jwtAuthenticationFilter);
     }
 
     @Bean
@@ -118,7 +127,7 @@ public class SecurityConfig {
             );
 
             // Eagerly load deferred CSRF token so the cookie is set on every response
-            http.addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class);
+            http.addFilterAfter(new CsrfCookieFilter(tokenRepository, csrfProperties.getCookieName()), BasicAuthenticationFilter.class);
         } else {
             http.csrf(csrf -> csrf.disable());
         }
@@ -131,6 +140,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/csrf/token").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
                         // Protected endpoints with custom authorization
                         .requestMatchers("/api/exam-templates/**").authenticated()
                         .requestMatchers(dashboardStatsMatcher).access(this::authorizeDashboardSchoolAccess)
@@ -152,6 +162,10 @@ public class SecurityConfig {
 
         // In dev profile, inject synthetic auth before the security filter runs
         devAuthenticationFilter.ifPresent(filter ->
+                http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class));
+
+        // In non-dev profiles, inject JWT authentication before the security filter runs
+        jwtAuthenticationFilter.ifPresent(filter ->
                 http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class));
 
         // Security headers
@@ -177,6 +191,11 @@ public class SecurityConfig {
         }
 
         return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
