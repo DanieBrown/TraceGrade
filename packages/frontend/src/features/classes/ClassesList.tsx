@@ -4,11 +4,12 @@ import type { ClassListItem } from './classesTypes'
 interface ClassesListProps {
   items: ClassListItem[]
   onEdit: (item: ClassListItem) => void
+  onEnroll: (item: ClassListItem) => void
   onArchive: (item: ClassListItem) => void
   isMutating?: boolean
 }
 
-export default function ClassesList({ items, onEdit, onArchive, isMutating = false }: ClassesListProps) {
+export default function ClassesList({ items, onEdit, onEnroll, onArchive, isMutating = false }: ClassesListProps) {
   return (
     <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" aria-label="Classes">
       {items.map((item) => (
@@ -16,6 +17,7 @@ export default function ClassesList({ items, onEdit, onArchive, isMutating = fal
           <ClassCard
             item={item}
             onEdit={onEdit}
+            onEnroll={onEnroll}
             onArchive={onArchive}
             isBusy={isMutating}
           />
