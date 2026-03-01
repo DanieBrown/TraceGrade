@@ -16,6 +16,7 @@ import {
   updateClass,
 } from '../features/classes/classesApi'
 import type { ClassListItem, CreateClassPayload } from '../features/classes/classesTypes'
+import EnrollmentModal from '../features/enrollments/EnrollmentModal'
 
 type LoadState = 'loading' | 'error' | 'done'
 type MutationState = 'idle' | 'creating' | 'updating' | 'archiving'
@@ -38,6 +39,7 @@ export default function ClassesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingClass, setEditingClass] = useState<ClassListItem | null>(null)
   const [archivingClass, setArchivingClass] = useState<ClassListItem | null>(null)
+  const [enrollingClass, setEnrollingClass] = useState<ClassListItem | null>(null)
   const latestRequestIdRef = useRef(0)
   const isMountedRef = useRef(true)
 
@@ -247,6 +249,10 @@ export default function ClassesPage() {
             setMutationError('')
             setEditingClass(item)
           }}
+          onEnroll={(item) => {
+              setMutationError('')
+              setEnrollingClass(item)
+            }}
           onArchive={(item) => {
             setMutationError('')
             setArchivingClass(item)
@@ -277,6 +283,13 @@ export default function ClassesPage() {
           item={archivingClass}
           onClose={() => setArchivingClass(null)}
           onConfirm={handleArchiveClass}
+        />
+      )}
+
+      {enrollingClass && (
+        <EnrollmentModal
+          item={enrollingClass}
+          onClose={() => setEnrollingClass(null)}
         />
       )}
     </main>

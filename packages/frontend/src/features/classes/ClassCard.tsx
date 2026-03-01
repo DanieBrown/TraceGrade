@@ -3,11 +3,12 @@ import type { ClassListItem } from './classesTypes'
 interface ClassCardProps {
   item: ClassListItem
   onEdit: (item: ClassListItem) => void
+  onEnroll: (item: ClassListItem) => void
   onArchive: (item: ClassListItem) => void
   isBusy?: boolean
 }
 
-export default function ClassCard({ item, onEdit, onArchive, isBusy = false }: ClassCardProps) {
+export default function ClassCard({ item, onEdit, onEnroll, onArchive, isBusy = false }: ClassCardProps) {
   return (
     <article className="card-glow flex h-full flex-col justify-between rounded-xl border bg-surface p-5">
       <div className="space-y-3">
@@ -39,6 +40,16 @@ export default function ClassCard({ item, onEdit, onArchive, isBusy = false }: C
           aria-label={`Edit ${item.name}`}
         >
           Edit
+        </button>
+        <button
+          type="button"
+          onClick={() => onEnroll(item)}
+          disabled={isBusy}
+          className="inline-flex items-center rounded-lg px-2 py-1 font-display text-sm font-semibold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-60"
+          style={{ color: 'var(--text-secondary)' }}
+          aria-label={`Manage roster for ${item.name}`}
+        >
+          Roster
         </button>
         <button
           type="button"
