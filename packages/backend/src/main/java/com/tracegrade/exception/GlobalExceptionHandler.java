@@ -189,6 +189,11 @@ public class GlobalExceptionHandler {
                     "Student is already actively enrolled in this class");
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(error));
         }
+        if (msg.contains("uq_grades_student_assignment")) {
+            ApiError error = ApiError.of("DUPLICATE_RESOURCE",
+                    "Grade already exists for this student and assignment");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(error));
+        }
         log.warn("DataIntegrityViolationException (unmapped constraint): {}", ex.getMessage());
         ApiError error = ApiError.of("CONFLICT", "Data integrity violation");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(error));
