@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { fetchExamTemplates } from '../features/exams/examsApi'
 import type { ExamTemplateListItem } from '../features/exams/examsTypes'
 import type { SavedScore } from '../features/grading/GradingResultCard'
@@ -77,90 +77,6 @@ function EmptyState({
   )
 }
 
-function ExamCard({
-  exam,
-  gradedCount,
-  totalStudents,
-  onGrade,
-}: {
-  exam: ExamTemplateListItem
-  gradedCount: number
-  totalStudents: number
-  onGrade: () => void
-}) {
-  const progressPct = totalStudents > 0 ? (gradedCount / totalStudents) * 100 : 0
-
-  return (
-    <div
-      className="rounded-xl p-5"
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        border: '1px solid var(--border)',
-      }}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="font-display font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-              {exam.title}
-            </h3>
-            <span
-              className="font-mono text-xs font-medium px-2 py-0.5 rounded-full"
-              style={{
-                color: '#5bc5f5',
-                background: 'rgba(91, 197, 245, 0.1)',
-                border: '1px solid rgba(91, 197, 245, 0.2)',
-              }}
-            >
-              {exam.statusLabel}
-            </span>
-          </div>
-          <p className="font-mono text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-            {exam.questionCount} questions · {exam.totalPoints} total points
-          </p>
-        </div>
-        <button
-          onClick={onGrade}
-          className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-display font-semibold text-xs transition-colors"
-          style={{ background: 'var(--accent-gold)', color: '#06101e' }}
-        >
-          ✏ Grade
-        </button>
-      </div>
-
-      <div className="mt-4">
-        <div className="flex items-center justify-between text-xs mb-1">
-          <span className="font-mono" style={{ color: 'var(--text-muted)' }}>Grading Progress</span>
-          <span className="font-mono" style={{ color: 'var(--text-secondary)' }}>
-            {gradedCount}/{totalStudents} students ({Math.round(progressPct)}%)
-          </span>
-        </div>
-        <div
-          className="w-full rounded-full overflow-hidden"
-          style={{ height: '6px', background: 'rgba(120, 180, 220, 0.1)' }}
-          role="progressbar"
-          aria-valuenow={gradedCount}
-          aria-valuemin={0}
-          aria-valuemax={Math.max(totalStudents, 1)}
-          aria-label={`${gradedCount} of ${totalStudents} students graded`}
-        >
-          <div
-            className="h-full rounded-full transition-all"
-            style={{
-              width: `${progressPct}%`,
-              background: progressPct === 100 ? 'var(--accent-teal)' : 'var(--accent-gold)',
-            }}
-          />
-        </div>
-      </div>
-
-      <button className="mt-3 text-xs transition-colors font-mono" style={{ color: 'var(--text-muted)' }}>
-        ◈ View {exam.questionCount} questions
-      </button>
-    </div>
-  )
-}
-
 function GradePanel({
   exam,
   students,
@@ -184,6 +100,7 @@ function GradePanel({
 }) {
   const [selectedStudentId, setSelectedStudentId] = useState('')
   const [submissionId, setSubmissionId] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState<{ studentName: string; score: string } | null>(null)
   const { state: gradingState, grade, reset } = useGrading()
 
   const selectedStudent = useMemo(
@@ -225,6 +142,12 @@ function GradePanel({
       totalAvailable,
     })
 
+    const scoreLabel = totalAvailable > 0
+      ? `${totalAdjusted % 1 === 0 ? totalAdjusted : totalAdjusted.toFixed(1)}/${totalAvailable}`
+      : 'saved'
+    setSaveSuccess({ studentName: selectedStudent.fullName, score: scoreLabel })
+    setTimeout(() => setSaveSuccess(null), 5000)
+
     setSubmissionId(null)
     setSelectedStudentId('')
     reset()
@@ -243,6 +166,43 @@ function GradePanel({
         border: '1px solid var(--border)',
       }}
     >
+      {/* Success banner after saving grades */}
+      {saveSuccess && (
+        <div
+          className="flex items-center gap-3 rounded-lg p-4 animate-in fade-in"
+          role="status"
+          style={{
+            background: 'rgba(0, 201, 167, 0.08)',
+            border: '1px solid rgba(0, 201, 167, 0.22)',
+          }}
+        >
+          <span
+            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(0, 201, 167, 0.15)' }}
+            aria-hidden="true"
+          >
+            <span style={{ color: 'var(--accent-teal)' }}>✓</span>
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+              Grades saved for {saveSuccess.studentName}
+            </p>
+            <p className="font-body text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+              Score: {saveSuccess.score} — Select another student to continue grading.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSaveSuccess(null)}
+            className="text-xs flex-shrink-0 px-2 py-1 rounded transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <div className="flex items-start justify-between">
         <div>
           <h2 className="font-display font-bold text-lg" style={{ color: 'var(--text-primary)' }}>
@@ -453,7 +413,8 @@ function GradePanel({
 }
 
 export default function PaperExamsPage() {
-  const [gradingExamId, setGradingExamId] = useState<string | null>(null)
+  const { examId: urlExamId } = useParams<{ examId: string }>()
+  const navigate = useNavigate()
   const [gradedStudents, setGradedStudents] = useState<GradedStudentRecord[]>([])
 
   const [exams, setExams] = useState<ExamTemplateListItem[]>([])
@@ -466,8 +427,8 @@ export default function PaperExamsPage() {
   const [studentsRetryable, setStudentsRetryable] = useState(true)
 
   const gradingExam = useMemo(
-    () => exams.find((exam) => exam.id === gradingExamId) ?? null,
-    [exams, gradingExamId],
+    () => (urlExamId ? exams.find((exam) => exam.id === urlExamId) ?? null : null),
+    [exams, urlExamId],
   )
 
   function handleSaveGrades(record: GradedStudentRecord) {
@@ -515,11 +476,6 @@ export default function PaperExamsPage() {
     void loadStudents()
   }, [loadExams, loadStudents])
 
-  const gradedCount = useMemo(
-    () => gradedStudents.filter((record) => students.some((student) => student.id === record.studentId)).length,
-    [gradedStudents, students],
-  )
-
   return (
     <div style={{ padding: '40px', maxWidth: '860px' }}>
       <div className="flex items-start justify-between" style={{ marginBottom: '28px' }}>
@@ -537,15 +493,14 @@ export default function PaperExamsPage() {
             Grade real student submissions using your existing exam templates.
           </p>
         </div>
-        {!gradingExam && (
-          <Link
-            to="/exams"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-display font-semibold text-sm transition-colors flex-shrink-0"
-            style={{ background: 'var(--accent-gold)', color: '#06101e' }}
-          >
-            + Create Paper Exam
-          </Link>
-        )}
+        <button
+          type="button"
+          onClick={() => navigate('/exams')}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-display font-semibold text-sm transition-colors flex-shrink-0"
+          style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+        >
+          ← Back to Exams
+        </button>
       </div>
 
       {!gradingExam && (
@@ -581,7 +536,7 @@ export default function PaperExamsPage() {
           studentsRetryable={studentsRetryable}
           onRetryStudents={loadStudents}
           gradedStudents={gradedStudents}
-          onBack={() => setGradingExamId(null)}
+          onBack={() => navigate('/exams')}
           onSaveGrades={handleSaveGrades}
         />
       ) : examsLoading ? (
@@ -616,27 +571,13 @@ export default function PaperExamsPage() {
             Retry loading exam templates
           </button>
         </div>
-      ) : exams.length === 0 ? (
-        <EmptyState
-          title="No exam templates available"
-          description="Create your first template before grading paper submissions."
-          primaryLinkLabel="Create exam template"
-          primaryLinkTo="/exams"
-          secondaryLinkLabel="Add students"
-          secondaryLinkTo="/students"
-        />
       ) : (
-        <div className="space-y-4">
-          {exams.map((exam) => (
-            <ExamCard
-              key={exam.id}
-              exam={exam}
-              gradedCount={gradedCount}
-              totalStudents={students.length}
-              onGrade={() => setGradingExamId(exam.id)}
-            />
-          ))}
-        </div>
+        <EmptyState
+          title="Exam not found"
+          description="The exam template could not be found. Return to the exams list and try again."
+          primaryLinkLabel="Back to Exams"
+          primaryLinkTo="/exams"
+        />
       )}
     </div>
   )

@@ -1,8 +1,10 @@
 package com.tracegrade.dto.request;
 
+import com.tracegrade.domain.model.UserRole;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -30,4 +32,8 @@ public class RegisterRequest {
     @Size(max = 100, message = "Last name must not exceed 100 characters")
     @Schema(description = "User last name", example = "Smith")
     private String lastName;
+
+    @NotNull(message = "Role is required")
+    @Schema(description = "User role (currently only TEACHER is supported)", example = "TEACHER")
+    private UserRole role;
 }

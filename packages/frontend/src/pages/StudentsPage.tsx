@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import AddStudentModal from '../features/students/AddStudentModal'
+import StudentDetailModal from '../features/students/StudentDetailModal'
 import StudentsList from '../features/students/StudentsList'
 import { EmptyStudentsState, ErrorStudentsState, LoadingStudentsState } from '../features/students/StudentsStates'
 import { fetchStudents, getStudentsLoadErrorDetails, isStudentListEmpty } from '../features/students/studentsApi'
@@ -13,6 +14,7 @@ export default function StudentsPage() {
   const [errorMessage, setErrorMessage] = useState('There was a problem connecting to the server.')
   const [canRetry, setCanRetry] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [selectedStudent, setSelectedStudent] = useState<StudentListItem | null>(null)
   const latestRequestIdRef = useRef(0)
   const isMountedRef = useRef(true)
 
@@ -86,13 +88,26 @@ export default function StudentsPage() {
         <EmptyStudentsState onAddStudent={() => setShowAddModal(true)} />
       )}
 
-      {loadState === 'done' && !isStudentListEmpty(items) && <StudentsList items={items} />}
+      {loadState === 'done' && !isStudentListEmpty(items) && (
+        <StudentsList items={items} onStudentClick={(student) => setSelectedStudent(student)} />
+      )}
 
       {showAddModal && (
         <AddStudentModal
           onClose={() => setShowAddModal(false)}
           onStudentAdded={() => {
             setShowAddModal(false)
+            void loadStudents()
+          }}
+        />
+      )}
+
+      {selectedStudent && (
+        <StudentDetailModal
+          student={selectedStudent}
+          onClose={() => setSelectedStudent(null)}
+          onStudentUpdated={() => {
+            setSelectedStudent(null)
             void loadStudents()
           }}
         />

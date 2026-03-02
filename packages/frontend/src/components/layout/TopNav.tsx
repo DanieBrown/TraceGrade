@@ -49,13 +49,6 @@ const BarChartIcon: SvgIcon = ({ size = 17 }) => (
   </svg>
 )
 
-const ClipboardIcon: SvgIcon = ({ size = 17 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-  </svg>
-)
-
 const ReviewIcon: SvgIcon = ({ size = 17 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
@@ -87,7 +80,6 @@ const NAV_LINKS = [
   { label: 'Exams',        to: '/exams',       Icon: FileTextIcon,  end: false },
   { label: 'Homework',     to: '/homework',    Icon: BookOpenIcon,  end: false },
   { label: 'Grades',       to: '/grades',      Icon: BarChartIcon,  end: false },
-  { label: 'Paper Exams',  to: '/paper-exams', Icon: ClipboardIcon, end: false },
   { label: 'Review Queue', to: '/review',      Icon: ReviewIcon,    end: false },
   { label: 'Settings',     to: '/settings',    Icon: SettingsIcon,  end: false },
 ]

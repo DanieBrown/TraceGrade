@@ -13,7 +13,6 @@ import type {
   RawGradebookStudentRow,
 } from './gradesTypes'
 
-const CLASSES_ENDPOINT = '/classes'
 const GRADEBOOK_ENDPOINT_SUFFIX = '/gradebook'
 const DEFAULT_CLASS_LABEL = 'Untitled Class'
 const DEFAULT_COLUMN_LABEL = 'Untitled Column'
@@ -26,6 +25,18 @@ export class NonRetryableGradesError extends Error {
     super(message)
     this.name = 'NonRetryableGradesError'
   }
+}
+
+function resolveClassesEndpoint(): string {
+  const schoolId = import.meta.env.VITE_SCHOOL_ID?.trim() ?? ''
+
+  if (!schoolId) {
+    throw new NonRetryableGradesError(
+      'Grades cannot be loaded because school configuration is missing. Set VITE_SCHOOL_ID and reload the page.'
+    )
+  }
+
+  return `/schools/${encodeURIComponent(schoolId)}/classes`
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -352,7 +363,8 @@ export function toGradebookViewModel(raw: unknown): GradebookViewModel {
 }
 
 export async function fetchClassesForGradebook(): Promise<GradebookClassOption[]> {
-  const response = await api.get<ApiResponse<unknown> | unknown>(CLASSES_ENDPOINT)
+  const endpoint = resolveClassesEndpoint()
+  const response = await api.get<ApiResponse<unknown> | unknown>(endpoint)
   const rawClasses = extractClasses(response.data)
 
   return rawClasses
@@ -367,7 +379,8 @@ export async function fetchClassGradebook(classId: string): Promise<GradebookVie
     throw new NonRetryableGradesError('Grades cannot be loaded because class selection is missing.')
   }
 
-  const endpoint = `${CLASSES_ENDPOINT}/${encodeURIComponent(normalizedClassId)}${GRADEBOOK_ENDPOINT_SUFFIX}`
+  const classesEndpoint = resolveClassesEndpoint()
+  const endpoint = `${classesEndpoint}/${encodeURIComponent(normalizedClassId)}${GRADEBOOK_ENDPOINT_SUFFIX}`
   const response = await api.get<ApiResponse<unknown> | unknown>(endpoint)
   const normalized = toGradebookViewModel(response.data)
 

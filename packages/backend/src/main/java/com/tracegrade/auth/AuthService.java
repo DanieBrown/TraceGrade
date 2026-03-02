@@ -35,6 +35,12 @@ public class AuthService {
      */
     @Transactional
     public String register(RegisterRequest request) {
+        // Only TEACHER role is currently supported
+        UserRole role = request.getRole();
+        if (role != UserRole.TEACHER) {
+            throw new IllegalArgumentException("Only TEACHER registration is currently supported.");
+        }
+
         String normalizedEmail = request.getEmail().toLowerCase();
         if (userRepository.findByEmail(normalizedEmail).isPresent()) {
             throw new DuplicateResourceException("User", "email", normalizedEmail);
@@ -45,7 +51,7 @@ public class AuthService {
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
-                .role(UserRole.TEACHER)
+                .role(role)
                 .isActive(true)
                 .build();
 
