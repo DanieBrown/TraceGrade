@@ -27,9 +27,9 @@ export default function App() {
           <Route path='/classes' element={<ClassesPage />} />
           <Route path='/students' element={<StudentsPage />} />
           <Route path='/exams' element={<ExamsPage />} />
+          <Route path='/exams/:examId' element={<PaperExamsPage />} />
           <Route path='/homework' element={<HomeworkPage />} />
           <Route path='/grades' element={<GradesPage />} />
-          <Route path='/paper-exams' element={<PaperExamsPage />} />
           <Route path='/classes/:classId/batch-grading' element={<BatchGradingPage />} />
           <Route path='/review' element={<ManualReviewQueuePage />} />
           <Route path='/settings' element={<SettingsPage />} />

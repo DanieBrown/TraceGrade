@@ -4,6 +4,7 @@ import type { ExamTemplateListItem } from './examsTypes'
 interface ExamCardProps {
   item: ExamTemplateListItem
   onOpen: (examId: string) => void
+  onCardClick: (item: ExamTemplateListItem) => void
 }
 
 function getStatusBadgeStyle(statusLabel: string): CSSProperties {
@@ -32,11 +33,15 @@ function getStatusBadgeStyle(statusLabel: string): CSSProperties {
   }
 }
 
-export default function ExamCard({ item, onOpen }: ExamCardProps) {
+export default function ExamCard({ item, onOpen, onCardClick }: ExamCardProps) {
   return (
     <article
-      className="card-glow flex h-full flex-col justify-between rounded-xl border bg-surface p-5"
+      className="card-glow flex h-full cursor-pointer flex-col justify-between rounded-xl border bg-surface p-5 transition-colors hover:border-[var(--accent-gold)]"
       style={{ borderColor: 'var(--border)' }}
+      onClick={() => onCardClick(item)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCardClick(item) } }}
     >
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-3">
@@ -62,12 +67,12 @@ export default function ExamCard({ item, onOpen }: ExamCardProps) {
       <div className="mt-4">
         <button
           type="button"
-          onClick={() => onOpen(item.id)}
+          onClick={(e) => { e.stopPropagation(); onOpen(item.id) }}
           className="inline-flex items-center rounded-lg px-2 py-1 font-display text-sm font-semibold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] active:scale-95"
           style={{ color: 'var(--accent-gold)' }}
-          aria-label={`Manage exam ${item.title}`}
+          aria-label={`Grade exam ${item.title}`}
         >
-          Manage Exam
+          Grade Exam →
         </button>
       </div>
     </article>

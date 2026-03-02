@@ -249,6 +249,29 @@ export async function createStudent(payload: CreateStudentPayload): Promise<Stud
   return item
 }
 
+export interface UpdateStudentPayload {
+  firstName?: string
+  lastName?: string
+  email?: string
+  studentNumber?: string
+  isActive?: boolean
+}
+
+export async function updateStudent(studentId: string, payload: UpdateStudentPayload): Promise<StudentListItem> {
+  const endpoint = resolveStudentsEndpoint()
+  const response = await api.put<ApiResponse<unknown> | unknown>(`${endpoint}/${encodeURIComponent(studentId)}`, payload)
+
+  const data = isRecord(response.data) ? response.data : null
+  const innerData = data?.data ?? data
+  const item = toStudentListItem(innerData)
+
+  if (!item) {
+    throw new Error('Failed to parse updated student response')
+  }
+
+  return item
+}
+
 export function isStudentListEmpty(items: StudentListItem[]): boolean {
   return items.length === 0
 }

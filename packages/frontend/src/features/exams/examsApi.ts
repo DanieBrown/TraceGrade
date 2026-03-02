@@ -129,6 +129,65 @@ export async function fetchExamTemplates(): Promise<ExamTemplateListItem[]> {
     .filter((item): item is ExamTemplateListItem => item !== null)
 }
 
+export interface CreateExamTemplatePayload {
+  name: string
+  subject?: string
+  topic?: string
+  gradeLevel?: string
+  description?: string
+  difficultyLevel?: 'EASY' | 'MEDIUM' | 'HARD' | 'ADVANCED'
+  totalPoints: number
+  questionsJson: string
+}
+
+export async function createExamTemplate(payload: CreateExamTemplatePayload): Promise<ExamTemplateListItem> {
+  const response = await api.post<ApiResponse<unknown> | unknown>(EXAM_TEMPLATES_ENDPOINT, payload)
+
+  const data = isRecord(response.data) ? response.data : null
+  const innerData = data?.data ?? data
+  const item = toExamTemplateListItem(innerData)
+
+  if (!item) {
+    throw new Error('Failed to parse created exam template response')
+  }
+
+  return item
+}
+
+export async function fetchExamTemplateById(examId: string): Promise<ExamTemplateListItem> {
+  const response = await api.get<ApiResponse<unknown> | unknown>(`${EXAM_TEMPLATES_ENDPOINT}/${encodeURIComponent(examId)}`)
+
+  const data = isRecord(response.data) ? response.data : null
+  const innerData = data?.data ?? data
+  const item = toExamTemplateListItem(innerData)
+
+  if (!item) {
+    throw new Error('Failed to parse exam template response')
+  }
+
+  return item
+}
+
+export async function updateExamTemplate(
+  examId: string,
+  payload: Partial<CreateExamTemplatePayload>,
+): Promise<ExamTemplateListItem> {
+  const response = await api.put<ApiResponse<unknown> | unknown>(
+    `${EXAM_TEMPLATES_ENDPOINT}/${encodeURIComponent(examId)}`,
+    payload,
+  )
+
+  const data = isRecord(response.data) ? response.data : null
+  const innerData = data?.data ?? data
+  const item = toExamTemplateListItem(innerData)
+
+  if (!item) {
+    throw new Error('Failed to parse updated exam template response')
+  }
+
+  return item
+}
+
 export function isExamTemplateListEmpty(items: ExamTemplateListItem[]): boolean {
   return items.length === 0
 }

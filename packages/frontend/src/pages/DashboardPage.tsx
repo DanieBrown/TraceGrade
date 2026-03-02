@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { fetchDashboardStats, isValidSchoolId, type DashboardStatsResponse } from '../features/dashboard/dashboardApi'
 import { getTeacherThreshold } from '../features/settings/settingsApi'
 
@@ -18,74 +19,7 @@ function formatThresholdPercent(threshold: number): string {
   return `${percentValue.toFixed(2).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1')}%`
 }
 
-const GRADE_DISTRIBUTION_STUDENT_COUNT = 87
 
-const GRADE_DISTRIBUTION = [
-  { label: 'A',  range: '90–100',  count: 24, pct: 28, color: 'var(--accent-teal)' },
-  { label: 'B',  range: '80–89',   count: 31, pct: 36, color: '#5bc5f5' },
-  { label: 'C',  range: '70–79',   count: 18, pct: 21, color: 'var(--accent-gold)' },
-  { label: 'D',  range: '60–69',   count: 9,  pct: 10, color: '#f0844a' },
-  { label: 'F',  range: '<60',     count: 5,  pct: 6,  color: 'var(--accent-crimson)' },
-]
-
-const RECENT_ACTIVITY = [
-  {
-    id: 1,
-    type: 'graded',
-    message: "AI graded Jack's Algebra Quiz",
-    detail: 'Confidence 97% — approved automatically',
-    time: '2 min ago',
-    confidence: 97,
-    icon: '✦',
-    iconColor: 'var(--accent-teal)',
-  },
-  {
-    id: 2,
-    type: 'flagged',
-    message: "Mohammed's History Exam flagged",
-    detail: 'Confidence 78% — awaiting your review',
-    time: '18 min ago',
-    confidence: 78,
-    icon: '⚑',
-    iconColor: 'var(--accent-gold)',
-  },
-  {
-    id: 3,
-    type: 'graded',
-    message: "Sarah's Calculus Test graded",
-    detail: 'Score 18/20 · Confidence 94%',
-    time: '1 hr ago',
-    confidence: 94,
-    icon: '✦',
-    iconColor: 'var(--accent-teal)',
-  },
-  {
-    id: 4,
-    type: 'uploaded',
-    message: 'Batch upload: 12 submissions',
-    detail: 'Chemistry Midterm · Period 3',
-    time: '3 hr ago',
-    confidence: null,
-    icon: '↑',
-    iconColor: '#5bc5f5',
-  },
-  {
-    id: 5,
-    type: 'flagged',
-    message: "Lena's Chemistry Midterm flagged",
-    detail: 'Confidence 61% — awaiting your review',
-    time: '3 hr ago',
-    confidence: 61,
-    icon: '⚑',
-    iconColor: 'var(--accent-gold)',
-  },
-]
-
-const CLASSES = [
-  { name: 'Algebra II — Period 3',   students: 30, avg: 84.1, graded: 30, total: 30 },
-  { name: 'Calculus — Period 5',      students: 27, avg: 79.6, graded: 24, total: 27 },
-  { name: 'Chemistry — Period 2',     students: 30, avg: 83.7, graded: 15, total: 30 },
-]
 
 function isEmptyDashboardStats(stats: DashboardStatsResponse): boolean {
   return (
@@ -157,83 +91,7 @@ function StatCard({
   )
 }
 
-function ConfidencePill({ score }: { score: number }) {
-  const color =
-    score >= 95 ? 'var(--accent-teal)'
-    : score >= 80 ? '#5bc5f5'
-    : score >= 60 ? 'var(--accent-gold)'
-    : 'var(--accent-crimson)'
 
-  return (
-    <span
-      className="font-mono"
-      style={{
-        fontSize: '10px',
-        fontWeight: 500,
-        padding: '2px 7px',
-        borderRadius: '99px',
-        color,
-        background: `${color}18`,
-        border: `1px solid ${color}35`,
-        flexShrink: 0,
-      }}
-    >
-      {score}%
-    </span>
-  )
-}
-
-function GradeBar({ item, delay }: { item: typeof GRADE_DISTRIBUTION[0]; delay: number }) {
-  return (
-    <div className="flex items-center gap-3">
-      {/* Grade letter */}
-      <div
-        className="font-display flex-shrink-0"
-        style={{
-          width: '28px',
-          fontWeight: 700,
-          fontSize: '14px',
-          color: item.color,
-          textAlign: 'right',
-        }}
-      >
-        {item.label}
-      </div>
-
-      {/* Bar track */}
-      <div
-        className="flex-1 rounded-full overflow-hidden"
-        style={{ height: '8px', background: 'rgba(120, 180, 220, 0.08)' }}
-      >
-        <div
-          className="h-full rounded-full animate-grow-x"
-          style={{
-            width: `${item.pct}%`,
-            background: item.color,
-            animationDelay: `${delay}ms`,
-            opacity: 0.85,
-          }}
-        />
-      </div>
-
-      {/* Count + range */}
-      <div className="flex items-center gap-2 flex-shrink-0" style={{ minWidth: '80px' }}>
-        <span
-          className="font-mono"
-          style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)', minWidth: '24px', textAlign: 'right' }}
-        >
-          {item.count}
-        </span>
-        <span
-          className="font-mono"
-          style={{ fontSize: '10px', color: 'var(--text-muted)' }}
-        >
-          {item.range}
-        </span>
-      </div>
-    </div>
-  )
-}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -462,336 +320,34 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── Main content row ── */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 340px',
-          gap: '20px',
-          marginBottom: '20px',
-        }}
-      >
-        {/* Grade Distribution Chart */}
-        <div
-          className="rounded-xl p-6"
-          style={{
-            backgroundColor: 'var(--bg-surface)',
-            border: '1px solid var(--border)',
-          }}
-        >
-          <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <div>
-              <p
-                className="font-mono"
-                style={{ fontSize: '9px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '4px' }}
-              >
-                Grade Distribution
-              </p>
-              <h2
-                className="font-display"
-                style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}
-              >
-                All Classes · {GRADE_DISTRIBUTION_STUDENT_COUNT} Students
-              </h2>
-            </div>
-            <span
-              className="font-mono"
-              style={{ fontSize: '10px', color: 'var(--text-muted)', paddingTop: '4px' }}
-            >
-              Current term
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {GRADE_DISTRIBUTION.map((item, i) => (
-              <GradeBar key={item.label} item={item} delay={i * 80} />
-            ))}
-          </div>
-
-          {/* Legend row */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '16px',
-              marginTop: '20px',
-              paddingTop: '16px',
-              borderTop: '1px solid var(--border)',
-            }}
-          >
-            {GRADE_DISTRIBUTION.map(item => (
-              <div key={item.label} className="flex items-center gap-1.5">
-                <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: item.color, flexShrink: 0 }} />
-                <span
-                  className="font-mono"
-                  style={{ fontSize: '10px', color: 'var(--text-secondary)' }}
-                >
-                  {item.pct}% {item.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div
-          className="rounded-xl p-6"
-          style={{
-            backgroundColor: 'var(--bg-surface)',
-            border: '1px solid var(--border)',
-          }}
-        >
-          <div style={{ marginBottom: '20px' }}>
-            <p
-              className="font-mono"
-              style={{ fontSize: '9px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '4px' }}
-            >
-              Activity
-            </p>
-            <h2
-              className="font-display"
-              style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}
-            >
-              Recent Events
-            </h2>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-            {RECENT_ACTIVITY.map((event, i) => (
-              <div
-                key={event.id}
-                style={{
-                  display: 'flex',
-                  gap: '12px',
-                  paddingBottom: i < RECENT_ACTIVITY.length - 1 ? '16px' : '0',
-                  marginBottom: i < RECENT_ACTIVITY.length - 1 ? '16px' : '0',
-                  borderBottom: i < RECENT_ACTIVITY.length - 1 ? '1px solid var(--border)' : 'none',
-                }}
-              >
-                {/* Icon */}
-                <div
-                  style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '6px',
-                    background: `${event.iconColor}14`,
-                    border: `1px solid ${event.iconColor}25`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: event.iconColor,
-                    fontSize: '12px',
-                    flexShrink: 0,
-                    marginTop: '1px',
-                  }}
-                >
-                  {event.icon}
-                </div>
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p
-                    style={{
-                      fontSize: '13px',
-                      fontWeight: 500,
-                      color: 'var(--text-primary)',
-                      fontFamily: 'Syne, sans-serif',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {event.message}
-                  </p>
-                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', fontFamily: 'Lora, serif' }}>
-                    {event.detail}
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                    <span
-                      className="font-mono"
-                      style={{ fontSize: '10px', color: 'var(--text-muted)' }}
-                    >
-                      {event.time}
-                    </span>
-                    {event.confidence !== null && (
-                      <ConfidencePill score={event.confidence} />
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Classes overview ── */}
-      <div
-        className="rounded-xl"
-        style={{
-          backgroundColor: 'var(--bg-surface)',
-          border: '1px solid var(--border)',
-          overflow: 'hidden',
-          marginBottom: '20px',
-        }}
-      >
-        <div
-          style={{
-            padding: '20px 24px 16px',
-            borderBottom: '1px solid var(--border)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <p
-              className="font-mono"
-              style={{ fontSize: '9px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '4px' }}
-            >
-              Classes
-            </p>
-            <h2 className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              Class Performance
-            </h2>
-          </div>
-          <span
-            className="font-mono"
-            style={{
-              fontSize: '10px',
-              padding: '3px 10px',
-              borderRadius: '99px',
-              color: 'var(--accent-teal)',
-              background: 'rgba(0, 201, 167, 0.08)',
-              border: '1px solid rgba(0, 201, 167, 0.18)',
-            }}
-          >
-            {CLASSES.length} classes
-          </span>
-        </div>
-
-        {/* Table header */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 100px 120px 180px',
-            gap: '0',
-            padding: '10px 24px',
-            borderBottom: '1px solid var(--border)',
-          }}
-        >
-          {['Class', 'Students', 'Average', 'Grading Progress'].map(col => (
-            <p
-              key={col}
-              className="font-mono"
-              style={{ fontSize: '9.5px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}
-            >
-              {col}
-            </p>
-          ))}
-        </div>
-
-        {/* Rows */}
-        {CLASSES.map((cls, i) => {
-          const progressPct = cls.total > 0 ? (cls.graded / cls.total) * 100 : 0
-          const avgColor =
-            cls.avg >= 90 ? 'var(--accent-teal)'
-            : cls.avg >= 80 ? '#5bc5f5'
-            : cls.avg >= 70 ? 'var(--accent-gold)'
-            : 'var(--accent-crimson)'
-
-          return (
-            <div
-              key={i}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 100px 120px 180px',
-                gap: '0',
-                padding: '14px 24px',
-                borderBottom: i < CLASSES.length - 1 ? '1px solid var(--border)' : 'none',
-                alignItems: 'center',
-                transition: 'background 0.15s',
-              }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(120, 180, 220, 0.03)')}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
-            >
-              <p
-                className="font-display"
-                style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)' }}
-              >
-                {cls.name}
-              </p>
-              <p
-                className="font-mono"
-                style={{ fontSize: '13px', color: 'var(--text-secondary)' }}
-              >
-                {cls.students}
-              </p>
-              <p
-                className="font-mono"
-                style={{ fontSize: '14px', fontWeight: 500, color: avgColor }}
-              >
-                {cls.avg}%
-              </p>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div
-                    style={{
-                      flex: 1,
-                      height: '6px',
-                      borderRadius: '99px',
-                      background: 'rgba(120, 180, 220, 0.1)',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: '100%',
-                        width: `${progressPct}%`,
-                        background: progressPct === 100 ? 'var(--accent-teal)' : 'var(--accent-gold)',
-                        borderRadius: '99px',
-                        transition: 'width 0.6s ease',
-                      }}
-                    />
-                  </div>
-                  <span
-                    className="font-mono"
-                    style={{ fontSize: '10px', color: 'var(--text-muted)', flexShrink: 0 }}
-                  >
-                    {cls.graded}/{cls.total}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
       {/* ── Quick actions ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '16px' }}>
         {[
           {
             label: 'Add Students',
             desc: 'Enroll new students into your school',
-            href: '/students',
+            to: '/students',
             icon: '+',
             accent: '#5bc5f5',
           },
           {
             label: 'Create Homework',
             desc: 'Create a new homework assignment',
-            href: '/homework',
+            to: '/homework',
             icon: '📋',
             accent: 'var(--accent-gold)',
           },
           {
             label: 'Create Exam',
             desc: 'Build exam templates for AI grading',
-            href: '/exams',
+            to: '/exams',
             icon: '✎',
             accent: 'var(--accent-teal)',
           },
         ].map(action => (
-          <a
-            key={action.href}
-            href={action.href}
+          <Link
+            key={action.to}
+            to={action.to}
             className="rounded-xl p-5 card-glow"
             style={{
               display: 'flex',
@@ -839,7 +395,7 @@ export default function DashboardPage() {
                 {action.desc}
               </p>
             </div>
-          </a>
+          </Link>
         ))}
       </div>
 
@@ -847,16 +403,16 @@ export default function DashboardPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
         {[
           {
-            label: 'Upload Paper Exams',
-            desc: 'Submit handwritten exams for AI grading',
-            href: '/paper-exams',
-            icon: '↑',
+            label: 'Grade Paper Exams',
+            desc: 'Upload handwritten exams for AI grading',
+            to: '/exams',
+            icon: '✦',
             accent: '#5bc5f5',
           },
           {
             label: 'Review Queue',
             desc: reviewQuickActionDescription,
-            href: '/review',
+            to: '/review',
             icon: '⚑',
             accent: 'var(--accent-gold)',
             badge: reviewQuickActionBadge,
@@ -864,14 +420,14 @@ export default function DashboardPage() {
           {
             label: 'View Grades',
             desc: 'Browse all grades across your classes',
-            href: '/grades',
+            to: '/grades',
             icon: '◈',
             accent: 'var(--accent-teal)',
           },
         ].map(action => (
-          <a
-            key={action.href}
-            href={action.href}
+          <Link
+            key={action.to}
+            to={action.to}
             className="rounded-xl p-5 card-glow"
             style={{
               display: 'flex',
@@ -937,7 +493,7 @@ export default function DashboardPage() {
                 {action.desc}
               </p>
             </div>
-          </a>
+          </Link>
         ))}
       </div>
 

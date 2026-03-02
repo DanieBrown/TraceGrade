@@ -8,6 +8,7 @@ export type RegisterPayload = {
   password: string;
   firstName: string;
   lastName: string;
+  role: 'TEACHER' | 'ADMIN' | 'COUNSELOR';
 };
 
 /** Shape of the data field returned by /api/auth/login and /api/auth/register */

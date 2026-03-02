@@ -34,14 +34,59 @@ export interface GradingResultResponse {
   updatedAt: string
 }
 
-export function triggerGrading(submissionId: string): Promise<GradingResultResponse> {
-  return api
-    .post<ApiResponse<GradingResultResponse>>(`/submissions/${submissionId}/grade`)
+/** Response from the POST enqueue endpoint (not the full grading result). */
+interface GradingEnqueuedResponse {
+  submissionId: string
+  status: 'QUEUED' | 'COMPLETED' | 'ALREADY_GRADED'
+  enqueuedAt: string
+}
+
+const POLL_INTERVAL_MS = 2_000
+const POLL_TIMEOUT_MS = 60_000
+
+/**
+ * Enqueue a submission for AI grading, then poll until the full
+ * grading result is ready.
+ *
+ * Flow:
+ *  1. POST  /submissions/{id}/grade  → GradingEnqueuedResponse
+ *  2. If status is COMPLETED or ALREADY_GRADED the result exists;
+ *     if QUEUED the backend is processing asynchronously.
+ *  3. Poll GET /submissions/{id}/grade until a result is returned
+ *     or the timeout expires.
+ */
+export async function triggerGrading(submissionId: string): Promise<GradingResultResponse> {
+  const enqueue = await api
+    .post<ApiResponse<GradingEnqueuedResponse>>(`/submissions/${submissionId}/grade`)
     .then((r) => r.data.data)
+
+  // For COMPLETED / ALREADY_GRADED the result is already persisted —
+  // fetch it immediately.
+  if (enqueue.status !== 'QUEUED') {
+    return fetchGradingResult(submissionId)
+  }
+
+  // Async path — poll until the worker has finished grading.
+  const deadline = Date.now() + POLL_TIMEOUT_MS
+
+  while (Date.now() < deadline) {
+    await sleep(POLL_INTERVAL_MS)
+    try {
+      return await fetchGradingResult(submissionId)
+    } catch {
+      // 404 means the worker hasn't stored a result yet — keep polling.
+    }
+  }
+
+  throw new Error('Grading is taking longer than expected. Please check back shortly.')
 }
 
 export function fetchGradingResult(submissionId: string): Promise<GradingResultResponse> {
   return api
     .get<ApiResponse<GradingResultResponse>>(`/submissions/${submissionId}/grade`)
     .then((r) => r.data.data)
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
