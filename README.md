@@ -194,19 +194,6 @@ If your existing dev database still contains Flyway history entry `V8__seed_demo
 - **Backend**: JUnit 5 for unit tests, TestContainers for integration tests
 - **Target Coverage**: 80%+ code coverage
 
-### FEAT-028 Exams Page Verification Checklist
-
-The Exams page (FEAT-028) includes automated and manual verification checks aligned to acceptance criteria (AC-001 through AC-006):
-
-| Criteria | Verification | Status |
-|----------|--------------|--------|
-| **AC-001: Route & Navigation** | Navigate to `/exams` from TopNav; confirm Exams page renders. Direct URL access to `/exams` via browser refresh also works. | `npm run build` validates route wiring |
-| **AC-002: List & Metadata** | With exam template data available, confirm each item shows title, question count (if available), and total points (if available) | Manual: load populated Exams page; verify metadata rendering |
-| **AC-003: State Branches** | Confirm loading, error, and empty states render correctly when API is pending, fails, or returns zero results | Manual: simulate pending/error/empty responses; verify each state appears |
-| **AC-004: Per-Item Actions** | Each exam card includes a primary open/manage action; action is clickable and keyboard-focusable | Manual: navigate exam cards with keyboard; click action control |
-| **AC-005: Paper Exams Non-Regression** | Navigate to `/paper-exams` after FEAT-028 changes; verify existing page still renders and all interactions remain available | Manual: access `/paper-exams` route; test existing paper exam workflow |
-| **AC-006: Missing Field Handling** | Provide exam data missing optional fields (e.g., no question count); confirm page remains stable without runtime errors | Manual: verify long titles do not break layout; missing metadata is handled safely |
-
 **Run checks locally**:
 ```bash
 cd packages/frontend
