@@ -19,13 +19,23 @@ const api = axios.create({
   withCredentials: true, // Send cookies cross-origin (required for CSRF)
 });
 
+function isStateChangingMethod(method: string | undefined): boolean {
+  return !!method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase());
+}
+
 /**
- * Request interceptor: attach the CSRF token from the XSRF-TOKEN cookie
- * as the X-XSRF-TOKEN header on state-changing requests.
+ * Request interceptor: ensure a CSRF token exists before the first mutating
+ * request, then attach it as X-XSRF-TOKEN.
  */
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
   const method = config.method?.toUpperCase();
-  if (method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+  const requestUrl = config.url ?? '';
+
+  if (isStateChangingMethod(method) && requestUrl !== '/csrf/token' && !getCookie('XSRF-TOKEN')) {
+    await api.get('/csrf/token');
+  }
+
+  if (isStateChangingMethod(method)) {
     const token = getCookie('XSRF-TOKEN');
     if (token) {
       config.headers['X-XSRF-TOKEN'] = token;

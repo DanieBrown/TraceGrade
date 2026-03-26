@@ -27,6 +27,9 @@ public class StorageProperties {
         /** Custom endpoint for LocalStack/MinIO (optional) */
         private String endpoint;
 
+        /** Publicly reachable endpoint for browser-facing URLs (optional) */
+        private String publicEndpoint;
+
         /** Presigned URL expiration in minutes */
         private int presignedUrlExpirationMinutes = 15;
 

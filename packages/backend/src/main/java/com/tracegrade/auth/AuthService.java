@@ -57,7 +57,7 @@ public class AuthService {
 
         user = userRepository.save(user);
         log.info("Registered new user: {}", normalizedEmail);
-        return jwtService.generateToken(user.getId(), user.getEmail());
+        return jwtService.generateToken(user);
     }
 
     /**
@@ -82,6 +82,6 @@ public class AuthService {
             throw new BadCredentialsException("Invalid email or password");
         }
 
-        return jwtService.generateToken(user.getId(), user.getEmail());
+        return jwtService.generateToken(user);
     }
 }

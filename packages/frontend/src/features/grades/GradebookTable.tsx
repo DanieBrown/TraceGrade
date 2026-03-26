@@ -7,6 +7,11 @@ interface GradebookTableProps {
 export default function GradebookTable({ viewModel }: GradebookTableProps) {
   return (
     <section className="overflow-x-auto rounded-xl border border-subtle">
+      <div className="border-b border-subtle bg-elevated px-4 py-3">
+        <p className="font-body text-xs text-sec">
+          This gradebook is read-only. Homework entries from the Homework page do not create columns here.
+        </p>
+      </div>
       <table aria-label="Class gradebook" className="w-full border-collapse text-left">
         <thead className="border-b border-subtle bg-elevated">
           <tr>

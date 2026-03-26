@@ -115,6 +115,7 @@ storage:
     bucket-name: ${S3_BUCKET_NAME:tracegrade-exams-dev}
     region: ${AWS_REGION:us-east-1}
     endpoint: ${S3_ENDPOINT:}
+    public-endpoint: ${S3_PUBLIC_ENDPOINT:}
     presigned-url-expiration-minutes: 15
 
 # OpenAI Configuration

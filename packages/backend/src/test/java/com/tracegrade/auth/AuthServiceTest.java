@@ -50,6 +50,7 @@ class AuthServiceTest {
         request.setPassword("Secure123!");
         request.setFirstName("Jane");
         request.setLastName("Smith");
+        request.setRole(UserRole.TEACHER);
 
         UUID userId = UUID.randomUUID();
         User savedUser = User.builder()
@@ -65,14 +66,14 @@ class AuthServiceTest {
         when(userRepository.findByEmail("teacher@school.edu")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("Secure123!")).thenReturn("$2a$encoded");
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(jwtService.generateToken(any(), anyString())).thenReturn("test.jwt.token");
+        when(jwtService.generateToken(any(User.class))).thenReturn("test.jwt.token");
 
         String token = authService.register(request);
 
         assertThat(token).isEqualTo("test.jwt.token");
         verify(passwordEncoder).encode("Secure123!");
         verify(userRepository).save(any(User.class));
-        verify(jwtService).generateToken(any(), anyString());
+        verify(jwtService).generateToken(any(User.class));
     }
 
     @Test
@@ -83,6 +84,7 @@ class AuthServiceTest {
         request.setPassword("Secure123!");
         request.setFirstName("Jane");
         request.setLastName("Smith");
+        request.setRole(UserRole.TEACHER);
 
         when(userRepository.findByEmail("teacher@school.edu")).thenReturn(Optional.empty());
         when(passwordEncoder.encode(anyString())).thenReturn("$2a$encoded");
@@ -96,7 +98,7 @@ class AuthServiceTest {
                 .isActive(true)
                 .build();
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(jwtService.generateToken(any(), anyString())).thenReturn("token");
+        when(jwtService.generateToken(any(User.class))).thenReturn("token");
 
         authService.register(request);
 
@@ -112,6 +114,7 @@ class AuthServiceTest {
         request.setPassword("Secure123!");
         request.setFirstName("Jane");
         request.setLastName("Smith");
+        request.setRole(UserRole.TEACHER);
 
         User existingUser = User.builder()
                 .email("existing@school.edu")
@@ -146,12 +149,12 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail("teacher@school.edu")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("Secure123!", "$2a$encoded")).thenReturn(true);
-        when(jwtService.generateToken(any(), anyString())).thenReturn("login.jwt.token");
+        when(jwtService.generateToken(any(User.class))).thenReturn("login.jwt.token");
 
         String token = authService.login("teacher@school.edu", "Secure123!");
 
         assertThat(token).isEqualTo("login.jwt.token");
-        verify(jwtService).generateToken(any(), anyString());
+        verify(jwtService).generateToken(any(User.class));
     }
 
     @Test
@@ -168,7 +171,7 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail("teacher@school.edu")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("Secure123!", "$2a$encoded")).thenReturn(true);
-        when(jwtService.generateToken(any(), anyString())).thenReturn("token");
+        when(jwtService.generateToken(any(User.class))).thenReturn("token");
 
         authService.login("Teacher@SCHOOL.EDU", "Secure123!");
 

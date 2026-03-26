@@ -42,6 +42,7 @@ public class GradingController {
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "Grading job accepted"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Rubric setup is incomplete for this exam", content = @Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Submission not found", content = @Content)
     })
     @PostMapping("/api/submissions/{submissionId}/grade")

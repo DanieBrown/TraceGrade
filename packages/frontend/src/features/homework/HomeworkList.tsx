@@ -33,7 +33,10 @@ function getStatusBadgeStyle(statusLabel: string): CSSProperties {
 
 function formatDueDate(dueDate: string | null): string {
   if (!dueDate) return 'No due date'
-  const date = new Date(dueDate)
+  const dateOnlyMatch = dueDate.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  const date = dateOnlyMatch
+    ? new Date(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3]))
+    : new Date(dueDate)
   if (isNaN(date.getTime())) return 'No due date'
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }

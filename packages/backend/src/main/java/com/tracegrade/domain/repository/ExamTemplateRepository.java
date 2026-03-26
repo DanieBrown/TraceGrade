@@ -10,6 +10,8 @@ import com.tracegrade.domain.model.ExamTemplate;
 
 public interface ExamTemplateRepository extends JpaRepository<ExamTemplate, UUID> {
 
+    Optional<ExamTemplate> findByAssignmentId(UUID assignmentId);
+
     boolean existsByTeacherIdAndNameIgnoreCase(UUID teacherId, String name);
 
     List<ExamTemplate> findByTeacherIdOrderByCreatedAtDesc(UUID teacherId);

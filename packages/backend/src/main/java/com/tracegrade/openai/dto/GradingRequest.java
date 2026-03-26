@@ -15,6 +15,9 @@ public class GradingRequest {
     @NotBlank
     private String submissionImageUrl;
 
+    /** Optional image of the teacher's model answer for visual comparison. */
+    private String expectedAnswerImageUrl;
+
     @NotNull
     private Integer questionNumber;
 

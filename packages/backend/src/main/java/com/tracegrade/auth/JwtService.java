@@ -9,6 +9,7 @@ import javax.crypto.SecretKey;
 import org.springframework.stereotype.Service;
 
 import com.tracegrade.config.JwtProperties;
+import com.tracegrade.domain.model.User;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -28,24 +29,40 @@ public class JwtService {
     private final JwtProperties jwtProperties;
 
     /**
-     * Generates a signed JWT for the given user ID.
+     * Generates a signed JWT for the authenticated user.
      *
-     * @param userId the user's UUID
-     * @param email  the user's email (stored as subject)
-     * @return signed JWT string
+     * <p>The token includes enough identity claims for the frontend to render the
+     * signed-in teacher consistently after login/register without a separate
+     * profile fetch.
      */
-    public String generateToken(UUID userId, String email) {
+    public String generateToken(User user) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + jwtProperties.getExpirationSeconds() * 1000L);
 
-        return Jwts.builder()
-                .subject(email)
-                .claim("userId", userId.toString())
+        var builder = Jwts.builder()
+                .subject(user.getEmail())
                 .issuer(jwtProperties.getIssuer())
                 .issuedAt(now)
-                .expiration(expiry)
-                .signWith(getSigningKey())
-                .compact();
+                .expiration(expiry);
+
+        UUID userId = user.getId();
+        if (userId != null) {
+            builder.claim("userId", userId.toString());
+        }
+
+        if (user.getFirstName() != null && !user.getFirstName().isBlank()) {
+            builder.claim("firstName", user.getFirstName());
+        }
+
+        if (user.getLastName() != null && !user.getLastName().isBlank()) {
+            builder.claim("lastName", user.getLastName());
+        }
+
+        if (user.getRole() != null) {
+            builder.claim("role", user.getRole().name());
+        }
+
+        return builder.signWith(getSigningKey()).compact();
     }
 
     /**

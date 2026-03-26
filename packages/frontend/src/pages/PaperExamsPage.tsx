@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { fetchExamTemplates } from '../features/exams/examsApi'
+import { parseExamQuestions } from '../features/exams/examQuestions'
 import type { ExamTemplateListItem } from '../features/exams/examsTypes'
 import type { SavedScore } from '../features/grading/GradingResultCard'
 import GradingResultCard from '../features/grading/GradingResultCard'
 import GradingResultsList from '../features/grading/GradingResultsList'
 import type { GradedStudentRecord } from '../features/grading/GradingResultsList'
 import { useGrading } from '../features/grading/useGrading'
+import { fetchAnswerRubrics } from '../features/rubrics/rubricsApi'
 import {
   fetchStudents,
   getStudentsLoadErrorDetails,
@@ -85,6 +87,7 @@ function GradePanel({
   studentsRetryable,
   onRetryStudents,
   gradedStudents,
+  rubricSetupPath,
   onBack,
   onSaveGrades,
 }: {
@@ -95,6 +98,7 @@ function GradePanel({
   studentsRetryable: boolean
   onRetryStudents: () => void
   gradedStudents: GradedStudentRecord[]
+  rubricSetupPath: string
   onBack: () => void
   onSaveGrades: (record: GradedStudentRecord) => void
 }) {
@@ -111,6 +115,8 @@ function GradePanel({
     () => new Set(gradedStudents.map((gradedStudent) => gradedStudent.studentId)),
     [gradedStudents],
   )
+  const showRubricRecoveryLink =
+    gradingState.phase === 'error' && gradingState.message.toLowerCase().includes('rubric')
   const ungradedStudents = useMemo(
     () => students.filter((student) => !gradedStudentIds.has(student.id)),
     [students, gradedStudentIds],
@@ -203,7 +209,7 @@ function GradePanel({
         </div>
       )}
 
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-display font-bold text-lg" style={{ color: 'var(--text-primary)' }}>
             Grade Paper Exam
@@ -212,19 +218,32 @@ function GradePanel({
             {exam.title}
           </p>
         </div>
-        <button
-          onClick={onBack}
-          className="px-3 py-1.5 rounded-lg text-sm font-display font-medium transition-colors"
-          style={{
-            border: '1px solid var(--border)',
-            color: 'var(--text-secondary)',
-            background: 'transparent',
-          }}
-          onMouseEnter={(event) => ((event.currentTarget as HTMLElement).style.background = 'rgba(120, 180, 220, 0.06)')}
-          onMouseLeave={(event) => ((event.currentTarget as HTMLElement).style.background = 'transparent')}
-        >
-          ← Back to Exams
-        </button>
+        <div className="flex flex-wrap justify-end gap-3">
+          <Link
+            to={rubricSetupPath}
+            className="px-3 py-1.5 rounded-lg text-sm font-display font-medium transition-colors"
+            style={{
+              border: '1px solid rgba(232, 164, 40, 0.35)',
+              color: 'var(--accent-gold)',
+              background: 'transparent',
+            }}
+          >
+            Set Up Rubric
+          </Link>
+          <button
+            onClick={onBack}
+            className="px-3 py-1.5 rounded-lg text-sm font-display font-medium transition-colors"
+            style={{
+              border: '1px solid var(--border)',
+              color: 'var(--text-secondary)',
+              background: 'transparent',
+            }}
+            onMouseEnter={(event) => ((event.currentTarget as HTMLElement).style.background = 'rgba(120, 180, 220, 0.06)')}
+            onMouseLeave={(event) => ((event.currentTarget as HTMLElement).style.background = 'transparent')}
+          >
+            ← Back to Exams
+          </button>
+        </div>
       </div>
 
       <div
@@ -390,6 +409,11 @@ function GradePanel({
               >
                 Retry grading
               </button>
+              {showRubricRecoveryLink && (
+                <Link to={rubricSetupPath} className="block text-xs underline" style={{ color: 'var(--accent-gold)' }}>
+                  Open rubric setup
+                </Link>
+              )}
             </div>
           )}
         </div>
@@ -425,11 +449,31 @@ export default function PaperExamsPage() {
   const [studentsLoading, setStudentsLoading] = useState(true)
   const [studentsError, setStudentsError] = useState<string | null>(null)
   const [studentsRetryable, setStudentsRetryable] = useState(true)
+  const [rubricsLoading, setRubricsLoading] = useState(false)
+  const [rubricsError, setRubricsError] = useState<string | null>(null)
+  const [rubricQuestionNumbers, setRubricQuestionNumbers] = useState<number[]>([])
 
   const gradingExam = useMemo(
     () => (urlExamId ? exams.find((exam) => exam.id === urlExamId) ?? null : null),
     [exams, urlExamId],
   )
+  const rubricSetupPath = gradingExam
+    ? `/exams/${encodeURIComponent(gradingExam.id)}/rubrics`
+    : '/exams'
+  const requiredRubricCount = useMemo(() => {
+    if (!gradingExam) {
+      return 0
+    }
+
+    const parsedQuestions = parseExamQuestions(gradingExam.questionsJson)
+    return parsedQuestions.length > 0 ? parsedQuestions.length : gradingExam.questionCount
+  }, [gradingExam])
+  const configuredRubricCount = rubricQuestionNumbers.length
+  const rubricsReady = gradingExam
+    ? requiredRubricCount > 0
+      ? configuredRubricCount >= requiredRubricCount
+      : configuredRubricCount > 0
+    : false
 
   function handleSaveGrades(record: GradedStudentRecord) {
     setGradedStudents((previousRecords) => {
@@ -471,10 +515,36 @@ export default function PaperExamsPage() {
     }
   }, [])
 
+  const loadRubrics = useCallback(async () => {
+    if (!gradingExam) {
+      setRubricsLoading(false)
+      setRubricsError(null)
+      setRubricQuestionNumbers([])
+      return
+    }
+
+    setRubricsLoading(true)
+    setRubricsError(null)
+
+    try {
+      const loadedRubrics = await fetchAnswerRubrics(gradingExam.id)
+      setRubricQuestionNumbers([...new Set(loadedRubrics.map((rubric) => rubric.questionNumber))].sort((left, right) => left - right))
+    } catch (error) {
+      setRubricsError(error instanceof Error ? error.message : 'Failed to load answer rubrics.')
+      setRubricQuestionNumbers([])
+    } finally {
+      setRubricsLoading(false)
+    }
+  }, [gradingExam])
+
   useEffect(() => {
     void loadExams()
     void loadStudents()
   }, [loadExams, loadStudents])
+
+  useEffect(() => {
+    void loadRubrics()
+  }, [loadRubrics])
 
   return (
     <div style={{ padding: '40px', maxWidth: '860px' }}>
@@ -528,17 +598,76 @@ export default function PaperExamsPage() {
       )}
 
       {gradingExam ? (
-        <GradePanel
-          exam={gradingExam}
-          students={students}
-          studentsLoading={studentsLoading}
-          studentsError={studentsError}
-          studentsRetryable={studentsRetryable}
-          onRetryStudents={loadStudents}
-          gradedStudents={gradedStudents}
-          onBack={() => navigate('/exams')}
-          onSaveGrades={handleSaveGrades}
-        />
+        rubricsLoading ? (
+          <div
+            className="rounded-xl p-6 font-body text-sm"
+            role="status"
+            aria-live="polite"
+            style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+          >
+            Checking rubric setup…
+          </div>
+        ) : rubricsError ? (
+          <div
+            className="rounded-xl p-6 space-y-2"
+            role="alert"
+            style={{ background: 'rgba(232, 69, 90, 0.08)', border: '1px solid rgba(232, 69, 90, 0.25)' }}
+          >
+            <p className="font-display font-semibold text-sm" style={{ color: 'var(--accent-crimson)' }}>
+              Failed to load rubric setup
+            </p>
+            <p className="font-body text-xs" style={{ color: 'var(--text-secondary)' }}>
+              {rubricsError}
+            </p>
+            <button onClick={() => void loadRubrics()} className="text-xs underline" style={{ color: 'var(--accent-crimson)' }}>
+              Retry loading rubrics
+            </button>
+          </div>
+        ) : !rubricsReady ? (
+          <div
+            className="rounded-xl p-6 space-y-4"
+            style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+          >
+            <div>
+              <p className="font-display font-semibold text-base" style={{ color: 'var(--text-primary)' }}>
+                AI grading is blocked until the rubric is complete
+              </p>
+              <p className="font-body text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                This exam currently has rubric coverage for {configuredRubricCount} of {requiredRubricCount || 1} questions. Add the missing expected answers before uploading student work.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to={rubricSetupPath}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-display font-semibold text-sm transition-colors"
+                style={{ background: 'var(--accent-gold)', color: '#06101e' }}
+              >
+                Set Up Rubric
+              </Link>
+              <button
+                type="button"
+                onClick={() => navigate('/exams')}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-display font-semibold text-sm transition-colors"
+                style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+              >
+                Back to Exams
+              </button>
+            </div>
+          </div>
+        ) : (
+          <GradePanel
+            exam={gradingExam}
+            students={students}
+            studentsLoading={studentsLoading}
+            studentsError={studentsError}
+            studentsRetryable={studentsRetryable}
+            onRetryStudents={loadStudents}
+            gradedStudents={gradedStudents}
+            rubricSetupPath={rubricSetupPath}
+            onBack={() => navigate('/exams')}
+            onSaveGrades={handleSaveGrades}
+          />
+        )
       ) : examsLoading ? (
         <div
           className="rounded-xl p-6 font-body text-sm"

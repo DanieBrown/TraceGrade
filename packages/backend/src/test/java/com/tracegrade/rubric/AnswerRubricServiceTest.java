@@ -3,6 +3,7 @@ package com.tracegrade.rubric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockMultipartFile;
 
 import com.tracegrade.domain.model.AnswerRubric;
 import com.tracegrade.domain.model.ExamTemplate;
@@ -26,13 +28,17 @@ import com.tracegrade.domain.repository.ExamTemplateRepository;
 import com.tracegrade.dto.request.CreateAnswerRubricRequest;
 import com.tracegrade.dto.request.UpdateAnswerRubricRequest;
 import com.tracegrade.dto.response.AnswerRubricResponse;
+import com.tracegrade.dto.response.RubricImageUploadResponse;
 import com.tracegrade.exception.ResourceNotFoundException;
+import com.tracegrade.storage.StorageService;
+import com.tracegrade.storage.StorageType;
 
 @SuppressWarnings("null") // Mockito thenReturn vs @NonNull JpaRepository.save() return type
 class AnswerRubricServiceTest {
 
     private AnswerRubricRepository rubricRepository;
     private ExamTemplateRepository examTemplateRepository;
+    private StorageService storageService;
     private AnswerRubricService service;
 
     private static final UUID TEMPLATE_ID = UUID.randomUUID();
@@ -42,8 +48,54 @@ class AnswerRubricServiceTest {
     void setUp() {
         rubricRepository = mock(AnswerRubricRepository.class);
         examTemplateRepository = mock(ExamTemplateRepository.class);
-        service = new AnswerRubricService(rubricRepository, examTemplateRepository);
+        storageService = mock(StorageService.class);
+        service = new AnswerRubricService(rubricRepository, examTemplateRepository, storageService);
     }
+
+        @Nested
+        @DisplayName("Upload rubric image")
+        class UploadImageTests {
+
+        @Test
+        @DisplayName("Should upload handwritten rubric image and return a public URL")
+        void uploadRubricImageSuccess() {
+            MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "teacher-answer.jpg",
+                "image/jpeg",
+                "image-bytes".getBytes());
+
+            when(examTemplateRepository.existsById(TEMPLATE_ID)).thenReturn(true);
+            when(storageService.upload(eq(StorageType.RUBRIC_IMAGE), eq("teacher-answer.jpg"), any(), eq("image/jpeg")))
+                .thenReturn("rubrics/teacher-answer.jpg");
+            when(storageService.getPublicUrl("rubrics/teacher-answer.jpg"))
+                .thenReturn("https://cdn.example.com/rubrics/teacher-answer.jpg");
+
+            RubricImageUploadResponse response = service.uploadRubricImage(TEMPLATE_ID, file);
+
+            assertThat(response.getFileName()).isEqualTo("teacher-answer.jpg");
+            assertThat(response.getFileUrl()).isEqualTo("https://cdn.example.com/rubrics/teacher-answer.jpg");
+            assertThat(response.getUploadedAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Should reject rubric image uploads when the exam template does not exist")
+        void uploadRubricImageMissingTemplate() {
+            MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "teacher-answer.jpg",
+                "image/jpeg",
+                "image-bytes".getBytes());
+
+            when(examTemplateRepository.existsById(TEMPLATE_ID)).thenReturn(false);
+
+            assertThatThrownBy(() -> service.uploadRubricImage(TEMPLATE_ID, file))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("ExamTemplate");
+
+            verify(storageService, never()).upload(any(), any(), any(), any());
+        }
+        }
 
     // -------------------------------------------------------------------------
     // Helpers
@@ -314,6 +366,27 @@ class AnswerRubricServiceTest {
             assertThat(response.getAnswerText()).isEqualTo("Original");
             assertThat(response.getGradingNotes()).isEqualTo("Original notes");
             assertThat(response.getQuestionNumber()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("Should clear the rubric image when update provides a blank value")
+        void updateClearsBlankRubricImage() {
+            ExamTemplate template = buildTemplate();
+            AnswerRubric rubric = buildRubric(template, 1);
+            rubric.setAnswerImageUrl("https://cdn.example.com/rubrics/q1.png");
+
+            when(examTemplateRepository.existsById(TEMPLATE_ID)).thenReturn(true);
+            when(rubricRepository.findById(RUBRIC_ID)).thenReturn(Optional.of(rubric));
+            when(rubricRepository.save(rubric)).thenReturn(rubric);
+
+            UpdateAnswerRubricRequest request = UpdateAnswerRubricRequest.builder()
+                    .answerImageUrl("   ")
+                    .build();
+
+            AnswerRubricResponse response = service.update(TEMPLATE_ID, RUBRIC_ID, request);
+
+            assertThat(response.getAnswerImageUrl()).isNull();
+            verify(rubricRepository).save(rubric);
         }
 
         @Test

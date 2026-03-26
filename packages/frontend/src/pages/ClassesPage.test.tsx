@@ -3,6 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ClassListItem } from '../features/classes/classesTypes'
 import ClassesPage from './ClassesPage'
 
+const mockNavigate = vi.hoisted(() => vi.fn())
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom')
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
 const fetchClassesMock = vi.fn()
 const createClassMock = vi.fn()
 const updateClassMock = vi.fn()
@@ -112,7 +119,21 @@ describe('ClassesPage', () => {
     expect(screen.getByRole('button', { name: 'Batch grade Biology 101' })).toBeInTheDocument()
   })
 
-  it('blocks Batch Grade entry and shows guidance when assignment context is missing', async () => {
+  it('opens Batch Grade route from the class card when assignment context is present', async () => {
+    fetchClassesMock.mockResolvedValueOnce([BASE_CLASS])
+
+    render(<ClassesPage />)
+
+    expect(await screen.findByText('Biology 101')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Batch grade Biology 101' }))
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      '/classes/class-1/batch-grading?className=Biology+101&assignmentId=123e4567-e89b-12d3-a456-426614174000',
+    )
+  })
+
+  it('opens Batch Grade route and lets the workflow page handle missing assignment context', async () => {
     fetchClassesMock.mockResolvedValueOnce([{ ...BASE_CLASS, assignmentId: null }])
 
     render(<ClassesPage />)
@@ -121,14 +142,10 @@ describe('ClassesPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Batch grade Biology 101' }))
 
-    expect(
-      await screen.findByText(
-        'Batch grading requires valid assignment context. Open this class from an assignment workflow or use a Batch Grading link with ?assignmentId=<uuid>.',
-      ),
-    ).toBeInTheDocument()
+    expect(mockNavigate).toHaveBeenCalledWith('/classes/class-1/batch-grading?className=Biology+101')
   })
 
-  it('blocks Batch Grade entry and shows guidance when assignment context is not a UUID', async () => {
+  it('opens Batch Grade route and preserves malformed assignment context for route-level guidance', async () => {
     fetchClassesMock.mockResolvedValueOnce([{ ...BASE_CLASS, assignmentId: 'assignment-not-a-uuid' }])
 
     render(<ClassesPage />)
@@ -137,11 +154,9 @@ describe('ClassesPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Batch grade Biology 101' }))
 
-    expect(
-      await screen.findByText(
-        'Batch grading requires valid assignment context. Open this class from an assignment workflow or use a Batch Grading link with ?assignmentId=<uuid>.',
-      ),
-    ).toBeInTheDocument()
+    expect(mockNavigate).toHaveBeenCalledWith(
+      '/classes/class-1/batch-grading?className=Biology+101&assignmentId=assignment-not-a-uuid',
+    )
   })
 
   it('creates a class from New Class flow and prepends it to list', async () => {

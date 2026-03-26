@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { logout } from '../../features/auth/authApi'
+import { getAuthenticatedUser, logout } from '../../features/auth/authApi'
 
 // ── Inline SVG icons ──────────────────────────────────────────────────────────
 
@@ -88,6 +88,28 @@ const NAV_LINKS = [
 
 export default function TopNav() {
   const navigate = useNavigate()
+  const authenticatedUser = getAuthenticatedUser()
+  const displayName =
+    [authenticatedUser?.firstName, authenticatedUser?.lastName].filter(Boolean).join(' ').trim() ||
+    authenticatedUser?.email?.split('@')[0] ||
+    (authenticatedUser?.role === 'ADMIN'
+      ? 'Admin'
+      : authenticatedUser?.role === 'COUNSELOR'
+        ? 'Counselor'
+        : 'Teacher')
+  const displayEmail = authenticatedUser?.email ?? 'teacher@school.edu'
+  const avatarSource =
+    [authenticatedUser?.firstName, authenticatedUser?.lastName].filter(Boolean).join(' ').trim() ||
+    authenticatedUser?.email ||
+    displayName
+  const avatarInitials =
+    avatarSource
+      .split(/[\s@._-]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((segment) => segment[0]?.toUpperCase() ?? '')
+      .join('') || 'TG'
+
   return (
     <aside
       className="bg-grid flex-shrink-0 flex flex-col"
@@ -224,7 +246,7 @@ export default function TopNav() {
               fontSize: '12px',
             }}
           >
-            AD
+            {avatarInitials}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p
@@ -238,13 +260,13 @@ export default function TopNav() {
                 textOverflow: 'ellipsis',
               }}
             >
-              Admin
+              {displayName}
             </p>
             <p
               className="font-mono"
               style={{ fontSize: '10px', color: 'var(--text-muted)' }}
             >
-              admin@school.edu
+              {displayEmail}
             </p>
           </div>
           <button

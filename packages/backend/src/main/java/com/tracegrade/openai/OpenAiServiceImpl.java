@@ -66,10 +66,15 @@ public class OpenAiServiceImpl implements OpenAiService {
     public GradingResponse gradeSubmission(GradingRequest request) {
         log.info("Grading submission: questionNumber={}", request.getQuestionNumber());
 
-        List<Object> userContent = List.of(
-                VisionMessageContent.text(buildGradingUserPrompt(request)),
-                VisionMessageContent.imageUrl(request.getSubmissionImageUrl())
-        );
+        java.util.ArrayList<Object> userContent = new java.util.ArrayList<>();
+        userContent.add(VisionMessageContent.text(buildGradingUserPrompt(request)));
+        userContent.add(VisionMessageContent.imageUrl(request.getSubmissionImageUrl()));
+
+        if (request.getExpectedAnswerImageUrl() != null && !request.getExpectedAnswerImageUrl().isBlank()) {
+            userContent.add(VisionMessageContent.text(
+                "A teacher-provided model answer image is attached next. Use it as rubric context when comparing against the student's handwritten answer."));
+            userContent.add(VisionMessageContent.imageUrl(request.getExpectedAnswerImageUrl()));
+        }
 
         ChatCompletionRequest body = new ChatCompletionRequest(
                 properties.getVisionModel(),
@@ -166,6 +171,7 @@ public class OpenAiServiceImpl implements OpenAiService {
                 """
                 Grade the handwritten answer in the image for question %d.
                 Expected answer: %s
+                Teacher model answer image attached: %s
                 Acceptable variations: %s
                 Grading notes: %s
                 Points available: %s
@@ -173,6 +179,7 @@ public class OpenAiServiceImpl implements OpenAiService {
                 """,
                 req.getQuestionNumber(),
                 req.getExpectedAnswer(),
+                req.getExpectedAnswerImageUrl() != null && !req.getExpectedAnswerImageUrl().isBlank() ? "yes" : "no",
                 req.getAcceptableVariations() != null ? req.getAcceptableVariations() : "none specified",
                 req.getGradingNotes() != null ? req.getGradingNotes() : "none",
                 req.getPointsAvailable());

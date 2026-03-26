@@ -10,7 +10,9 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tracegrade.exception.ResourceNotFoundException;
 import com.tracegrade.grading.GradingService;
+import com.tracegrade.grading.RubricSetupRequiredException;
 import com.tracegrade.monitoring.GradingMetricsService;
 
 import lombok.RequiredArgsConstructor;
@@ -101,6 +103,10 @@ public class GradingWorker {
             gradingService.grade(submissionId);
             deleteMessage(message.receiptHandle());
             log.info("Grading complete [submissionId={}]", submissionId);
+        } catch (RubricSetupRequiredException | ResourceNotFoundException e) {
+            log.warn("Grading job is not retryable [submissionId={}, messageId={}]: {}",
+                    submissionId, message.messageId(), e.getMessage());
+            deleteMessage(message.receiptHandle());
         } catch (Exception e) {
             log.error("Grading failed [submissionId={}, messageId={}] — message will be retried",
                     submissionId, message.messageId(), e);

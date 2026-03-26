@@ -68,6 +68,9 @@ describe('GradesPage', () => {
 
     expect(await screen.findByText('No classes found')).toBeInTheDocument()
     expect(screen.getByText('There are no classes available for gradebook viewing yet.')).toBeInTheDocument()
+    expect(
+      screen.getByText('This page summarizes published class assignments and finalized exam grades. Homework items created on the Homework page do not create gradebook columns.'),
+    ).toBeInTheDocument()
     expect(fetchClassGradebookMock).not.toHaveBeenCalled()
   })
 
@@ -118,6 +121,9 @@ describe('GradesPage', () => {
     )
 
     expect(await screen.findByRole('table', { name: 'Class gradebook' })).toBeInTheDocument()
+    expect(
+      screen.getByText('This gradebook is read-only. Homework entries from the Homework page do not create columns here.'),
+    ).toBeInTheDocument()
     expect(screen.getByText('Alex Kim')).toBeInTheDocument()
     expect(screen.getByText('18')).toBeInTheDocument()
     expect(screen.getByLabelText('No grade')).toBeInTheDocument()

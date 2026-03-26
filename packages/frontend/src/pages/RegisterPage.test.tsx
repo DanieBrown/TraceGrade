@@ -101,6 +101,13 @@ describe('RegisterPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create Account' }))
 
     await waitFor(() => {
+      expect(registerMock).toHaveBeenCalledWith({
+        firstName: 'New',
+        lastName: 'User',
+        email: 'new@example.com',
+        password: 'securepassword',
+        role: 'TEACHER',
+      })
       expect(localStorage.getItem('auth_token')).toBe('jwt-register-token')
       expect(mockNavigate).toHaveBeenCalledWith('/')
     })

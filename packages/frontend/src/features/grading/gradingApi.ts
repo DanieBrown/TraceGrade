@@ -1,3 +1,4 @@
+import axios from 'axios'
 import api from '../../lib/api'
 import type { ApiResponse } from '../submissions/submissionApi'
 
@@ -44,6 +45,52 @@ interface GradingEnqueuedResponse {
 const POLL_INTERVAL_MS = 2_000
 const POLL_TIMEOUT_MS = 60_000
 
+function isTransientGradingPollError(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 404
+}
+
+function getErrorMessage(error: unknown): string | null {
+  if (!axios.isAxiosError(error)) {
+    return error instanceof Error && error.message.trim() ? error.message : null
+  }
+
+  const responseData = error.response?.data
+  if (responseData && typeof responseData === 'object') {
+    const message =
+      ('message' in responseData && typeof responseData.message === 'string' && responseData.message.trim()) ||
+      ('error' in responseData &&
+        typeof responseData.error === 'object' &&
+        responseData.error !== null &&
+        'message' in responseData.error &&
+        typeof responseData.error.message === 'string' &&
+        responseData.error.message.trim())
+
+    if (message) {
+      return message
+    }
+  }
+
+  return error.message.trim() ? error.message : null
+}
+
+function toGradingError(error: unknown): Error {
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status
+
+    if (status === 429) {
+      return new Error('AI grading is temporarily rate limited. Please wait a moment and try again.')
+    }
+
+    if (!error.response) {
+      return new Error('Could not reach the grading service. Check your connection and try again.')
+    }
+
+    return new Error(getErrorMessage(error) ?? 'Grading failed. Please try again.')
+  }
+
+  return error instanceof Error ? error : new Error('Grading failed. Please try again.')
+}
+
 /**
  * Enqueue a submission for AI grading, then poll until the full
  * grading result is ready.
@@ -73,12 +120,18 @@ export async function triggerGrading(submissionId: string): Promise<GradingResul
     await sleep(POLL_INTERVAL_MS)
     try {
       return await fetchGradingResult(submissionId)
-    } catch {
-      // 404 means the worker hasn't stored a result yet — keep polling.
+    } catch (error) {
+      if (isTransientGradingPollError(error)) {
+        continue
+      }
+
+      throw toGradingError(error)
     }
   }
 
-  throw new Error('Grading is taking longer than expected. Please check back shortly.')
+  throw new Error(
+    'AI grading did not finish in time. If you are running locally, verify the backend, LocalStack SQS queue, and OpenAI configuration before retrying.',
+  )
 }
 
 export function fetchGradingResult(submissionId: string): Promise<GradingResultResponse> {

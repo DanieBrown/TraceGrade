@@ -171,6 +171,10 @@ public class S3StorageService implements StorageService {
     @Override
     public String getPublicUrl(String key) {
         StorageProperties.S3 s3Props = properties.getS3();
+        String publicEndpoint = s3Props.getPublicEndpoint();
+        if (publicEndpoint != null && !publicEndpoint.isBlank()) {
+            return publicEndpoint + "/" + s3Props.getBucketName() + "/" + key;
+        }
         if (s3Props.getEndpoint() != null && !s3Props.getEndpoint().isBlank()) {
             return s3Props.getEndpoint() + "/" + s3Props.getBucketName() + "/" + key;
         }

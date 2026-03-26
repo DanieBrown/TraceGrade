@@ -156,16 +156,24 @@ All services should show "healthy" status.
 
 1. **Explore the API**: Visit http://localhost:8080/actuator/health
 2. **View the Frontend**: Open http://localhost:5173
-3. **Run Batch Grading (FEAT-047)**:
+3. **Run the Full Teacher Scenario**:
+	 - Follow [DOCKER.md](DOCKER.md#full-teacher-scenario-rubric-to-grading) for the end-to-end teacher flow:
+	   - add or choose a student
+	   - complete rubric setup for each exam question
+	   - upload the student's handwritten submission
+	   - run AI grading and save the grade
+	 - If you want the grading step to complete locally, set `OPENAI_API_KEY` in `.env` before starting the stack
+4. **Run Batch Grading (FEAT-047)**:
 	 - Open `Classes`
 	 - Select `Batch Grade` on a class card
+	 - If the class is not linked to a valid assignment yet, the workflow still opens and explains that `assignmentId` context is required before submitting
 	 - Ensure route includes `assignmentId` query param:
 		 - `/classes/<classId>/batch-grading?className=<className>&assignmentId=<assignment-uuid>`
 	 - Complete flow: Upload → Map Students → Processing → Summary
 	 - Use `Retry Failed` to resubmit failed rows only
 	 - Refresh during processing to verify session restore behavior
-4. **Read the Docs**: Check out [DOCKER.md](DOCKER.md) for advanced usage
-5. **Start Developing**: The frontend has hot-reload enabled, so changes appear instantly!
+5. **Read the Docs**: Check out [DOCKER.md](DOCKER.md) for advanced usage
+6. **Start Developing**: The frontend has hot-reload enabled, so changes appear instantly!
 
 ---
 

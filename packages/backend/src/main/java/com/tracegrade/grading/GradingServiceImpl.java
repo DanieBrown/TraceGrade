@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tracegrade.domain.model.AnswerRubric;
+import com.tracegrade.domain.model.ExamTemplate;
 import com.tracegrade.domain.model.GradingResult;
 import com.tracegrade.domain.model.StudentSubmission;
 import com.tracegrade.domain.model.SubmissionStatus;
@@ -82,6 +86,7 @@ public class GradingServiceImpl implements GradingService {
         if (gradingJobPublisher != null) {
             StudentSubmission submission = submissionRepository.findById(submissionId)
                     .orElseThrow(() -> new ResourceNotFoundException("StudentSubmission", submissionId));
+            ensureSubmissionReadyForGrading(submission);
             submission.setStatus(SubmissionStatus.PENDING);
             submissionRepository.save(submission);
 
@@ -172,17 +177,7 @@ public class GradingServiceImpl implements GradingService {
         StudentSubmission submission = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new ResourceNotFoundException("StudentSubmission", submissionId));
 
-        if (submission.getExamTemplate() == null) {
-            throw new ResourceNotFoundException("ExamTemplate for submission", submissionId);
-        }
-
-        UUID templateId = submission.getExamTemplate().getId();
-        List<AnswerRubric> rubrics =
-                rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(templateId);
-
-        if (rubrics.isEmpty()) {
-            throw new ResourceNotFoundException("AnswerRubrics for ExamTemplate", templateId);
-        }
+        List<AnswerRubric> rubrics = ensureSubmissionReadyForGrading(submission);
 
         String imageUrl = extractFirstImageUrl(submission.getSubmissionImageUrls(), submissionId);
 
@@ -199,6 +194,7 @@ public class GradingServiceImpl implements GradingService {
 
             GradingRequest req = GradingRequest.builder()
                     .submissionImageUrl(imageUrl)
+                    .expectedAnswerImageUrl(rubric.getAnswerImageUrl())
                     .questionNumber(rubric.getQuestionNumber())
                     .expectedAnswer(expectedAnswer)
                     .acceptableVariations(rubric.getAcceptableVariations())
@@ -225,6 +221,98 @@ public class GradingServiceImpl implements GradingService {
 
         int processingMs = (int) (System.currentTimeMillis() - startMs);
         return aggregateAndPersist(submission, rubrics, aiResponses, processingMs);
+    }
+
+    private List<AnswerRubric> ensureSubmissionReadyForGrading(StudentSubmission submission) {
+        if (submission.getExamTemplate() == null) {
+            throw new ResourceNotFoundException("ExamTemplate for submission", submission.getId());
+        }
+
+        ExamTemplate examTemplate = submission.getExamTemplate();
+        UUID templateId = examTemplate.getId();
+        List<AnswerRubric> rubrics = rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(templateId);
+        Set<Integer> expectedQuestionNumbers = extractExpectedQuestionNumbers(examTemplate.getQuestionsJson());
+
+        if (expectedQuestionNumbers.isEmpty()) {
+            if (rubrics.isEmpty()) {
+                throw new RubricSetupRequiredException(templateId, 0, 0, List.of());
+            }
+            return rubrics;
+        }
+
+        Set<Integer> configuredQuestionNumbers = rubrics.stream()
+                .map(AnswerRubric::getQuestionNumber)
+                .collect(java.util.stream.Collectors.toSet());
+
+        List<Integer> missingQuestionNumbers = expectedQuestionNumbers.stream()
+                .filter(questionNumber -> !configuredQuestionNumbers.contains(questionNumber))
+                .toList();
+
+        if (!missingQuestionNumbers.isEmpty()) {
+            throw new RubricSetupRequiredException(
+                    templateId,
+                    expectedQuestionNumbers.size(),
+                    configuredQuestionNumbers.size(),
+                    missingQuestionNumbers);
+        }
+
+        return rubrics;
+    }
+
+    private Set<Integer> extractExpectedQuestionNumbers(String questionsJson) {
+        if (questionsJson == null || questionsJson.isBlank()) {
+            return Set.of();
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(questionsJson);
+            JsonNode questionsNode = root;
+
+            if (!root.isArray()) {
+                JsonNode nestedQuestions = root.get("questions");
+                if (nestedQuestions == null || !nestedQuestions.isArray()) {
+                    return Set.of();
+                }
+                questionsNode = nestedQuestions;
+            }
+
+            Set<Integer> questionNumbers = new LinkedHashSet<>();
+            int index = 0;
+            for (JsonNode questionNode : questionsNode) {
+                index += 1;
+                Integer questionNumber = extractQuestionNumber(questionNode);
+                questionNumbers.add(questionNumber != null && questionNumber > 0 ? questionNumber : index);
+            }
+            return questionNumbers;
+        } catch (JsonProcessingException ex) {
+            log.warn("Failed to parse questionsJson for rubric readiness check: {}", ex.getMessage());
+            return Set.of();
+        }
+    }
+
+    private Integer extractQuestionNumber(JsonNode questionNode) {
+        if (questionNode == null || questionNode.isNull()) {
+            return null;
+        }
+
+        JsonNode numberNode = questionNode.get("number");
+        if (numberNode == null || numberNode.isNull()) {
+            numberNode = questionNode.get("questionNumber");
+        }
+        if (numberNode == null || numberNode.isNull()) {
+            return null;
+        }
+        if (numberNode.isInt()) {
+            return numberNode.intValue();
+        }
+        if (numberNode.isTextual()) {
+            try {
+                return Integer.parseInt(numberNode.asText().trim());
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
     }
 
     private void persistFailedResult(StudentSubmission submission, int processingMs) {

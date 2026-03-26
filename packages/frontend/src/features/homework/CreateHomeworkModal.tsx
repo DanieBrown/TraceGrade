@@ -155,9 +155,9 @@ export default function CreateHomeworkModal({ onClose, onHomeworkCreated }: Crea
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label htmlFor="hw-class" className="font-display text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                Class
+                Class Label
                 <span className="ml-1 font-body" style={{ color: 'var(--text-muted)', fontWeight: 400 }}>
-                  (optional)
+                  (display only)
                 </span>
               </label>
               <input
@@ -174,6 +174,9 @@ export default function CreateHomeworkModal({ onClose, onHomeworkCreated }: Crea
                   color: 'var(--text-primary)',
                 }}
               />
+              <p className="font-body text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                This label helps organize homework on this page, but it does not link the item into Gradebook.
+              </p>
             </div>
             <div className="space-y-1.5">
               <label htmlFor="hw-points" className="font-display text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>

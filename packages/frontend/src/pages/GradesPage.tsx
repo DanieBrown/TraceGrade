@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import ClassContextHeader from '../features/grades/ClassContextHeader'
 import GradebookTable from '../features/grades/GradebookTable'
 import { EmptyGradesState, ErrorGradesState, LoadingGradesState } from '../features/grades/GradesStates'
@@ -151,6 +152,27 @@ export default function GradesPage() {
 
   return (
     <main className="flex-1 overflow-y-auto bg-base" style={{ padding: '40px', maxWidth: '1200px' }}>
+      <section
+        className="mb-6 rounded-xl border p-4"
+        style={{
+          background: 'rgba(91, 197, 245, 0.06)',
+          borderColor: 'rgba(91, 197, 245, 0.18)',
+        }}
+      >
+        <p className="font-display text-sm font-semibold text-pri">Read-only gradebook summary</p>
+        <p className="mt-1 font-body text-sm text-sec">
+          This page summarizes published class assignments and finalized exam grades. Homework items created on the Homework page do not create gradebook columns.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-3">
+          <Link to="/homework" className="font-display text-sm font-semibold underline" style={{ color: 'var(--accent-teal)' }}>
+            View Homework Planner
+          </Link>
+          <Link to="/exams" className="font-display text-sm font-semibold underline" style={{ color: 'var(--accent-gold)' }}>
+            Create Gradeable Exam
+          </Link>
+        </div>
+      </section>
+
       <ClassContextHeader
         classOptions={classOptions}
         selectedClassId={selectedClassId}

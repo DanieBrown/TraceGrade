@@ -3,6 +3,7 @@ package com.tracegrade.submission;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -19,11 +20,14 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 
+import com.tracegrade.domain.model.ExamTemplate;
 import com.tracegrade.domain.model.StudentSubmission;
 import com.tracegrade.domain.model.SubmissionStatus;
+import com.tracegrade.domain.repository.ExamTemplateRepository;
 import com.tracegrade.domain.repository.StudentSubmissionRepository;
 import com.tracegrade.dto.response.BatchUploadResponse;
 import com.tracegrade.dto.response.FileUploadResponse;
+import com.tracegrade.exception.ResourceNotFoundException;
 import com.tracegrade.exception.StorageException;
 import com.tracegrade.imageprocessing.ImagePreprocessingService;
 import com.tracegrade.imageprocessing.PreprocessedImage;
@@ -34,6 +38,7 @@ import com.tracegrade.storage.StorageType;
 class SubmissionUploadServiceTest {
 
     private StorageService storageService;
+    private ExamTemplateRepository examTemplateRepository;
     private StudentSubmissionRepository submissionRepository;
     private ImagePreprocessingService preprocessingService;
     private SubmissionUploadService service;
@@ -46,9 +51,12 @@ class SubmissionUploadServiceTest {
     @BeforeEach
     void setUp() {
         storageService = mock(StorageService.class);
+        examTemplateRepository = mock(ExamTemplateRepository.class);
         submissionRepository = mock(StudentSubmissionRepository.class);
         preprocessingService = mock(ImagePreprocessingService.class);
-        service = new SubmissionUploadService(storageService, submissionRepository, preprocessingService);
+        service = new SubmissionUploadService(storageService, examTemplateRepository, submissionRepository, preprocessingService);
+        when(examTemplateRepository.findByAssignmentId(ASSIGNMENT_ID)).thenReturn(java.util.Optional.empty());
+        when(examTemplateRepository.findById(ASSIGNMENT_ID)).thenReturn(java.util.Optional.of(buildExamTemplate(ASSIGNMENT_ID, null)));
     }
 
     @Nested
@@ -83,6 +91,28 @@ class SubmissionUploadServiceTest {
             verify(storageService).upload(StorageType.SUBMISSION_IMAGE, "exam.jpg", "processed".getBytes(), "image/jpeg");
             verify(submissionRepository).save(any(StudentSubmission.class));
         }
+
+            @Test
+            @DisplayName("Should attach the resolved exam template to the persisted submission")
+            void uploadSingleAttachesExamTemplate() {
+                MockMultipartFile file = new MockMultipartFile(
+                    "file", "exam.jpg", "image/jpeg", "jpeg content".getBytes());
+
+                ExamTemplate examTemplate = buildExamTemplate(UUID.randomUUID(), ASSIGNMENT_ID);
+                when(examTemplateRepository.findByAssignmentId(ASSIGNMENT_ID)).thenReturn(java.util.Optional.of(examTemplate));
+
+                PreprocessedImage preprocessed = new PreprocessedImage("exam.jpg", "processed".getBytes(), "image/jpeg", "jpg");
+                when(preprocessingService.preprocess(eq("exam.jpg"), any(), eq("image/jpeg")))
+                    .thenReturn(List.of(preprocessed));
+                when(storageService.upload(eq(StorageType.SUBMISSION_IMAGE), eq("exam.jpg"), any(), eq("image/jpeg")))
+                    .thenReturn(STORAGE_KEY);
+                when(storageService.getPublicUrl(STORAGE_KEY)).thenReturn(FILE_URL);
+                when(submissionRepository.save(any(StudentSubmission.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+                service.uploadSingle(ASSIGNMENT_ID, STUDENT_ID, file);
+
+                verify(submissionRepository).save(argThat(submission -> examTemplate.equals(submission.getExamTemplate())));
+            }
 
         @Test
         @DisplayName("Should use 'application/octet-stream' when content type is null")
@@ -176,6 +206,18 @@ class SubmissionUploadServiceTest {
                     .isInstanceOf(StorageException.class)
                     .hasMessageContaining("disk error");
         }
+
+        @Test
+        @DisplayName("Should reject uploads that do not resolve to an exam template")
+        void uploadWithoutExamTemplateFailsFast() {
+            MockMultipartFile file = new MockMultipartFile("file", "exam.jpg", "image/jpeg", "bytes".getBytes());
+            when(examTemplateRepository.findByAssignmentId(ASSIGNMENT_ID)).thenReturn(java.util.Optional.empty());
+            when(examTemplateRepository.findById(ASSIGNMENT_ID)).thenReturn(java.util.Optional.empty());
+
+            assertThatThrownBy(() -> service.uploadSingle(ASSIGNMENT_ID, STUDENT_ID, file))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("ExamTemplate");
+        }
     }
 
     @Nested
@@ -236,11 +278,19 @@ class SubmissionUploadServiceTest {
         return StudentSubmission.builder()
                 .assignmentId(ASSIGNMENT_ID)
                 .studentId(STUDENT_ID)
+                .examTemplate(buildExamTemplate(ASSIGNMENT_ID, null))
                 .submissionImageUrls("[\"" + fileUrl + "\"]")
                 .originalFormat(format)
                 .status(SubmissionStatus.PENDING)
                 .submittedAt(java.time.Instant.now())
                 .build();
+    }
+
+    private ExamTemplate buildExamTemplate(UUID id, UUID assignmentId) {
+        ExamTemplate examTemplate = new ExamTemplate();
+        examTemplate.setId(id);
+        examTemplate.setAssignmentId(assignmentId);
+        return examTemplate;
     }
 }
 

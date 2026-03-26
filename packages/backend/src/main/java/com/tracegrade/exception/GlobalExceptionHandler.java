@@ -25,6 +25,7 @@ import com.tracegrade.dto.response.ApiResponse;
 import com.tracegrade.dto.response.FieldError;
 import com.tracegrade.imageprocessing.PreprocessingException;
 import com.tracegrade.grading.GradingFailedException;
+import com.tracegrade.grading.RubricSetupRequiredException;
 import com.tracegrade.openai.exception.OpenAiException;
 import com.tracegrade.openai.exception.OpenAiRateLimitException;
 import com.tracegrade.rubric.DuplicateQuestionNumberException;
@@ -174,6 +175,13 @@ public class GlobalExceptionHandler {
         ApiError error = ApiError.of("NOT_FOUND", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(error));
     }
+
+        @ExceptionHandler(RubricSetupRequiredException.class)
+        public ResponseEntity<ApiResponse<Void>> handleRubricSetupRequired(
+                        RubricSetupRequiredException ex) {
+                ApiError error = ApiError.of("RUBRIC_SETUP_REQUIRED", ex.getMessage());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(error));
+        }
 
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ApiResponse<Void>> handleDuplicateResource(

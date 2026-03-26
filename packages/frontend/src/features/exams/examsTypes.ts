@@ -5,6 +5,7 @@ export interface ExamTemplateListItem {
   questionCount: number
   totalPoints: number
   statusLabel: string
+  questionsJson?: string
 }
 
 export interface RawExamTemplate {
@@ -21,4 +22,5 @@ export interface RawExamTemplate {
   totalPoints?: number | string | null
   status?: string | null
   label?: string | null
+  questionsJson?: string | null
 }

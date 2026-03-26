@@ -20,6 +20,15 @@ function toStringOrDefault(value: unknown, fallback: string): string {
   return normalized.length > 0 ? normalized : fallback
 }
 
+function toOptionalTrimmedString(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const normalized = value.trim()
+  return normalized.length > 0 ? normalized : undefined
+}
+
 function toFiniteNonNegativeNumber(value: unknown, fallback = 0): number {
   if (typeof value === 'number') {
     return Number.isFinite(value) && value >= 0 ? value : fallback
@@ -109,6 +118,7 @@ export function toExamTemplateListItem(raw: unknown): ExamTemplateListItem | nul
     rawTemplate.status ?? rawTemplate.label,
     DEFAULT_STATUS_LABEL,
   )
+  const questionsJson = toOptionalTrimmedString(rawTemplate.questionsJson)
 
   return {
     id,
@@ -117,6 +127,7 @@ export function toExamTemplateListItem(raw: unknown): ExamTemplateListItem | nul
     questionCount,
     totalPoints,
     statusLabel,
+    ...(questionsJson ? { questionsJson } : {}),
   }
 }
 

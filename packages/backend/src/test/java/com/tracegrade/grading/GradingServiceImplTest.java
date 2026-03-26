@@ -231,7 +231,7 @@ class GradingServiceImplTest {
         }
 
         @Test
-        @DisplayName("Should throw ResourceNotFoundException when exam template has no rubrics")
+        @DisplayName("Should throw RubricSetupRequiredException when exam template has no rubrics")
         void throwsNotFound_whenNoRubrics() {
             ExamTemplate template = buildTemplate();
             StudentSubmission submission = buildSubmission(template);
@@ -243,8 +243,8 @@ class GradingServiceImplTest {
                     .thenReturn(List.of());
 
             assertThatThrownBy(() -> service.grade(SUBMISSION_ID))
-                    .isInstanceOf(ResourceNotFoundException.class)
-                    .hasMessageContaining("AnswerRubrics");
+                    .isInstanceOf(RubricSetupRequiredException.class)
+                    .hasMessageContaining("answer rubric");
         }
 
         @Test
@@ -683,8 +683,11 @@ class GradingServiceImplTest {
             publisherField.set(service, mockPublisher);
 
             StudentSubmission submission = buildSubmission(buildTemplate());
+                        submission.getExamTemplate().setQuestionsJson("[{\"number\":1}]");
             when(gradingResultRepository.findBySubmissionId(SUBMISSION_ID)).thenReturn(Optional.empty());
             when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
+                        when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
+                                        .thenReturn(List.of(buildRubric(submission.getExamTemplate(), 1)));
             stubSubmissionSave(submission);
 
             GradingEnqueuedResponse response = service.enqueueGrading(SUBMISSION_ID);
@@ -694,6 +697,31 @@ class GradingServiceImplTest {
             assertThat(response.getEnqueuedAt()).isNotNull();
             verify(mockPublisher).publishGradingJob(SUBMISSION_ID);
             verify(openAiService, never()).gradeSubmission(any());
+        }
+
+        @Test
+        @DisplayName("Should reject queueing when rubric setup is incomplete")
+        void sqsEnabled_incompleteRubrics_throwsRubricSetupRequired() throws Exception {
+            GradingJobPublisher mockPublisher = mock(GradingJobPublisher.class);
+            Field publisherField = GradingServiceImpl.class.getDeclaredField("gradingJobPublisher");
+            publisherField.setAccessible(true);
+            publisherField.set(service, mockPublisher);
+
+            ExamTemplate template = buildTemplate();
+            template.setQuestionsJson("[{\"number\":1},{\"number\":2}]");
+            StudentSubmission submission = buildSubmission(template);
+
+            when(gradingResultRepository.findBySubmissionId(SUBMISSION_ID)).thenReturn(Optional.empty());
+            when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
+            when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
+                    .thenReturn(List.of(buildRubric(template, 1)));
+
+            assertThatThrownBy(() -> service.enqueueGrading(SUBMISSION_ID))
+                    .isInstanceOf(RubricSetupRequiredException.class)
+                    .hasMessageContaining("all 2 questions")
+                    .hasMessageContaining("Missing rubric questions: 2");
+
+            verify(mockPublisher, never()).publishGradingJob(any());
         }
 
         @Test
@@ -736,6 +764,31 @@ class GradingServiceImplTest {
             assertThat(response.getStatus()).isEqualTo("COMPLETED");
             assertThat(response.getEnqueuedAt()).isNotNull();
             verify(openAiService).gradeSubmission(any());
+        }
+
+        @Test
+        @DisplayName("Should pass the teacher model answer image URL to the AI grading request when present")
+        void passesModelAnswerImageUrlToAiRequest() {
+            ExamTemplate template = buildTemplate();
+            StudentSubmission submission = buildSubmission(template);
+            AnswerRubric rubric = buildRubric(template, 1);
+            rubric.setAnswerImageUrl("https://cdn.example.com/rubrics/q1.jpg");
+            GradingResponse aiResp = buildAiResponse(1, 0.92, false);
+
+            when(gradingResultRepository.findBySubmissionId(SUBMISSION_ID)).thenReturn(Optional.empty());
+            when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
+            when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
+                    .thenReturn(List.of(rubric));
+            when(openAiService.gradeSubmission(any())).thenReturn(aiResp);
+            stubSubmissionSave(submission);
+            stubResultSave();
+
+            service.grade(SUBMISSION_ID);
+
+            ArgumentCaptor<GradingRequest> requestCaptor = ArgumentCaptor.forClass(GradingRequest.class);
+            verify(openAiService).gradeSubmission(requestCaptor.capture());
+            assertThat(requestCaptor.getValue().getExpectedAnswerImageUrl())
+                    .isEqualTo("https://cdn.example.com/rubrics/q1.jpg");
         }
     }
 

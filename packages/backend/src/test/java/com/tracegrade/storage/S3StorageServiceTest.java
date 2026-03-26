@@ -251,6 +251,16 @@ class S3StorageServiceTest {
             String url = service.getPublicUrl("exams/test-key");
             assertThat(url).isEqualTo("http://localhost:4566/test-bucket/exams/test-key");
         }
+
+        @Test
+        @DisplayName("Should prefer public endpoint for browser-facing URLs when configured")
+        void publicEndpointUrl() {
+            properties.getS3().setEndpoint("http://localstack:4566");
+            properties.getS3().setPublicEndpoint("http://localhost:4566");
+
+            String url = service.getPublicUrl("exams/test-key");
+            assertThat(url).isEqualTo("http://localhost:4566/test-bucket/exams/test-key");
+        }
     }
 
     @Nested

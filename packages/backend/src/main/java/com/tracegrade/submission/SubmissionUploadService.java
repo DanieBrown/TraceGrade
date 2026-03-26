@@ -11,11 +11,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.tracegrade.domain.model.ExamTemplate;
 import com.tracegrade.domain.model.StudentSubmission;
 import com.tracegrade.domain.model.SubmissionStatus;
+import com.tracegrade.domain.repository.ExamTemplateRepository;
 import com.tracegrade.domain.repository.StudentSubmissionRepository;
 import com.tracegrade.dto.response.BatchUploadResponse;
 import com.tracegrade.dto.response.FileUploadResponse;
+import com.tracegrade.exception.ResourceNotFoundException;
 import com.tracegrade.exception.StorageException;
 import com.tracegrade.imageprocessing.ImagePreprocessingService;
 import com.tracegrade.imageprocessing.PreprocessedImage;
@@ -31,11 +34,13 @@ import lombok.extern.slf4j.Slf4j;
 public class SubmissionUploadService {
 
     private final StorageService storageService;
+    private final ExamTemplateRepository examTemplateRepository;
     private final StudentSubmissionRepository submissionRepository;
     private final ImagePreprocessingService preprocessingService;
 
     @Transactional
     public FileUploadResponse uploadSingle(UUID assignmentId, UUID studentId, MultipartFile file) {
+        ExamTemplate examTemplate = resolveExamTemplate(assignmentId);
         String originalFilename = file.getOriginalFilename();
         String format = extractFormat(originalFilename);
         String contentType = file.getContentType() != null ? file.getContentType() : "application/octet-stream";
@@ -65,6 +70,7 @@ public class SubmissionUploadService {
         StudentSubmission submission = StudentSubmission.builder()
                 .assignmentId(assignmentId)
                 .studentId(studentId)
+            .examTemplate(examTemplate)
                 .submissionImageUrls(submissionImageUrls)
                 .originalFormat(format)
                 .status(SubmissionStatus.PENDING)
@@ -94,6 +100,12 @@ public class SubmissionUploadService {
                 .totalFiles(files.size())
                 .successfulUploads(results.size())
                 .build();
+    }
+
+    private ExamTemplate resolveExamTemplate(UUID assignmentId) {
+        return examTemplateRepository.findByAssignmentId(assignmentId)
+                .or(() -> examTemplateRepository.findById(assignmentId))
+                .orElseThrow(() -> new ResourceNotFoundException("ExamTemplate", assignmentId));
     }
 
     private String extractFormat(String filename) {

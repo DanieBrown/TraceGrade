@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { login, register, logout, getToken, isAuthenticated } from './authApi'
+import { login, register, logout, getAuthenticatedUser, getToken, isAuthenticated } from './authApi'
 
 // ── Mock the Axios instance ────────────────────────────────────────────────────
 
@@ -22,6 +22,13 @@ describe('authApi', () => {
   afterEach(() => {
     localStorage.clear()
   })
+
+  function createToken(payload: Record<string, unknown>): string {
+    const encode = (value: Record<string, unknown>) =>
+      window.btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+
+    return `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode(payload)}.signature`
+  }
 
   // ── login ──────────────────────────────────────────────────────────────────
 
@@ -94,6 +101,33 @@ describe('authApi', () => {
 
     it('returns null when auth_token is absent', () => {
       expect(getToken()).toBeNull()
+    })
+  })
+
+  describe('getAuthenticatedUser', () => {
+    it('extracts the authenticated teacher identity from JWT claims', () => {
+      localStorage.setItem(
+        'auth_token',
+        createToken({
+          sub: 'teacher@example.com',
+          firstName: 'Casey',
+          lastName: 'Rivera',
+          role: 'TEACHER',
+        }),
+      )
+
+      expect(getAuthenticatedUser()).toEqual({
+        email: 'teacher@example.com',
+        firstName: 'Casey',
+        lastName: 'Rivera',
+        role: 'TEACHER',
+      })
+    })
+
+    it('returns null for malformed tokens', () => {
+      localStorage.setItem('auth_token', 'not-a-jwt')
+
+      expect(getAuthenticatedUser()).toBeNull()
     })
   })
 

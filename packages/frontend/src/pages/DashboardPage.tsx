@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getAuthenticatedUser } from '../features/auth/authApi'
 import { fetchDashboardStats, isValidSchoolId, type DashboardStatsResponse } from '../features/dashboard/dashboardApi'
 import { getTeacherThreshold } from '../features/settings/settingsApi'
 
@@ -168,6 +169,15 @@ export default function DashboardPage() {
   const hour = now.getHours()
   const greeting =
     hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  const authenticatedUser = getAuthenticatedUser()
+  const displayName =
+    [authenticatedUser?.firstName, authenticatedUser?.lastName].filter(Boolean).join(' ').trim() ||
+    authenticatedUser?.email?.split('@')[0] ||
+    (authenticatedUser?.role === 'ADMIN'
+      ? 'Admin'
+      : authenticatedUser?.role === 'COUNSELOR'
+        ? 'Counselor'
+        : 'Teacher')
   const dateStr = now.toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
@@ -190,7 +200,7 @@ export default function DashboardPage() {
           className="font-display"
           style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1, marginBottom: '8px' }}
         >
-          {greeting}, Admin.
+          {greeting}, {displayName}.
         </h1>
         {loadState === 'loading' && (
           <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif' }}>

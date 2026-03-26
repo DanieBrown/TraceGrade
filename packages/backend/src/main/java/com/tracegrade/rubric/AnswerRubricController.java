@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,12 +20,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.tracegrade.dto.request.CreateAnswerRubricRequest;
 import com.tracegrade.dto.request.UpdateAnswerRubricRequest;
 import com.tracegrade.dto.response.AnswerRubricResponse;
 import com.tracegrade.dto.response.ApiResponse;
+import com.tracegrade.dto.response.RubricImageUploadResponse;
+import com.tracegrade.validation.ValidFileUpload;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -75,6 +80,26 @@ public class AnswerRubricController {
         List<AnswerRubricResponse> response = rubricService.listByExamTemplate(examTemplateId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+        @Operation(
+                        summary = "Upload a rubric reference image",
+                        description = "Uploads a teacher-provided handwritten model answer image for use in rubric setup and AI grading context."
+        )
+        @ApiResponses({
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Rubric image uploaded"),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid file upload", content = @Content),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Exam template not found", content = @Content)
+        })
+        @PostMapping(value = "/upload-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        public ResponseEntity<ApiResponse<RubricImageUploadResponse>> uploadImage(
+                        @Parameter(description = "UUID of the exam template", required = true)
+                        @PathVariable UUID examTemplateId,
+                        @Parameter(description = "Teacher handwritten model-answer image", required = true)
+                        @RequestPart("file") @ValidFileUpload MultipartFile file) {
+
+                RubricImageUploadResponse response = rubricService.uploadRubricImage(examTemplateId, file);
+                return ResponseEntity.ok(ApiResponse.success(response));
+        }
 
     @Operation(
             summary = "Get a single rubric by ID",

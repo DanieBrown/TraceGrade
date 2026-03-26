@@ -21,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.tracegrade.grading.RubricSetupRequiredException;
 import com.tracegrade.grading.GradingService;
 
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -173,6 +174,22 @@ class GradingWorkerTest {
 
             verify(sqsClient, never()).deleteMessage(any(DeleteMessageRequest.class));
         }
+
+    @Test
+    @DisplayName("deletes message when rubric setup is incomplete because retrying cannot fix it")
+    void deletesMessageOnRubricSetupRequired() throws Exception {
+        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
+            .thenReturn(ReceiveMessageResponse.builder()
+                .messages(buildMessage(SUBMISSION_ID, "receipt-rubric"))
+                .build());
+        when(gradingService.grade(SUBMISSION_ID))
+            .thenThrow(new RubricSetupRequiredException(UUID.randomUUID(), 2, 1, List.of(2)));
+
+        worker.pollAndProcess();
+
+        verify(sqsClient).deleteMessage(assertArg((DeleteMessageRequest req) ->
+            org.assertj.core.api.Assertions.assertThat(req.receiptHandle()).isEqualTo("receipt-rubric")));
+    }
 
         @Test
         @DisplayName("continues processing remaining messages after one failure")

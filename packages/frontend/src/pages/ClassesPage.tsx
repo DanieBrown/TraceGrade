@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import ArchiveClassModal from '../features/classes/ArchiveClassModal'
 import ClassFormModal from '../features/classes/ClassFormModal'
 import ClassesList from '../features/classes/ClassesList'
@@ -15,7 +16,6 @@ import {
   isClassListEmpty,
   updateClass,
 } from '../features/classes/classesApi'
-import { isValidAssignmentId } from '../features/batch-grading/domain/assignmentContext'
 import type { ClassListItem, CreateClassPayload } from '../features/classes/classesTypes'
 import EnrollmentModal from '../features/enrollments/EnrollmentModal'
 
@@ -31,6 +31,7 @@ function getMutationErrorMessage(error: unknown, fallback: string): string {
 }
 
 export default function ClassesPage() {
+  const navigate = useNavigate()
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [mutationState, setMutationState] = useState<MutationState>('idle')
   const [items, setItems] = useState<ClassListItem[]>([])
@@ -255,21 +256,16 @@ export default function ClassesPage() {
               setEnrollingClass(item)
             }}
           onBatchGrade={(item) => {
-            const assignmentId = item.assignmentId?.trim() ?? ''
-
-            if (!isValidAssignmentId(assignmentId)) {
-              setMutationError(
-                'Batch grading requires valid assignment context. Open this class from an assignment workflow or use a Batch Grading link with ?assignmentId=<uuid>.',
-              )
-              return
-            }
-
             const classId = encodeURIComponent(item.id)
             const className = encodeURIComponent(item.name)
-            const encodedAssignmentId = encodeURIComponent(assignmentId)
-            window.location.assign(
-              `/classes/${classId}/batch-grading?className=${className}&assignmentId=${encodedAssignmentId}`,
-            )
+            const assignmentId = item.assignmentId?.trim() ?? ''
+            const searchParams = new URLSearchParams({ className: item.name })
+
+            if (assignmentId) {
+              searchParams.set('assignmentId', assignmentId)
+            }
+
+            navigate(`/classes/${classId}/batch-grading?${searchParams.toString()}`)
           }}
           onArchive={(item) => {
             setMutationError('')

@@ -1,10 +1,11 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import PaperExamsPage from './PaperExamsPage'
 
 const fetchExamTemplatesMock = vi.fn()
 const fetchStudentsMock = vi.fn()
+const fetchAnswerRubricsMock = vi.fn()
 const getStudentsLoadErrorDetailsMock = vi.fn(() => ({
   message: 'There was a problem connecting to the server.',
   retryable: true,
@@ -17,6 +18,10 @@ vi.mock('../features/exams/examsApi', () => ({
 vi.mock('../features/students/studentsApi', () => ({
   fetchStudents: (...args: unknown[]) => fetchStudentsMock(...args),
   getStudentsLoadErrorDetails: (...args: unknown[]) => getStudentsLoadErrorDetailsMock(...args),
+}))
+
+vi.mock('../features/rubrics/rubricsApi', () => ({
+  fetchAnswerRubrics: (...args: unknown[]) => fetchAnswerRubricsMock(...args),
 }))
 
 vi.mock('../features/submissions/FileUpload', () => ({
@@ -52,15 +57,26 @@ describe('PaperExamsPage', () => {
     cleanup()
   })
 
-  it('renders exam templates and student dropdown from APIs without demo data', async () => {
+  function renderAtExamRoute(examId: string) {
+    return render(
+      <MemoryRouter initialEntries={[`/exams/${examId}`]}>
+        <Routes>
+          <Route path="/exams/:examId" element={<PaperExamsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+  }
+
+  it('blocks grading and links to rubric setup when rubric coverage is incomplete', async () => {
     fetchExamTemplatesMock.mockResolvedValueOnce([
       {
         id: 'template-1',
         assignmentId: 'assignment-42',
         title: 'Algebra Midterm',
-        questionCount: 12,
+        questionCount: 2,
         totalPoints: 60,
         statusLabel: 'Published',
+        questionsJson: '[{"number":1},{"number":2}]',
       },
     ])
     fetchStudentsMock.mockResolvedValueOnce([
@@ -73,37 +89,31 @@ describe('PaperExamsPage', () => {
         fullName: 'Jordan Lee',
       },
     ])
+    fetchAnswerRubricsMock.mockResolvedValueOnce([
+      {
+        id: 'rubric-1',
+        examTemplateId: 'template-1',
+        questionNumber: 1,
+      },
+    ])
 
-    render(
-      <MemoryRouter>
-        <PaperExamsPage />
-      </MemoryRouter>,
-    )
+    renderAtExamRoute('template-1')
 
-    expect(await screen.findByText('Algebra Midterm')).toBeInTheDocument()
-    expect(screen.queryByText('Exam from Uploaded Image')).not.toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: '✏ Grade' }))
-
-    await waitFor(() => {
-      expect(screen.getByRole('option', { name: 'Alice Smith' })).toBeInTheDocument()
-      expect(screen.getByRole('option', { name: 'Jordan Lee' })).toBeInTheDocument()
-    })
-
-    expect(screen.queryByRole('option', { name: 'Jack' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('option', { name: 'Sarah' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('option', { name: 'Mohammed' })).not.toBeInTheDocument()
+    expect(await screen.findByText(/rubric coverage for 1 of 2 questions/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Set Up Rubric' })).toHaveAttribute('href', '/exams/template-1/rubrics')
+    expect(screen.queryByLabelText('Select Student to Grade')).not.toBeInTheDocument()
   })
 
-  it('passes template-derived assignmentId to file upload instead of nil uuid', async () => {
+  it('passes template-derived assignmentId to file upload when rubric setup is ready', async () => {
     fetchExamTemplatesMock.mockResolvedValueOnce([
       {
         id: 'template-9',
         assignmentId: 'assignment-real-9',
         title: 'Physics Quiz',
-        questionCount: 5,
+        questionCount: 1,
         totalPoints: 25,
         statusLabel: 'Draft',
+        questionsJson: '[{"number":1}]',
       },
     ])
     fetchStudentsMock.mockResolvedValueOnce([
@@ -112,35 +122,22 @@ describe('PaperExamsPage', () => {
         fullName: 'Mia Torres',
       },
     ])
+    fetchAnswerRubricsMock.mockResolvedValueOnce([
+      {
+        id: 'rubric-9',
+        examTemplateId: 'template-9',
+        questionNumber: 1,
+      },
+    ])
 
-    render(
-      <MemoryRouter>
-        <PaperExamsPage />
-      </MemoryRouter>,
-    )
+    renderAtExamRoute('template-9')
 
-    await screen.findByText('Physics Quiz')
-    fireEvent.click(screen.getByRole('button', { name: '✏ Grade' }))
+    expect(await screen.findByText('Physics Quiz')).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Select Student to Grade'), {
       target: { value: 'student-9' },
     })
 
     expect(await screen.findByTestId('file-upload-props')).toHaveTextContent('assignmentId=assignment-real-9')
     expect(screen.getByTestId('file-upload-props')).not.toHaveTextContent('00000000-0000-0000-0000-000000000001')
-  })
-
-  it('renders exam and student empty-state guidance links', async () => {
-    fetchExamTemplatesMock.mockResolvedValueOnce([])
-    fetchStudentsMock.mockResolvedValueOnce([])
-
-    render(
-      <MemoryRouter>
-        <PaperExamsPage />
-      </MemoryRouter>,
-    )
-
-    expect(await screen.findByText('No exam templates available')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Create exam template' })).toHaveAttribute('href', '/exams')
-    expect(screen.getByRole('link', { name: 'Add students' })).toHaveAttribute('href', '/students')
   })
 })

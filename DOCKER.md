@@ -225,6 +225,7 @@ After starting frontend/backend containers, verify batch grading behavior from c
 
 1. Open `http://localhost:5173/classes`
 2. Click `Batch Grade` on a class card
+3. If the selected class has no linked assignment yet, confirm the route still opens and the page shows missing-context guidance instead of blocking on the Classes page
 3. Confirm URL has `assignmentId` query param:
    ```
    /classes/<classId>/batch-grading?className=<className>&assignmentId=<assignment-uuid>
@@ -236,6 +237,57 @@ After starting frontend/backend containers, verify batch grading behavior from c
    - Summary: pass/fail rates, average score, flagged review count
 5. Trigger mixed outcomes and confirm `Retry Failed` only resubmits failed rows
 6. Refresh during processing and confirm progress restoration from session state
+
+## Full Teacher Scenario: Rubric to Grading
+
+Use this walkthrough to validate the complete teacher-managed paper exam flow in the Docker stack.
+
+### Preconditions
+
+- Start the stack with `docker compose up -d`
+- Ensure `OPENAI_API_KEY` is present in `.env` before starting the backend; without it, rubric setup and submission upload will work, but AI grading will not complete successfully
+- Wait for `docker compose ps` to show healthy core services before opening the app
+- Use an exam template that has structured question data in `questionsJson`
+- Ensure at least one student exists in the teacher portal
+- In this scenario, the teacher uploads the student's handwritten submission from the teacher portal. There is no separate student-facing submission portal in this local workflow.
+
+### Scenario Steps
+
+1. Open `http://localhost:5173` and sign in through the teacher portal.
+2. Open `Students` and add a student with `+ Add Student` if you do not already have one to grade against.
+3. Open `Exams` and select the exam template you want to grade.
+4. Open the exam grading screen.
+5. If the grading screen blocks AI grading because rubric coverage is incomplete, click `Set Up Rubric`.
+6. On the rubric page, save one rubric per question:
+   - enter `Expected answer`, upload a teacher answer image, or both
+   - set `Points available`
+   - optionally add `Acceptable variations` and `Grading notes`
+   - click `Save Question N Rubric`
+7. Repeat until the rubric page shows full coverage for all required questions, then return to the exam grading page.
+8. In `Select Student to Grade`, choose the student.
+9. In `Upload Student's Handwritten Exam`, add a JPEG, PNG, PDF, or HEIC file containing the student's handwritten response.
+10. Click `Upload 1 file` or `Upload remaining files` and wait for the upload status to become `Done`.
+11. Click `Grade with AI`.
+12. Wait for the grading result to load.
+13. Review the outcome:
+   - if the submission is clear and the model is confident, the teacher can save the returned grade immediately
+   - if the submission is hard to read or confidence is low, the UI can show `Manual Review Required`; that still means the grading run completed, but the teacher should inspect the result before saving
+14. Click `Save Grades for <student>` to finalize the result.
+
+### Validation Checkpoints
+
+- The rubric page should allow image upload, image removal, and image replacement before or after saving.
+- Saved rubric image previews should load in the browser from `http://localhost:4566/...` when running in Docker.
+- Student submission upload should return `Done` and expose `Grade with AI`.
+- AI grading should no longer fail with rubric-setup errors once every question has a saved rubric entry.
+- A completed grading run can either return a ready-to-save score or a manual-review state, depending on model confidence and image quality.
+- Saving grades should clear the current student selection and show a success confirmation banner.
+
+### Notes for Local Validation
+
+- If rubric images do not preview in the browser, confirm the backend container includes `S3_PUBLIC_ENDPOINT=http://localhost:4566`.
+- If AI grading does not complete, inspect backend logs and confirm `OPENAI_API_KEY`, LocalStack, and SQS are all configured correctly.
+- For meaningful scoring results, use a real handwritten sample that matches the rubric instead of a placeholder image.
 
 ### Database Migrations
 

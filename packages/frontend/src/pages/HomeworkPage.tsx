@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import CreateHomeworkModal from '../features/homework/CreateHomeworkModal'
 import HomeworkList from '../features/homework/HomeworkList'
 import {
@@ -64,7 +65,7 @@ export default function HomeworkPage() {
       <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold text-pri">Homework</h1>
-          <p className="mt-1 font-body text-sm text-sec">Manage your homework assignments</p>
+          <p className="mt-1 font-body text-sm text-sec">Plan homework reminders and due dates for your classes.</p>
         </div>
         <button
           type="button"
@@ -79,6 +80,28 @@ export default function HomeworkPage() {
           + Create Homework
         </button>
       </header>
+
+      <section
+        className="mb-6 rounded-xl border p-4"
+        style={{
+          background: 'rgba(91, 197, 245, 0.06)',
+          borderColor: 'rgba(91, 197, 245, 0.18)',
+        }}
+      >
+        <p className="font-display text-sm font-semibold text-pri">Homework and Gradebook are separate</p>
+        <p className="mt-1 font-body text-sm text-sec">
+          Homework entries on this page are planning records. They do not create gradebook columns or editable grade rows.
+          Gradebook reflects published class assignments and finalized exam grades.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-3">
+          <Link to="/grades" className="font-display text-sm font-semibold underline" style={{ color: 'var(--accent-teal)' }}>
+            Open Gradebook
+          </Link>
+          <Link to="/exams" className="font-display text-sm font-semibold underline" style={{ color: 'var(--accent-gold)' }}>
+            Open Exams
+          </Link>
+        </div>
+      </section>
 
       {loadState === 'loading' && <LoadingHomeworkState />}
 

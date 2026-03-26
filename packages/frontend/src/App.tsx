@@ -3,6 +3,7 @@ import AuthedLayout from './components/layout/AuthedLayout'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import ExamRubricPage from './pages/ExamRubricPage'
 import PaperExamsPage from './pages/PaperExamsPage'
 import ManualReviewQueuePage from './pages/ManualReviewQueuePage'
 import DashboardPage from './pages/DashboardPage'
@@ -27,6 +28,7 @@ export default function App() {
           <Route path='/classes' element={<ClassesPage />} />
           <Route path='/students' element={<StudentsPage />} />
           <Route path='/exams' element={<ExamsPage />} />
+          <Route path='/exams/:examId/rubrics' element={<ExamRubricPage />} />
           <Route path='/exams/:examId' element={<PaperExamsPage />} />
           <Route path='/homework' element={<HomeworkPage />} />
           <Route path='/grades' element={<GradesPage />} />

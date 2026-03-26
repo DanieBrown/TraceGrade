@@ -115,6 +115,7 @@ services:
       S3_BUCKET_NAME: ${S3_BUCKET_NAME:-tracegrade-exams-dev}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       S3_ENDPOINT: http://localstack:4566
+      S3_PUBLIC_ENDPOINT: http://localhost:4566
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
 
