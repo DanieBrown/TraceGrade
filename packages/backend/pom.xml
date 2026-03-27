@@ -19,11 +19,11 @@
     <description>Backend API for TraceGrade - Teacher productivity and grade management platform</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <!-- Override ByteBuddy for Java 22 compatibility (NestHost fix) -->
-        <byte-buddy.version>1.14.18</byte-buddy.version>
+        <!-- Override ByteBuddy for Java 25 compatibility -->
+        <byte-buddy.version>1.15.11</byte-buddy.version>
     </properties>
 
     <dependencyManagement>
@@ -249,8 +249,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
-                    <source>21</source>
-                    <target>21</target>
+                    <source>25</source>
+                    <target>25</target>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
