@@ -116,8 +116,8 @@ class S3StorageServiceTest {
         @DisplayName("Should download file and return bytes")
         void downloadSuccessfully() {
             byte[] expected = "file data".getBytes();
-            ResponseBytes<GetObjectResponse> responseBytes = mock(ResponseBytes.class);
-            when(responseBytes.asByteArray()).thenReturn(expected);
+            ResponseBytes<GetObjectResponse> responseBytes =
+                    ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), expected);
             when(s3Client.getObjectAsBytes(any(GetObjectRequest.class))).thenReturn(responseBytes);
 
             byte[] result = service.download("exams/test-key");
