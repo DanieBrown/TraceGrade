@@ -33,67 +33,6 @@ function isEmptyDashboardStats(stats: DashboardStatsResponse): boolean {
   )
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function StatCard({
-  label,
-  value,
-  sub,
-  accent,
-  badge,
-}: {
-  label: string
-  value: string | number
-  sub: string
-  accent?: string
-  badge?: { text: string; color: string }
-}) {
-  return (
-    <div
-      className="card-glow rounded-xl p-5 flex flex-col gap-3"
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        border: '1px solid var(--border)',
-        transition: 'box-shadow 0.2s ease',
-      }}
-    >
-      <div className="flex items-start justify-between">
-        <p
-          className="font-mono"
-          style={{ fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}
-        >
-          {label}
-        </p>
-        {badge && (
-          <span
-            className="font-mono"
-            style={{
-              fontSize: '9px',
-              fontWeight: 500,
-              padding: '2px 7px',
-              borderRadius: '99px',
-              color: badge.color,
-              background: `${badge.color}18`,
-              border: `1px solid ${badge.color}35`,
-            }}
-          >
-            {badge.text}
-          </span>
-        )}
-      </div>
-      <p
-        className="font-display"
-        style={{ fontSize: '36px', fontWeight: 800, lineHeight: 1, color: accent ?? 'var(--text-primary)' }}
-      >
-        {value}
-      </p>
-      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif' }}>{sub}</p>
-    </div>
-  )
-}
-
-
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
@@ -185,328 +124,205 @@ export default function DashboardPage() {
     year: 'numeric',
   })
 
+  const metricItems = stats
+    ? [
+        {
+          label: 'Students',
+          value: `${stats.totalStudents}`,
+          detail: `${stats.classCount} active classes`,
+        },
+        {
+          label: 'Graded this week',
+          value: `${stats.gradedThisWeek}`,
+          detail: 'AI-graded submissions',
+        },
+        {
+          label: 'Pending review',
+          value: `${stats.pendingReviews}`,
+          detail: reviewThresholdLabel ? `Below ${reviewThresholdLabel} confidence` : 'Below your confidence threshold',
+        },
+        {
+          label: 'Class average',
+          value: `${stats.classAverage.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`,
+          detail: `Letter grade ${stats.letterGrade}`,
+        },
+      ]
+    : []
+
+  const actionItems = [
+    {
+      label: 'Create exam',
+      description: 'Start a new exam and move directly into grading setup.',
+      to: '/exams?quick=create',
+    },
+    {
+      label: 'Manage students',
+      description: 'Review rosters, enroll new learners, and fix records.',
+      to: '/students',
+    },
+    {
+      label: 'Open review queue',
+      description: reviewQuickActionDescription,
+      to: '/review',
+    },
+  ]
+
+  const workloadItems = [
+    {
+      label: 'Manual review queue',
+      value:
+        loadState === 'loading'
+          ? 'Loading'
+          : loadState === 'error'
+            ? 'Unavailable'
+            : `${reviewQuickActionBadge}`,
+      description:
+        loadState === 'loading'
+          ? 'Pulling the latest review workload.'
+          : reviewQuickActionDescription,
+      tone: loadState === 'error' ? 'var(--accent-crimson)' : 'var(--accent-gold)',
+    },
+    {
+      label: 'Review threshold',
+      value: reviewThresholdLabel ?? 'Default',
+      description: reviewThresholdLabel
+        ? 'Submissions under this score are queued for review.'
+        : 'Threshold will appear once settings finish loading.',
+      tone: 'var(--text-primary)',
+    },
+    {
+      label: 'Next best action',
+      value: loadState === 'done' && !isEmptyState && pendingReviews > 0 ? 'Review queue' : 'Create exam',
+      description:
+        loadState === 'done' && !isEmptyState && pendingReviews > 0
+          ? 'There are submissions waiting for a manual decision.'
+          : 'No urgent review backlog. Prepare the next assessment workflow.',
+      tone: 'var(--text-primary)',
+    },
+  ]
+
   return (
-    <div style={{ padding: '40px', maxWidth: '1100px' }}>
-
-      {/* ── Page header ── */}
-      <div style={{ marginBottom: '36px' }}>
-        <p
-          className="font-mono"
-          style={{ fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px' }}
-        >
-          {dateStr}
-        </p>
-        <h1
-          className="font-display"
-          style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1, marginBottom: '8px' }}
-        >
-          {greeting}, {displayName}.
-        </h1>
-        {loadState === 'loading' && (
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif' }}>
-            Loading live dashboard stats…
-          </p>
-        )}
-        {loadState === 'error' && (
-          <p style={{ fontSize: '14px', color: 'var(--accent-crimson)', fontFamily: 'Lora, serif' }}>
-            Unable to load dashboard metrics. Check school configuration and refresh to retry.
-          </p>
-        )}
-        {loadState === 'done' && isEmptyState && (
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif' }}>
-            No activity yet for this school. Once classes and submissions are active, live metrics will appear here.
-          </p>
-        )}
-        {loadState === 'done' && !isEmptyState && stats && (
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif' }}>
-            You have{' '}
-            <span style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>
-              {stats.pendingReviews} submissions
-            </span>{' '}
-            waiting for manual review across {stats.classCount} classes.
-          </p>
-        )}
-      </div>
-
-      {/* ── Stat cards ── */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '16px',
-          marginBottom: '28px',
-        }}
-      >
-        {loadState === 'loading' && (
-          <div
-            className="rounded-xl p-5 flex items-center gap-3"
-            style={{
-              gridColumn: '1 / -1',
-              backgroundColor: 'var(--bg-surface)',
-              border: '1px solid var(--border)',
-              color: 'var(--text-muted)',
-            }}
-          >
-            <svg
-              className="animate-spin h-5 w-5"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
+      <section className="surface-panel rounded-[28px] px-6 py-6 sm:px-8 sm:py-8">
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-gold-300/80">{dateStr}</p>
+            <h1 className="mt-3 font-display text-3xl font-semibold leading-tight text-white sm:text-4xl">
+              {greeting}, {displayName}.
+            </h1>
+            <p className="mt-3 font-body text-sm leading-6 text-sec">
+              {loadState === 'loading' && 'Loading your school activity and grading workload.'}
+              {loadState === 'error' && 'Dashboard data is unavailable right now. Check school configuration and retry.'}
+              {loadState === 'done' && isEmptyState && 'No live activity yet. Once classes and submissions begin, the workspace will populate here.'}
+              {loadState === 'done' && !isEmptyState && stats && `You have ${stats.pendingReviews} submissions waiting for manual review across ${stats.classCount} classes.`}
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[23rem]">
+            <Link
+              to="/review"
+              className="rounded-2xl border border-accent bg-gold-500/10 px-4 py-4 no-underline transition-colors duration-150 hover:bg-gold-500/14"
             >
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-            </svg>
-            <span className="font-display text-sm">Loading dashboard summary…</span>
-          </div>
-        )}
-
-        {loadState === 'error' && (
-          <div
-            role="alert"
-            className="rounded-xl p-5"
-            style={{
-              gridColumn: '1 / -1',
-              backgroundColor: 'var(--bg-surface)',
-              border: '1px solid var(--border)',
-            }}
-          >
-            <p className="font-display" style={{ fontSize: '14px', fontWeight: 700, color: 'var(--accent-crimson)', marginBottom: '4px' }}>
-              Dashboard summary is unavailable
-            </p>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif' }}>
-              Check your connection and school configuration, then refresh the page to retry.
-            </p>
-          </div>
-        )}
-
-        {loadState === 'done' && isEmptyState && (
-          <div
-            className="rounded-xl p-5"
-            style={{
-              gridColumn: '1 / -1',
-              backgroundColor: 'var(--bg-surface)',
-              border: '1px solid var(--border)',
-            }}
-          >
-            <p className="font-display" style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
-              No dashboard activity yet
-            </p>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif' }}>
-              This school has no active classes, students, or graded submissions yet.
-            </p>
-          </div>
-        )}
-
-        {loadState === 'done' && !isEmptyState && stats && (
-          <>
-            <StatCard
-              label="Total Students"
-              value={stats.totalStudents}
-              sub={`Across ${stats.classCount} active classes`}
-              badge={{ text: 'Active', color: 'var(--accent-teal)' }}
-            />
-            <StatCard
-              label="Graded This Week"
-              value={stats.gradedThisWeek}
-              sub="AI-graded submissions"
-              badge={{ text: 'AI', color: '#5bc5f5' }}
-            />
-            <StatCard
-              label="Pending Reviews"
-              value={stats.pendingReviews}
-              sub={reviewThresholdLabel ? `Confidence below ${reviewThresholdLabel}` : 'Confidence below your configured threshold'}
-              accent={stats.pendingReviews > 0 ? 'var(--accent-gold)' : 'var(--accent-teal)'}
-              badge={{ text: 'Needs Action', color: 'var(--accent-gold)' }}
-            />
-            <StatCard
-              label="Class Average"
-              value={`${stats.classAverage.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`}
-              sub={`Letter grade — ${stats.letterGrade}`}
-              accent="var(--accent-teal)"
-              badge={{ text: stats.letterGrade, color: 'var(--accent-teal)' }}
-            />
-          </>
-        )}
-      </div>
-
-      {/* ── Quick actions ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '16px' }}>
-        {[
-          {
-            label: 'Add Students',
-            desc: 'Enroll new students into your school',
-            to: '/students',
-            icon: '+',
-            accent: '#5bc5f5',
-          },
-          {
-            label: 'Create Homework',
-            desc: 'Create a new homework assignment',
-            to: '/homework',
-            icon: '📋',
-            accent: 'var(--accent-gold)',
-          },
-          {
-            label: 'Create Exam',
-            desc: 'Build exam templates for AI grading',
-            to: '/exams',
-            icon: '✎',
-            accent: 'var(--accent-teal)',
-          },
-        ].map(action => (
-          <Link
-            key={action.to}
-            to={action.to}
-            className="rounded-xl p-5 card-glow"
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '14px',
-              backgroundColor: 'var(--bg-surface)',
-              border: '1px solid var(--border)',
-              textDecoration: 'none',
-              transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
-            }}
-            onMouseEnter={e => {
-              const el = e.currentTarget as HTMLElement
-              el.style.borderColor = `${action.accent}40`
-            }}
-            onMouseLeave={e => {
-              const el = e.currentTarget as HTMLElement
-              el.style.borderColor = 'var(--border)'
-            }}
-          >
-            <div
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '10px',
-                background: `${action.accent}14`,
-                border: `1px solid ${action.accent}28`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: action.accent,
-                fontSize: '16px',
-                flexShrink: 0,
-              }}
+              <p className="font-display text-sm font-medium text-white">Review queue</p>
+              <p className="mt-2 font-mono text-2xl text-gold-400">{loadState === 'done' ? reviewQuickActionBadge : '...'}</p>
+              <p className="mt-2 font-body text-xs leading-5 text-sec">{reviewQuickActionDescription}</p>
+            </Link>
+            <Link
+              to="/exams?quick=create"
+              className="rounded-2xl border border-subtle bg-white/[0.03] px-4 py-4 no-underline transition-colors duration-150 hover:bg-white/[0.05]"
             >
-              {action.icon}
+              <p className="font-display text-sm font-medium text-white">Create exam</p>
+              <p className="mt-2 font-body text-xs leading-5 text-sec">Open a new assessment and keep the next grading cycle moving.</p>
+            </Link>
+          </div>
+        </div>
+
+        <div className="section-divider mt-8 pt-6">
+          {loadState === 'loading' && (
+            <div className="rounded-2xl border border-subtle bg-white/[0.03] px-4 py-4 font-body text-sm text-sec">
+              Loading dashboard summary...
             </div>
-            <div style={{ flex: 1 }}>
-              <p
-                className="font-display"
-                style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)', marginBottom: '4px' }}
+          )}
+
+          {loadState === 'error' && (
+            <div role="alert" className="rounded-2xl border border-crimson-500/30 bg-crimson-500/10 px-4 py-4">
+              <p className="font-display text-sm font-medium text-crimson-400">Dashboard summary unavailable</p>
+              <p className="mt-1 font-body text-sm text-sec">Check your connection and school configuration, then refresh to retry.</p>
+            </div>
+          )}
+
+          {loadState === 'done' && isEmptyState && (
+            <div className="rounded-2xl border border-subtle bg-white/[0.03] px-4 py-4">
+              <p className="font-display text-sm font-medium text-white">No dashboard activity yet</p>
+              <p className="mt-1 font-body text-sm text-sec">This school has no active classes, students, or graded submissions yet.</p>
+            </div>
+          )}
+
+          {loadState === 'done' && !isEmptyState && stats && (
+            <div className="grid gap-px overflow-hidden rounded-[24px] border border-subtle bg-white/10 lg:grid-cols-4">
+              {metricItems.map((item) => (
+                <div key={item.label} className="metric-divider bg-base/80 px-5 py-5">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-mut">{item.label}</p>
+                  <p className="mt-3 font-display text-3xl font-semibold text-white">{item.value}</p>
+                  <p className="mt-2 font-body text-sm text-sec">{item.detail}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <div className="mt-6 grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
+        <section className="surface-panel-plain rounded-[24px] p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="font-display text-xl font-medium text-white">Workspace actions</p>
+              <p className="mt-1 font-body text-sm text-sec">Use these shortcuts for the most common teacher tasks.</p>
+            </div>
+            <Link to="/grades" className="font-mono text-xs uppercase tracking-[0.18em] text-gold-300 no-underline">
+              View grades
+            </Link>
+          </div>
+          <div className="section-divider mt-5 space-y-3 pt-5">
+            {actionItems.map((action) => (
+              <Link
+                key={action.to}
+                to={action.to}
+                className="block rounded-2xl border border-subtle bg-white/[0.03] px-4 py-4 no-underline transition-colors duration-150 hover:bg-white/[0.05]"
               >
-                {action.label}
-              </p>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif', lineHeight: 1.4 }}>
-                {action.desc}
-              </p>
-            </div>
-          </Link>
-        ))}
-      </div>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-display text-base font-medium text-white">{action.label}</p>
+                    <p className="mt-1 font-body text-sm leading-6 text-sec">{action.description}</p>
+                  </div>
+                  <span className="font-mono text-xs uppercase tracking-[0.18em] text-mut">Open</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
 
-      {/* ── Grading quick actions ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-        {[
-          {
-            label: 'Grade Paper Exams',
-            desc: 'Upload handwritten exams for AI grading',
-            to: '/exams',
-            icon: '✦',
-            accent: '#5bc5f5',
-          },
-          {
-            label: 'Review Queue',
-            desc: reviewQuickActionDescription,
-            to: '/review',
-            icon: '⚑',
-            accent: 'var(--accent-gold)',
-            badge: reviewQuickActionBadge,
-          },
-          {
-            label: 'View Grades',
-            desc: 'Browse all grades across your classes',
-            to: '/grades',
-            icon: '◈',
-            accent: 'var(--accent-teal)',
-          },
-        ].map(action => (
-          <Link
-            key={action.to}
-            to={action.to}
-            className="rounded-xl p-5 card-glow"
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '14px',
-              backgroundColor: 'var(--bg-surface)',
-              border: '1px solid var(--border)',
-              textDecoration: 'none',
-              transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
-            }}
-            onMouseEnter={e => {
-              const el = e.currentTarget as HTMLElement
-              el.style.borderColor = `${action.accent}40`
-            }}
-            onMouseLeave={e => {
-              const el = e.currentTarget as HTMLElement
-              el.style.borderColor = 'var(--border)'
-            }}
-          >
-            <div
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '10px',
-                background: `${action.accent}14`,
-                border: `1px solid ${action.accent}28`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: action.accent,
-                fontSize: '16px',
-                flexShrink: 0,
-              }}
-            >
-              {action.icon}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <p
-                  className="font-display"
-                  style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}
-                >
-                  {action.label}
-                </p>
-                {action.badge !== undefined && action.badge > 0 && (
-                  <span
-                    className="font-mono pulse-soft"
-                    style={{
-                      fontSize: '9px',
-                      fontWeight: 500,
-                      padding: '1px 6px',
-                      borderRadius: '99px',
-                      color: 'var(--accent-gold)',
-                      background: 'rgba(232, 164, 40, 0.15)',
-                      border: '1px solid rgba(232, 164, 40, 0.3)',
-                    }}
-                  >
-                    {action.badge}
-                  </span>
-                )}
+        <section className="surface-panel-plain rounded-[24px] p-6">
+          <div>
+            <p className="font-display text-xl font-medium text-white">Today at a glance</p>
+            <p className="mt-1 font-body text-sm text-sec">A quieter summary of review pressure and grading readiness.</p>
+          </div>
+          <div className="section-divider mt-5 space-y-4 pt-5">
+            {workloadItems.map((item) => (
+              <div key={item.label} className="rounded-2xl border border-subtle bg-white/[0.03] px-4 py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-mut">{item.label}</p>
+                    <p className="mt-3 font-display text-2xl font-semibold" style={{ color: item.tone }}>
+                      {item.value}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-2 font-body text-sm leading-6 text-sec">{item.description}</p>
               </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'Lora, serif', lineHeight: 1.4 }}>
-                {action.desc}
-              </p>
-            </div>
-          </Link>
-        ))}
+            ))}
+          </div>
+        </section>
       </div>
-
     </div>
   )
 }

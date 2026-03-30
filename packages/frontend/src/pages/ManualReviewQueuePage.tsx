@@ -4,6 +4,7 @@ import type { GradingResultResponse } from '../features/grading/gradingApi'
 import { getTeacherThreshold } from '../features/settings/settingsApi'
 import { fetchPendingReviews } from '../features/review/reviewApi'
 import ReviewQueueItem from '../features/review/ReviewQueueItem'
+import { AppNotice, AppPage, AppPageHeader, AppPanel } from '../components/layout/AppPage'
 
 type LoadState = 'loading' | 'error' | 'done'
 
@@ -64,89 +65,39 @@ export default function ManualReviewQueuePage() {
   const pendingCount = items.filter((item) => !reviewedIds.has(String(item.gradeId))).length
 
   return (
-    <div style={{ padding: '40px', maxWidth: '1100px' }}>
-      {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <p
-          className="font-mono"
-          style={{
-            fontSize: '10px',
-            letterSpacing: '0.16em',
-            textTransform: 'uppercase',
-            color: 'var(--text-muted)',
-            marginBottom: '6px',
-          }}
-        >
-          AI Confidence Review
-        </p>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
-          <div>
-            <h1 className="font-display" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              Manual Review Queue
-              {loadState === 'done' && pendingCount > 0 && (
-                <span
-                  className="font-mono pulse-soft"
-                  style={{
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    marginLeft: '12px',
-                    padding: '3px 10px',
-                    borderRadius: '99px',
-                    color: 'var(--accent-gold)',
-                    background: 'rgba(232, 164, 40, 0.12)',
-                    border: '1px solid rgba(232, 164, 40, 0.28)',
-                    verticalAlign: 'middle',
-                  }}
-                >
-                  {pendingCount} pending
-                </span>
-              )}
-            </h1>
-            <p className="font-body text-sm" style={{ color: 'var(--text-secondary)' }}>
-              Submissions where AI confidence was below {thresholdLabel ?? 'your configured threshold'}. Review each one and approve or
-              adjust before grades are finalised.{' '}
-              <Link to="/settings" className="text-accent-gold hover:underline" style={{ color: 'var(--accent-gold)' }}>
-                Adjust this in Settings.
-              </Link>
-            </p>
-          </div>
-        </div>
-      </div>
+    <AppPage width="standard">
+      <AppPageHeader
+        eyebrow="AI confidence review"
+        title="Manual Review Queue"
+        description={`Review submissions that fell below ${thresholdLabel ?? 'your current'} confidence threshold before finalising grades.`}
+      />
 
-      {/* Info bar */}
       {loadState === 'done' && items.length > 0 && (
-        <div
-          className="rounded-xl p-4 flex items-center gap-4"
-          style={{
-            background: 'rgba(232, 164, 40, 0.06)',
-            border: '1px solid rgba(232, 164, 40, 0.18)',
-            marginBottom: '24px',
-          }}
-        >
-          <span style={{ color: 'var(--accent-gold)', fontSize: '18px' }}>⚑</span>
-          <div className="flex-1">
+        <AppNotice>
+          <div className="flex items-center gap-4">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full border border-accent bg-gold-500/10 text-gold-400">⚑</span>
+            <div className="flex-1">
             <p className="font-display font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
               {pendingCount} submission{pendingCount !== 1 ? 's' : ''} need your review
             </p>
             <p className="font-body text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
               AI graded these but flagged them due to low confidence. Your approval finalises the grade.
             </p>
+            </div>
+            <div className="text-right">
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-mut">Reviewed</p>
+              <p className="mt-1 font-display text-lg text-white">{reviewedIds.size}</p>
+            </div>
           </div>
-          <span
-            className="font-mono"
-            style={{ fontSize: '10px', color: 'var(--text-muted)', flexShrink: 0 }}
-          >
-            {reviewedIds.size} reviewed
-          </span>
-        </div>
+          <p className="mt-3 font-body text-sm text-sec">
+            Need to change the threshold? <Link to="/settings" className="font-semibold text-gold-300 no-underline hover:text-gold-200">Open Settings</Link>.
+          </p>
+        </AppNotice>
       )}
 
-      {/* Loading */}
       {loadState === 'loading' && (
-        <div
-          className="flex items-center justify-center py-24 gap-3"
-          style={{ color: 'var(--text-muted)' }}
-        >
+        <AppPanel className="py-16">
+          <div className="flex items-center justify-center gap-3" style={{ color: 'var(--text-muted)' }}>
           <svg
             className="animate-spin h-5 w-5"
             xmlns="http://www.w3.org/2000/svg"
@@ -158,19 +109,13 @@ export default function ManualReviewQueuePage() {
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>
           <span className="font-display text-sm">Loading review queue…</span>
-        </div>
+          </div>
+        </AppPanel>
       )}
 
-      {/* Error */}
       {loadState === 'error' && (
-        <div
-          role="alert"
-          className="flex items-start gap-3 rounded-xl p-5"
-          style={{
-            background: 'rgba(232, 69, 90, 0.08)',
-            border: '1px solid rgba(232, 69, 90, 0.22)',
-          }}
-        >
+        <AppNotice tone="danger">
+          <div className="flex items-start gap-3">
           <span style={{ color: 'var(--accent-crimson)', fontSize: '18px', flexShrink: 0 }} aria-hidden="true">✕</span>
           <div>
             <p className="font-display font-semibold text-sm" style={{ color: 'var(--accent-crimson)' }}>
@@ -180,12 +125,13 @@ export default function ManualReviewQueuePage() {
               Check your connection and refresh the page to try again.
             </p>
           </div>
-        </div>
+          </div>
+        </AppNotice>
       )}
 
-      {/* Empty state */}
       {loadState === 'done' && items.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-28 text-center gap-5">
+        <AppPanel className="py-20">
+          <div className="flex flex-col items-center justify-center text-center gap-5">
           <div
             className="w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold"
             style={{
@@ -205,12 +151,13 @@ export default function ManualReviewQueuePage() {
               No submissions are currently awaiting manual review.
             </p>
           </div>
-        </div>
+          </div>
+        </AppPanel>
       )}
 
-      {/* Queue list */}
       {loadState === 'done' && items.length > 0 && (
-        <ol className="space-y-3" aria-label="Manual review queue">
+        <AppPanel className="p-4 sm:p-5">
+          <ol className="space-y-3" aria-label="Manual review queue">
           {items.map((item) => (
             <ReviewQueueItem
               key={String(item.gradeId)}
@@ -218,8 +165,9 @@ export default function ManualReviewQueuePage() {
               onReviewed={handleReviewed}
             />
           ))}
-        </ol>
+          </ol>
+        </AppPanel>
       )}
-    </div>
+    </AppPage>
   )
 }

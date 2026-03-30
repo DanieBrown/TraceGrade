@@ -4,21 +4,23 @@
 
 @layer base {
   :root {
-    --bg-base:     #06101e;
-    --bg-surface:  #0d1f38;
-    --bg-elevated: #122240;
-    --bg-card:     #0f2540;
+    --bg-base: #06101e;
+    --bg-surface: #0b1830;
+    --bg-elevated: #10213d;
+    --bg-card: #132744;
 
-    --accent-gold:    #e8a428;
-    --accent-teal:    #00c9a7;
+    --accent-gold: #e8a428;
+    --accent-teal: #00c9a7;
     --accent-crimson: #e8455a;
 
-    --text-primary:   #dce8f2;
-    --text-secondary: #7ba4c0;
-    --text-muted:     #4a6b86;
+    --text-primary: #edf3f8;
+    --text-secondary: #aac0d1;
+    --text-muted: #6f8798;
 
-    --border:        rgba(120, 180, 220, 0.11);
+    --border: rgba(170, 192, 209, 0.14);
+    --border-strong: rgba(170, 192, 209, 0.22);
     --border-accent: rgba(232, 164, 40, 0.28);
+    --shadow-soft: 0 18px 40px rgba(3, 9, 18, 0.28);
   }
 
   html {
@@ -27,7 +29,9 @@
 
   body {
     height: 100%;
-    background-color: var(--bg-base);
+    background:
+      radial-gradient(circle at top left, rgba(232, 164, 40, 0.06), transparent 26%),
+      linear-gradient(180deg, #091221 0%, var(--bg-base) 100%);
     color: var(--text-primary);
     font-family: 'Lora', Georgia, serif;
     -webkit-font-smoothing: antialiased;
@@ -50,6 +54,13 @@
 }
 
 @layer utilities {
+  .app-shell {
+    background:
+      radial-gradient(720px 420px at 0% 0%, rgba(232, 164, 40, 0.05), transparent 52%),
+      linear-gradient(180deg, rgba(9, 18, 33, 0.95) 0%, rgba(6, 16, 30, 1) 100%),
+      var(--bg-base);
+  }
+
   .bg-base     { background-color: var(--bg-base); }
   .bg-surface  { background-color: var(--bg-surface); }
   .bg-elevated { background-color: var(--bg-elevated); }
@@ -60,23 +71,39 @@
   .text-mut  { color: var(--text-muted); }
 
   .border-subtle { border-color: var(--border); }
+  .border-strong { border-color: var(--border-strong); }
   .border-accent { border-color: var(--border-accent); }
-
-  /* Graph-paper grid texture */
-  .bg-grid {
-    background-image:
-      linear-gradient(rgba(120, 180, 220, 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(120, 180, 220, 0.04) 1px, transparent 1px);
-    background-size: 28px 28px;
-  }
 
   .font-display { font-family: 'Syne', sans-serif; }
   .font-body    { font-family: 'Lora', Georgia, serif; }
   .font-mono    { font-family: 'IBM Plex Mono', Menlo, monospace; }
 
-  /* Stat card glow on hover */
-  .card-glow:hover {
-    box-shadow: 0 0 0 1px rgba(232, 164, 40, 0.2), 0 8px 32px rgba(6, 16, 30, 0.6);
+  .surface-panel {
+    background: linear-gradient(180deg, rgba(16, 33, 61, 0.96), rgba(11, 24, 48, 0.96));
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .surface-panel-plain {
+    background: rgba(11, 24, 48, 0.82);
+    border: 1px solid var(--border);
+  }
+
+  .nav-item {
+    transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+  }
+
+  .nav-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+  }
+
+  .section-divider {
+    border-top: 1px solid rgba(170, 192, 209, 0.1);
+  }
+
+  .metric-divider:not(:last-child) {
+    border-right: 1px solid rgba(170, 192, 209, 0.1);
   }
 
   /* Confidence bar fill animation */
@@ -87,12 +114,58 @@
     animation: grow-x 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  /* Subtle pulse for pending badge */
-  @keyframes soft-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.65; }
+  @keyframes route-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
-  .pulse-soft {
-    animation: soft-pulse 2s ease-in-out infinite;
+
+  .route-transition {
+    animation: route-enter 0.18s ease-out both;
+  }
+
+  .command-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 12vh;
+  }
+
+  .command-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(6, 16, 30, 0.68);
+    border: 0;
+    z-index: 1;
+  }
+
+  .command-panel {
+    width: min(640px, calc(100vw - 32px));
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(16, 33, 61, 0.98), rgba(9, 18, 33, 0.98));
+    box-shadow: 0 24px 50px rgba(6, 16, 30, 0.45);
+    overflow: hidden;
+    position: relative;
+    z-index: 2;
+    animation: route-enter 0.2s ease-out both;
+  }
+
+  @media (max-width: 768px) {
+    .command-overlay {
+      padding-top: 5vh;
+    }
+
+    .command-panel {
+      width: calc(100vw - 20px);
+    }
   }
 }

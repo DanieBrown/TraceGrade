@@ -1,13 +1,14 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import type { GradingResultResponse, QuestionScore } from '../grading/gradingApi'
 import { submitReview } from './reviewApi'
 
 // ── Confidence helpers (mirrored from GradingResultCard) ──────────────────────
 
 function confidenceClasses(score: number): { text: string; bg: string } {
-  if (score >= 80) return { text: 'text-green-700', bg: 'bg-green-50 border-green-200' }
-  if (score >= 60) return { text: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' }
-  return { text: 'text-red-700', bg: 'bg-red-50 border-red-200' }
+  if (score >= 80) return { text: 'text-teal-400', bg: 'bg-teal-500/10 border-teal-500/25' }
+  if (score >= 60) return { text: 'text-gold-300', bg: 'bg-gold-500/10 border-gold-500/25' }
+  return { text: 'text-crimson-400', bg: 'bg-crimson-500/10 border-crimson-500/25' }
 }
 
 function formatScore(value: number): string {
@@ -31,35 +32,37 @@ function QuestionRow({
   const panelId = `rq-panel-${q.questionNumber}`
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-subtle bg-white/[0.03]">
       <button
         id={headingId}
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-gray-50 transition-colors text-left"
+        className="w-full text-left transition-colors hover:bg-white/[0.03]"
       >
+        <div className="flex items-center gap-3 px-4 py-3">
         <span className="text-sm font-semibold text-gray-700 w-7 flex-shrink-0">
           Q{q.questionNumber}
         </span>
 
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${cls.bg} ${cls.text}`}>
+        <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${cls.bg} ${cls.text}`}>
           {formatScore(q.confidenceScore)}% confident
         </span>
 
         {q.illegible && (
-          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
+          <span className="rounded-full border border-crimson-500/25 bg-crimson-500/10 px-2 py-0.5 text-xs font-medium text-crimson-400">
             Illegible
           </span>
         )}
 
-        <span className="ml-auto text-sm font-semibold text-gray-900">
+        <span className="ml-auto text-sm font-semibold text-pri">
           {formatScore(adjustedPoints)} / {formatScore(q.pointsAvailable)}
         </span>
 
-        <span className="text-gray-400 text-xs ml-1" aria-hidden="true">
+        <span className="ml-1 text-xs text-mut" aria-hidden="true">
           {open ? '▲' : '▼'}
         </span>
+        </div>
       </button>
 
       {open && (
@@ -67,19 +70,19 @@ function QuestionRow({
           id={panelId}
           role="region"
           aria-labelledby={headingId}
-          className="px-4 py-3 bg-gray-50 border-t border-gray-200 space-y-3"
+          className="space-y-3 border-t border-subtle bg-white/[0.02] px-4 py-3"
         >
           {q.feedback && (
             <div>
-              <p className="text-xs font-semibold text-gray-600 mb-1">AI Feedback</p>
-              <p className="text-xs text-gray-700 leading-relaxed">{q.feedback}</p>
+              <p className="mb-1 text-xs font-semibold text-sec">AI Feedback</p>
+              <p className="text-xs leading-relaxed text-sec">{q.feedback}</p>
             </div>
           )}
 
           <div className="flex items-center gap-3 flex-wrap">
             <label
               htmlFor={`rq-adj-${q.questionNumber}`}
-              className="text-xs font-semibold text-gray-600 flex-shrink-0"
+              className="flex-shrink-0 text-xs font-semibold text-sec"
             >
               Manual Adjustment
             </label>
@@ -97,10 +100,10 @@ function QuestionRow({
                     onAdjust(q.questionNumber, Math.min(Math.max(val, 0), q.pointsAvailable))
                   }
                 }}
-                className="w-16 border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-16 rounded-lg border border-subtle bg-elevated px-2 py-1 text-center text-sm text-pri focus:outline-none focus:ring-2 focus:ring-gold-500/40"
                 aria-label={`Adjusted points for question ${q.questionNumber}`}
               />
-              <span className="text-xs text-gray-500">/ {formatScore(q.pointsAvailable)} pts</span>
+              <span className="text-xs text-mut">/ {formatScore(q.pointsAvailable)} pts</span>
             </div>
           </div>
         </div>
@@ -114,7 +117,7 @@ function QuestionRow({
 function SubmissionImage({ url }: { url?: string | null }) {
   if (!url) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-48 bg-gray-100 rounded-lg border border-gray-200 text-gray-400 gap-2 p-6">
+      <div className="flex min-h-48 h-full flex-col items-center justify-center gap-2 rounded-2xl border border-subtle bg-white/[0.03] p-6 text-mut">
         <span className="text-3xl" aria-hidden="true">🖼</span>
         <p className="text-xs text-center">Submission image unavailable</p>
       </div>
@@ -125,7 +128,7 @@ function SubmissionImage({ url }: { url?: string | null }) {
     <img
       src={url}
       alt="Student submission"
-      className="w-full rounded-lg border border-gray-200 object-contain max-h-[600px]"
+      className="max-h-[520px] w-full rounded-2xl border border-subtle object-contain bg-white/[0.02]"
     />
   )
 }
@@ -170,8 +173,10 @@ export default function ReviewQueueItem({
       })
       setReviewed(true)
       setExpanded(false)
+      toast.success('AI grade approved.')
       onReviewed(updated)
     } catch {
+      toast.error('Unable to save approval.')
       setError('Failed to save approval. Please try again.')
     } finally {
       setSaving(false)
@@ -202,8 +207,10 @@ export default function ReviewQueueItem({
       })
       setReviewed(true)
       setExpanded(false)
+      toast.success('Review adjustments saved.')
       onReviewed(updated)
     } catch {
+      toast.error('Unable to save adjustments.')
       setError('Failed to save adjustments. Please try again.')
     } finally {
       setSaving(false)
@@ -216,60 +223,62 @@ export default function ReviewQueueItem({
   const totalAvailable = parsedQuestions.reduce((s, q) => s + q.pointsAvailable, 0)
 
   return (
-    <li className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <li className="overflow-hidden rounded-[20px] border border-subtle bg-white/[0.02]">
       {/* ── Collapsed row ── */}
       <button
         onClick={() => !reviewed && setExpanded((v) => !v)}
         disabled={reviewed}
         className={[
-          'w-full flex items-center gap-4 px-5 py-4 text-left transition-colors',
-          reviewed ? 'cursor-default' : 'hover:bg-gray-50',
+          'w-full px-4 py-4 text-left transition-colors sm:px-5',
+          reviewed ? 'cursor-default' : 'hover:bg-white/[0.04]',
         ].join(' ')}
         aria-expanded={expanded}
       >
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-900 truncate">
+        <div className="flex items-center gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-pri">
             Submission {String(result.submissionId).slice(0, 8)}…
           </p>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="mt-0.5 text-xs text-mut">
             AI score: {formatScore(totalAiPoints)} / {totalAvailable} pts
           </p>
         </div>
 
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border flex-shrink-0 ${cls.bg} ${cls.text}`}>
+        <span className={`flex-shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${cls.bg} ${cls.text}`}>
           {formatScore(confidenceScore)}% confidence
         </span>
 
         {reviewed ? (
-          <span className="text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-full flex-shrink-0">
+          <span className="flex-shrink-0 rounded-full border border-teal-500/25 bg-teal-500/10 px-2.5 py-1 text-xs font-semibold text-teal-400">
             Reviewed ✓
           </span>
         ) : (
-          <span className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full flex-shrink-0">
+          <span className="flex-shrink-0 rounded-full border border-gold-500/25 bg-gold-500/10 px-2.5 py-1 text-xs font-medium text-gold-300">
             Needs Review
           </span>
         )}
 
         {!reviewed && (
-          <span className="text-gray-400 text-xs" aria-hidden="true">
+          <span className="text-xs text-mut" aria-hidden="true">
             {expanded ? '▲' : '▼'}
           </span>
         )}
+        </div>
       </button>
 
       {/* ── Expanded side-by-side panel ── */}
       {expanded && (
-        <div className="border-t border-gray-200">
+        <div className="border-t border-subtle bg-base/40">
           {error && (
-            <div role="alert" className="mx-5 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            <div role="alert" className="mx-5 mt-4 rounded-xl border border-crimson-500/30 bg-crimson-500/10 p-3 text-sm text-crimson-400">
               {error}
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-5">
+          <div className="grid grid-cols-1 gap-5 p-4 lg:grid-cols-[1.1fr_1.15fr_0.9fr] lg:p-5">
             {/* Left: student submission image */}
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-mut">
                 Student Submission
               </p>
               <SubmissionImage url={result.submissionImageUrl} />
@@ -277,11 +286,11 @@ export default function ReviewQueueItem({
 
             {/* Centre: question breakdown with adjustments */}
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-mut">
                 Question Breakdown
               </p>
               {parsedQuestions.length === 0 ? (
-                <p className="text-sm text-gray-500">No question data available.</p>
+                <p className="text-sm text-sec">No question data available.</p>
               ) : (
                 <div className="space-y-2">
                   {parsedQuestions.map((q) => (
@@ -299,26 +308,26 @@ export default function ReviewQueueItem({
             {/* Right: summary + actions */}
             <div className="space-y-4">
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-mut">
                   AI Grade Summary
                 </p>
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2">
+                <div className="space-y-2 rounded-2xl border border-subtle bg-white/[0.03] p-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">AI Score</span>
-                    <span className="font-semibold text-gray-900">
+                    <span className="text-sec">AI Score</span>
+                    <span className="font-semibold text-pri">
                       {formatScore(totalAiPoints)} / {totalAvailable}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Confidence</span>
+                    <span className="text-sec">Confidence</span>
                     <span className={`font-semibold ${cls.text}`}>
                       {formatScore(confidenceScore)}%
                     </span>
                   </div>
                   {result.aiFeedback && (
-                    <div className="pt-2 border-t border-gray-200">
-                      <p className="text-xs font-semibold text-gray-600 mb-1">AI Feedback</p>
-                      <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-line">
+                    <div className="border-t border-subtle pt-2">
+                      <p className="mb-1 text-xs font-semibold text-sec">AI Feedback</p>
+                      <p className="whitespace-pre-line text-xs leading-relaxed text-sec">
                         {result.aiFeedback}
                       </p>
                     </div>
@@ -327,27 +336,27 @@ export default function ReviewQueueItem({
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <p className="text-xs font-semibold uppercase tracking-wide text-mut">
                   Review Actions
                 </p>
                 <button
                   onClick={handleApprove}
                   disabled={saving}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+                  className="w-full rounded-xl bg-gold-500 px-4 py-2.5 text-sm font-medium text-navy-950 transition-colors hover:bg-gold-600 disabled:opacity-50"
                 >
                   {saving ? 'Saving…' : 'Approve AI Grade'}
                 </button>
                 <button
                   onClick={handleSaveAdjustments}
                   disabled={saving}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+                  className="w-full rounded-xl border border-subtle bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-pri transition-colors hover:bg-white/[0.06] disabled:opacity-50"
                 >
                   {saving ? 'Saving…' : 'Save with Adjustments'}
                 </button>
                 <button
                   onClick={() => setExpanded(false)}
                   disabled={saving}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                  className="w-full rounded-xl border border-subtle bg-transparent px-4 py-2.5 text-sm text-sec transition-colors hover:bg-white/[0.04]"
                 >
                   Cancel
                 </button>

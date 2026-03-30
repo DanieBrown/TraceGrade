@@ -11,7 +11,7 @@ interface ClassCardProps {
 
 export default function ClassCard({ item, onEdit, onEnroll, onBatchGrade, onArchive, isBusy = false }: ClassCardProps) {
   return (
-    <article className="card-glow flex h-full flex-col justify-between rounded-xl border bg-surface p-5">
+    <article className="surface-panel-plain flex h-full flex-col justify-between rounded-[22px] p-5 transition-colors duration-150 hover:bg-white/[0.04]">
       <div className="space-y-3">
         <p className="truncate font-display text-base font-semibold text-pri" title={item.name}>
           {item.name}
@@ -21,23 +21,22 @@ export default function ClassCard({ item, onEdit, onEnroll, onBatchGrade, onArch
           <p className="font-body text-sm text-sec">{item.subject}</p>
 
           <div className="flex flex-wrap gap-2">
-            <span className="rounded-full border px-2 py-0.5 font-body text-xs text-sec">
+            <span className="rounded-full border border-subtle bg-white/[0.03] px-2.5 py-1 font-body text-xs text-sec">
               Period: {item.period}
             </span>
-            <span className="rounded-full border px-2 py-0.5 font-body text-xs text-sec">
+            <span className="rounded-full border border-subtle bg-white/[0.03] px-2.5 py-1 font-body text-xs text-sec">
               Year: {item.schoolYear}
             </span>
           </div>
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-end gap-2">
+      <div className="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-subtle pt-4">
         <button
           type="button"
           onClick={() => onEdit(item)}
           disabled={isBusy}
-          className="inline-flex items-center rounded-lg px-2 py-1 font-display text-sm font-semibold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-60"
-          style={{ color: 'var(--text-secondary)' }}
+          className="inline-flex items-center rounded-lg px-2.5 py-1.5 font-display text-sm font-semibold text-sec transition-colors duration-150 hover:text-pri focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-60"
           aria-label={`Edit ${item.name}`}
         >
           Edit
@@ -46,8 +45,7 @@ export default function ClassCard({ item, onEdit, onEnroll, onBatchGrade, onArch
           type="button"
           onClick={() => onEnroll(item)}
           disabled={isBusy}
-          className="inline-flex items-center rounded-lg px-2 py-1 font-display text-sm font-semibold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-60"
-          style={{ color: 'var(--text-secondary)' }}
+          className="inline-flex items-center rounded-lg px-2.5 py-1.5 font-display text-sm font-semibold text-sec transition-colors duration-150 hover:text-pri focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-60"
           aria-label={`Manage roster for ${item.name}`}
         >
           Roster
@@ -56,8 +54,7 @@ export default function ClassCard({ item, onEdit, onEnroll, onBatchGrade, onArch
           type="button"
           onClick={() => onBatchGrade(item)}
           disabled={isBusy}
-          className="inline-flex items-center rounded-lg px-2 py-1 font-display text-sm font-semibold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-60"
-          style={{ color: 'var(--text-secondary)' }}
+          className="inline-flex items-center rounded-lg px-2.5 py-1.5 font-display text-sm font-semibold text-sec transition-colors duration-150 hover:text-pri focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-60"
           aria-label={`Batch grade ${item.name}`}
         >
           Batch Grade
@@ -66,8 +63,7 @@ export default function ClassCard({ item, onEdit, onEnroll, onBatchGrade, onArch
           type="button"
           onClick={() => onArchive(item)}
           disabled={isBusy}
-          className="inline-flex items-center rounded-lg px-2 py-1 font-display text-sm font-semibold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-crimson)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-60"
-          style={{ color: 'var(--accent-crimson)' }}
+          className="inline-flex items-center rounded-lg px-2.5 py-1.5 font-display text-sm font-semibold text-crimson-400 transition-colors duration-150 hover:text-crimson-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-crimson)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-60"
           aria-label={`Archive ${item.name}`}
         >
           Archive

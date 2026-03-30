@@ -13,14 +13,15 @@
     "test:run": "vitest run"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.0.1",
+    "@tanstack/react-query": "^5.14.2",
+    "axios": "^1.6.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.0",
-    "@reduxjs/toolkit": "^2.0.1",
     "react-redux": "^9.0.4",
-    "zustand": "^4.4.7",
-    "axios": "^1.6.2",
-    "@tanstack/react-query": "^5.14.2"
+    "react-router-dom": "^6.20.0",
+    "sonner": "^2.0.7",
+    "zustand": "^4.4.7"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

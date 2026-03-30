@@ -1,16 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import CreateExamModal from '../features/exams/CreateExamModal'
 import ExamDetailModal from '../features/exams/ExamDetailModal'
 import ExamsList from '../features/exams/ExamsList'
 import { EmptyExamsState, ErrorExamsState, LoadingExamsState } from '../features/exams/ExamsStates'
 import { fetchExamTemplates, isExamTemplateListEmpty } from '../features/exams/examsApi'
 import type { ExamTemplateListItem } from '../features/exams/examsTypes'
+import { AppPage, AppPageHeader } from '../components/layout/AppPage'
 
 type LoadState = 'loading' | 'error' | 'done'
 
 export default function ExamsPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [items, setItems] = useState<ExamTemplateListItem[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -48,6 +52,18 @@ export default function ExamsPage() {
     }
   }, [loadTemplates])
 
+  useEffect(() => {
+    if (searchParams.get('quick') !== 'create') {
+      return
+    }
+
+    setShowCreateModal(true)
+
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.delete('quick')
+    setSearchParams(nextParams, { replace: true })
+  }, [searchParams, setSearchParams])
+
   const handleCreateExam = useCallback(() => {
     setShowCreateModal(true)
   }, [])
@@ -60,24 +76,21 @@ export default function ExamsPage() {
   )
 
   return (
-    <main className="flex-1 overflow-y-auto bg-base" style={{ padding: '40px', maxWidth: '1200px' }}>
-      <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-pri">Exams</h1>
-          <p className="mt-1 font-body text-sm text-sec">Create, manage, and grade your exam templates</p>
-        </div>
-        <button
+    <AppPage>
+      <AppPageHeader
+        eyebrow="Assessment templates"
+        title="Exams"
+        description="Create, manage, and open gradeable exam templates for classroom workflows."
+        actions={(
+          <button
           type="button"
           onClick={handleCreateExam}
-          className="inline-flex items-center justify-center self-start rounded-lg px-5 py-2.5 font-display text-sm font-semibold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] active:scale-95"
-          style={{
-            background: 'var(--accent-gold)',
-            color: 'var(--bg-base)',
-          }}
+          className="inline-flex items-center justify-center rounded-xl bg-gold-500 px-5 py-3 font-display text-sm font-semibold text-navy-950 transition-colors duration-150 hover:bg-gold-600"
         >
           + Create Exam
         </button>
-      </header>
+        )}
+      />
 
       {loadState === 'loading' && <LoadingExamsState />}
 
@@ -96,6 +109,7 @@ export default function ExamsPage() {
           onClose={() => setShowCreateModal(false)}
           onExamCreated={() => {
             setShowCreateModal(false)
+            toast.success('Exam template created.')
             void loadTemplates()
           }}
         />
@@ -115,6 +129,6 @@ export default function ExamsPage() {
           }}
         />
       )}
-    </main>
+    </AppPage>
   )
 }

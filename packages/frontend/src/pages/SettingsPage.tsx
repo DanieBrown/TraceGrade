@@ -1,29 +1,17 @@
 import { useTeacherThreshold } from '../features/settings/useTeacherThreshold'
+import { AppNotice, AppPage, AppPageHeader, AppPanel } from '../components/layout/AppPage'
 
 function ThresholdSourceBadge({ source }: { source: 'teacher_override' | 'default' }) {
   if (source === 'teacher_override') {
     return (
-      <span
-        className="font-mono text-[10px] px-2 py-1 rounded"
-        style={{
-          background: 'rgba(232,164,40,0.12)',
-          color: 'var(--accent-gold)',
-          border: '1px solid rgba(232,164,40,0.28)',
-        }}
-      >
+      <span className="rounded-full border border-accent bg-gold-500/10 px-2.5 py-1 font-mono text-[10px] text-gold-400">
         Teacher Override
       </span>
     )
   }
 
   return (
-    <span
-      className="font-mono text-[10px] px-2 py-1 rounded border border-subtle"
-      style={{
-        background: 'rgba(120,180,220,0.1)',
-        color: 'var(--text-muted)',
-      }}
-    >
+    <span className="rounded-full border border-subtle bg-white/[0.04] px-2.5 py-1 font-mono text-[10px] text-mut">
       System Default
     </span>
   )
@@ -48,26 +36,14 @@ export default function SettingsPage() {
   const activeErrorMessage = validationError ?? saveError
 
   return (
-    <div style={{ padding: '40px', maxWidth: '1100px' }}>
-      <header style={{ marginBottom: '24px' }}>
-        <p
-          className="font-mono text-muted uppercase text-[10px] tracking-[0.16em]"
-          style={{ color: 'var(--text-muted)', marginBottom: '6px' }}
-        >
-          Preferences
-        </p>
-        <h1 className="font-display text-primary text-[28px] font-extrabold" style={{ color: 'var(--text-primary)', marginBottom: '6px' }}>
-          Settings
-        </h1>
-        <p className="font-body text-secondary text-sm" style={{ color: 'var(--text-secondary)' }}>
-          Manage your teacher preferences and AI grading behavior.
-        </p>
-      </header>
+    <AppPage width="standard">
+      <AppPageHeader
+        eyebrow="Preferences"
+        title="Settings"
+        description="Manage your teacher preferences and the confidence threshold used by AI grading."
+      />
 
-      <section
-        className="bg-card rounded-xl border-subtle p-6 mb-6"
-        style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
-      >
+      <AppPanel className="mb-6">
         <h2 className="font-display text-primary text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
           AI Confidence Threshold
         </h2>
@@ -86,15 +62,7 @@ export default function SettingsPage() {
         )}
 
         {loadState === 'error' && (
-          <div
-            role="alert"
-            className="rounded-lg p-4"
-            style={{
-              background: 'rgba(232,69,90,0.1)',
-              border: '1px solid rgba(232,69,90,0.2)',
-              color: 'var(--accent-crimson)',
-            }}
-          >
+          <AppNotice tone="danger">
             <p className="font-display text-sm font-semibold">Unable to load preferences</p>
             <p className="font-body text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
             <button
@@ -105,11 +73,11 @@ export default function SettingsPage() {
             >
               Retry
             </button>
-          </div>
+          </AppNotice>
         )}
 
         {loadState === 'empty' && (
-          <div className="rounded-lg border border-subtle p-4" style={{ borderColor: 'var(--border)' }}>
+          <div className="rounded-2xl border border-subtle bg-white/[0.03] p-4">
             <p className="font-display text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>No preference found yet</p>
             <p className="font-body text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
               We could not read your threshold settings. Try loading again.
@@ -149,7 +117,7 @@ export default function SettingsPage() {
                   step="0.01"
                   value={thresholdInput}
                   onChange={(event) => setThresholdInput(event.target.value)}
-                  className="bg-elevated border-subtle text-primary rounded-lg px-3 py-2 font-mono w-32 outline-none focus:border-accent-gold focus:ring-1 focus:ring-[var(--accent-gold)]"
+                  className="w-32 rounded-xl border bg-elevated px-3 py-2 font-mono text-primary outline-none focus:ring-1 focus:ring-[var(--accent-gold)]"
                   style={{
                     backgroundColor: 'var(--bg-elevated)',
                     color: 'var(--text-primary)',
@@ -175,7 +143,7 @@ export default function SettingsPage() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="bg-accent-gold text-bg-base font-display font-bold rounded-lg px-4 py-2 text-sm transition-colors hover:bg-[#f0c050] disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="rounded-xl bg-gold-500 px-4 py-2 text-sm font-display font-bold text-navy-950 transition-colors hover:bg-gold-600 disabled:cursor-not-allowed disabled:opacity-70"
                   style={{ background: 'var(--accent-gold)', color: 'var(--bg-base)' }}
                 >
                   {isSaving ? 'Saving...' : 'Save Changes'}
@@ -189,7 +157,7 @@ export default function SettingsPage() {
             </div>
           </form>
         )}
-      </section>
-    </div>
+      </AppPanel>
+    </AppPage>
   )
 }

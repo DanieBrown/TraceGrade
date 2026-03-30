@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import ArchiveClassModal from '../features/classes/ArchiveClassModal'
 import ClassFormModal from '../features/classes/ClassFormModal'
 import ClassesList from '../features/classes/ClassesList'
@@ -18,6 +20,7 @@ import {
 } from '../features/classes/classesApi'
 import type { ClassListItem, CreateClassPayload } from '../features/classes/classesTypes'
 import EnrollmentModal from '../features/enrollments/EnrollmentModal'
+import { AppNotice, AppPage, AppPageHeader, AppPanel } from '../components/layout/AppPage'
 
 type LoadState = 'loading' | 'error' | 'done'
 type MutationState = 'idle' | 'creating' | 'updating' | 'archiving'
@@ -32,6 +35,7 @@ function getMutationErrorMessage(error: unknown, fallback: string): string {
 
 export default function ClassesPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [mutationState, setMutationState] = useState<MutationState>('idle')
   const [items, setItems] = useState<ClassListItem[]>([])
@@ -80,6 +84,19 @@ export default function ClassesPage() {
     }
   }, [loadClasses])
 
+  useEffect(() => {
+    if (searchParams.get('quick') !== 'create') {
+      return
+    }
+
+    setMutationError('')
+    setShowCreateModal(true)
+
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.delete('quick')
+    setSearchParams(nextParams, { replace: true })
+  }, [searchParams, setSearchParams])
+
   const handleCreateClass = useCallback(async (payload: CreateClassPayload) => {
     setMutationState('creating')
     setMutationError('')
@@ -99,6 +116,7 @@ export default function ClassesPage() {
 
         return [created, ...deduped]
       })
+      toast.success(`Created ${created.name}.`)
       setShowCreateModal(false)
     } catch (error) {
       const message = getMutationErrorMessage(error, 'Failed to create class. Please try again.')
@@ -136,6 +154,7 @@ export default function ClassesPage() {
           return updated.isActive ? [updated] : []
         }),
       )
+      toast.success(`Updated ${updated.name}.`)
       setEditingClass(null)
     } catch (error) {
       const message = getMutationErrorMessage(error, 'Failed to update class. Please try again.')
@@ -167,6 +186,7 @@ export default function ClassesPage() {
       setItems((currentItems) =>
         currentItems.filter((item) => item.id !== archivingClass.id),
       )
+      toast.success(`Archived ${archivingClass.name}.`)
       setArchivingClass(null)
     } catch (error) {
       const message = getMutationErrorMessage(error, 'Failed to archive class. Please try again.')
@@ -184,45 +204,46 @@ export default function ClassesPage() {
   const isMutating = mutationState !== 'idle'
   const hasNonRetryableLoadError = loadState === 'error' && !canRetry
   const isNewClassDisabled = isMutating || hasNonRetryableLoadError
+  const classWithAssignment = items.find((item) => (item.assignmentId?.trim() ?? '').length > 0)
+
+  function navigateToBatchGrading(item: ClassListItem) {
+    const classId = encodeURIComponent(item.id)
+    const assignmentId = item.assignmentId?.trim() ?? ''
+    const search = new URLSearchParams({ className: item.name })
+
+    if (assignmentId) {
+      search.set('assignmentId', assignmentId)
+    }
+
+    navigate(`/classes/${classId}/batch-grading?${search.toString()}`)
+  }
 
   return (
-    <main className="flex-1 overflow-y-auto bg-base" style={{ padding: '40px', maxWidth: '1200px' }}>
-      <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-pri">Classes</h1>
-          <p className="mt-1 font-body text-sm text-sec">Manage your classes</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setMutationError('')
-            setShowCreateModal(true)
-          }}
-          disabled={isNewClassDisabled}
-          className="inline-flex items-center justify-center self-start rounded-lg px-5 py-2.5 font-display text-sm font-semibold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
-          style={{
-            background: 'var(--accent-gold)',
-            color: 'var(--bg-base)',
-          }}
-          aria-label="Create class"
-        >
-          + New Class
-        </button>
-      </header>
+    <AppPage>
+      <AppPageHeader
+        eyebrow="Class management"
+        title="Classes"
+        description="Manage class sections, roster access, and the batch-grading entry points tied to each class."
+        actions={(
+          <button
+            type="button"
+            onClick={() => {
+              setMutationError('')
+              setShowCreateModal(true)
+            }}
+            disabled={isNewClassDisabled}
+            className="inline-flex items-center justify-center rounded-xl bg-gold-500 px-5 py-3 font-display text-sm font-semibold text-navy-950 transition-colors duration-150 hover:bg-gold-600 disabled:cursor-not-allowed disabled:bg-gold-500/60"
+            aria-label="Create class"
+          >
+            + New Class
+          </button>
+        )}
+      />
 
       {mutationError && loadState === 'done' && (
-        <section
-          role="alert"
-          className="mb-6 rounded-xl border p-4"
-          style={{
-            background: 'rgba(232, 69, 90, 0.08)',
-            borderColor: 'rgba(232, 69, 90, 0.22)',
-          }}
-        >
-          <p className="font-body text-sm" style={{ color: 'var(--accent-crimson)' }}>
-            {mutationError}
-          </p>
-        </section>
+        <AppNotice tone="danger">
+          <p className="font-body text-sm">{mutationError}</p>
+        </AppNotice>
       )}
 
       {loadState === 'loading' && <LoadingClassesState />}
@@ -245,34 +266,25 @@ export default function ClassesPage() {
       )}
 
       {loadState === 'done' && !isClassListEmpty(items) && (
-        <ClassesList
-          items={items}
-          onEdit={(item) => {
-            setMutationError('')
-            setEditingClass(item)
-          }}
-          onEnroll={(item) => {
+        <>
+          <ClassesList
+            items={items}
+            onEdit={(item) => {
+              setMutationError('')
+              setEditingClass(item)
+            }}
+            onEnroll={(item) => {
               setMutationError('')
               setEnrollingClass(item)
             }}
-          onBatchGrade={(item) => {
-            const classId = encodeURIComponent(item.id)
-            const className = encodeURIComponent(item.name)
-            const assignmentId = item.assignmentId?.trim() ?? ''
-            const searchParams = new URLSearchParams({ className: item.name })
-
-            if (assignmentId) {
-              searchParams.set('assignmentId', assignmentId)
-            }
-
-            navigate(`/classes/${classId}/batch-grading?${searchParams.toString()}`)
-          }}
-          onArchive={(item) => {
-            setMutationError('')
-            setArchivingClass(item)
-          }}
-          isMutating={isMutating}
-        />
+            onBatchGrade={(item) => navigateToBatchGrading(item)}
+            onArchive={(item) => {
+              setMutationError('')
+              setArchivingClass(item)
+            }}
+            isMutating={isMutating}
+          />
+        </>
       )}
 
       {showCreateModal && (
@@ -306,6 +318,6 @@ export default function ClassesPage() {
           onClose={() => setEnrollingClass(null)}
         />
       )}
-    </main>
+    </AppPage>
   )
 }

@@ -6,7 +6,7 @@ interface GradebookTableProps {
 
 export default function GradebookTable({ viewModel }: GradebookTableProps) {
   return (
-    <section className="overflow-x-auto rounded-xl border border-subtle">
+    <section className="overflow-x-auto rounded-[24px] border border-subtle bg-surface">
       <div className="border-b border-subtle bg-elevated px-4 py-3">
         <p className="font-body text-xs text-sec">
           This gradebook is read-only. Homework entries from the Homework page do not create columns here.
@@ -33,10 +33,10 @@ export default function GradebookTable({ viewModel }: GradebookTableProps) {
 
         <tbody className="bg-surface">
           {viewModel.rows.map((row) => (
-            <tr key={row.studentId} className="group border-b border-subtle transition-colors duration-150 hover:bg-elevated">
+            <tr key={row.studentId} className="group border-b border-subtle transition-colors duration-150 hover:bg-white/[0.04]">
               <th
                 scope="row"
-                className="sticky left-0 z-10 bg-surface p-4 font-display font-semibold text-pri whitespace-nowrap group-hover:bg-elevated"
+                className="sticky left-0 z-10 bg-surface p-4 font-display font-semibold text-pri whitespace-nowrap group-hover:bg-white/[0.04]"
               >
                 {row.studentName}
               </th>

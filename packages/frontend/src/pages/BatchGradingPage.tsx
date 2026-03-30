@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import BatchMappingStep from '../features/batch-grading/components/BatchMappingStep'
 import BatchProgressStep from '../features/batch-grading/components/BatchProgressStep'
 import BatchSummaryStep from '../features/batch-grading/components/BatchSummaryStep'
@@ -10,6 +10,7 @@ import {
 } from '../features/batch-grading/domain/assignmentContext'
 import { BATCH_WORKFLOW_STEPS } from '../features/batch-grading/domain/batchTypes'
 import { useBatchWorkflow } from '../features/batch-grading/state/useBatchWorkflow'
+import { AppPage, AppPageHeader, AppPanel } from '../components/layout/AppPage'
 
 const STEP_LABELS: Record<(typeof BATCH_WORKFLOW_STEPS)[number], string> = {
   upload: 'Upload',
@@ -42,11 +43,11 @@ export default function BatchGradingPage() {
 
   if (!classId) {
     return (
-      <main className="flex-1 overflow-y-auto bg-base" style={{ padding: '40px', maxWidth: '1200px' }}>
-        <section className="rounded-xl border border-subtle bg-surface p-6">
+      <AppPage>
+        <AppPanel>
           <h1 className="font-display text-xl font-bold text-pri">Batch grading</h1>
           <p className="mt-2 font-body text-sm text-sec">
-            Class context is missing. Return to Classes and start Batch Grade from a class card.
+            Choose a class from the Classes page to start batch grading.
           </p>
           <button
             type="button"
@@ -59,24 +60,31 @@ export default function BatchGradingPage() {
           >
             Back to Classes
           </button>
-        </section>
-      </main>
+        </AppPanel>
+      </AppPage>
     )
   }
 
   return (
-    <main className="flex-1 overflow-y-auto bg-base" style={{ padding: '40px', maxWidth: '1200px' }}>
+    <AppPage>
+      <AppPageHeader
+        eyebrow="Batch grading"
+        title={`Batch grading: ${breadcrumbClassLabel}`}
+        description="Upload, map, process, and review class submissions in one guided flow."
+      />
       <div className="mb-6">
-        <p className="font-body text-xs text-mut">
-          classes &gt; {breadcrumbClassLabel} &gt; Batch Grading
-        </p>
-        <h1 className="mt-1 font-display text-2xl font-bold text-pri">Batch Grading: {breadcrumbClassLabel}</h1>
+        <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 font-body text-sm text-sec">
+          <Link to="/classes" className="text-gold-300 no-underline hover:text-gold-200">Classes</Link>
+          <span className="text-mut">/</span>
+          <Link to="/classes" className="text-gold-300 no-underline hover:text-gold-200">{breadcrumbClassLabel}</Link>
+          <span className="text-mut">/</span>
+          <span className="text-pri">Batch grading</span>
+        </nav>
         {!assignmentId && (
-          <p className="mt-2 font-body text-sm" style={{ color: 'var(--accent-crimson)' }}>
+          <p className="mt-3 rounded-xl border border-gold-500/20 bg-gold-500/8 px-4 py-3 font-body text-sm text-sec">
             {hasInvalidAssignmentId
-              ? 'Invalid assignment context. Add '
-              : 'Missing assignment context. Add '}
-            <span className="font-mono">?assignmentId=&lt;uuid&gt;</span> to the URL before submitting.
+              ? 'The selected assignment could not be matched. Return to Classes and launch batch grading again from the correct assignment.'
+              : 'This class was opened without an assignment selected. Return to Classes and choose the assignment you want to grade.'}
           </p>
         )}
       </div>
@@ -172,6 +180,6 @@ export default function BatchGradingPage() {
           />
         )}
       </section>
-    </main>
+    </AppPage>
   )
 }

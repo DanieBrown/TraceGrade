@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import CreateHomeworkModal from '../features/homework/CreateHomeworkModal'
 import HomeworkList from '../features/homework/HomeworkList'
 import {
@@ -13,6 +14,7 @@ import {
   isHomeworkListEmpty,
 } from '../features/homework/homeworkApi'
 import type { HomeworkListItem } from '../features/homework/homeworkTypes'
+import { AppNotice, AppPage, AppPageHeader } from '../components/layout/AppPage'
 
 type LoadState = 'loading' | 'error' | 'done'
 
@@ -61,47 +63,38 @@ export default function HomeworkPage() {
   }, [loadHomework])
 
   return (
-    <main className="flex-1 overflow-y-auto bg-base" style={{ padding: '40px', maxWidth: '1200px' }}>
-      <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-pri">Homework</h1>
-          <p className="mt-1 font-body text-sm text-sec">Plan homework reminders and due dates for your classes.</p>
-        </div>
-        <button
+    <AppPage>
+      <AppPageHeader
+        eyebrow="Homework planning"
+        title="Homework"
+        description="Plan assignments and due dates for your classes without mixing them into the gradebook workflow."
+        actions={(
+          <button
           type="button"
           onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center justify-center self-start rounded-lg px-5 py-2.5 font-display text-sm font-semibold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] active:scale-95"
-          style={{
-            background: 'var(--accent-gold)',
-            color: 'var(--bg-base)',
-          }}
+          className="inline-flex items-center justify-center rounded-xl bg-gold-500 px-5 py-3 font-display text-sm font-semibold text-navy-950 transition-colors duration-150 hover:bg-gold-600"
           aria-label="Create homework"
         >
           + Create Homework
         </button>
-      </header>
+        )}
+      />
 
-      <section
-        className="mb-6 rounded-xl border p-4"
-        style={{
-          background: 'rgba(91, 197, 245, 0.06)',
-          borderColor: 'rgba(91, 197, 245, 0.18)',
-        }}
-      >
-        <p className="font-display text-sm font-semibold text-pri">Homework and Gradebook are separate</p>
+      <AppNotice>
+        <p className="font-display text-sm font-semibold text-pri">Homework and gradebook are separate</p>
         <p className="mt-1 font-body text-sm text-sec">
           Homework entries on this page are planning records. They do not create gradebook columns or editable grade rows.
           Gradebook reflects published class assignments and finalized exam grades.
         </p>
         <div className="mt-3 flex flex-wrap gap-3">
-          <Link to="/grades" className="font-display text-sm font-semibold underline" style={{ color: 'var(--accent-teal)' }}>
+          <Link to="/grades" className="font-display text-sm font-semibold text-gold-300 no-underline hover:text-gold-200">
             Open Gradebook
           </Link>
-          <Link to="/exams" className="font-display text-sm font-semibold underline" style={{ color: 'var(--accent-gold)' }}>
+          <Link to="/exams" className="font-display text-sm font-semibold text-gold-300 no-underline hover:text-gold-200">
             Open Exams
           </Link>
         </div>
-      </section>
+      </AppNotice>
 
       {loadState === 'loading' && <LoadingHomeworkState />}
 
@@ -124,10 +117,11 @@ export default function HomeworkPage() {
           onClose={() => setShowCreateModal(false)}
           onHomeworkCreated={() => {
             setShowCreateModal(false)
+            toast.success('Homework created.')
             void loadHomework()
           }}
         />
       )}
-    </main>
+    </AppPage>
   )
 }

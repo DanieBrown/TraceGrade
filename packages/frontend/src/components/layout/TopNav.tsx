@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { getAuthenticatedUser, logout } from '../../features/auth/authApi'
 
@@ -84,10 +85,19 @@ const NAV_LINKS = [
   { label: 'Settings',     to: '/settings',    Icon: SettingsIcon,  end: false },
 ]
 
+interface CommandItem {
+  id: string
+  label: string
+  description: string
+  to: string
+}
+
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
 export default function TopNav() {
   const navigate = useNavigate()
+  const [isCommandOpen, setIsCommandOpen] = useState(false)
+  const [commandQuery, setCommandQuery] = useState('')
   const authenticatedUser = getAuthenticatedUser()
   const displayName =
     [authenticatedUser?.firstName, authenticatedUser?.lastName].filter(Boolean).join(' ').trim() ||
@@ -110,184 +120,243 @@ export default function TopNav() {
       .map((segment) => segment[0]?.toUpperCase() ?? '')
       .join('') || 'TG'
 
+  const commandItems = useMemo<CommandItem[]>(() => {
+    const navCommands = NAV_LINKS.map((item) => ({
+      id: `nav-${item.to}`,
+      label: item.label,
+      description: 'Navigate',
+      to: item.to,
+    }))
+
+    return [
+      {
+        id: 'quick-new-exam',
+        label: 'New Exam',
+        description: 'Open exam creator',
+        to: '/exams?quick=create',
+      },
+      {
+        id: 'quick-new-class',
+        label: 'New Class',
+        description: 'Open class creator',
+        to: '/classes?quick=create',
+      },
+      ...navCommands,
+    ]
+  }, [])
+
+  const filteredCommands = useMemo(() => {
+    const query = commandQuery.trim().toLowerCase()
+
+    if (!query) {
+      return commandItems
+    }
+
+    return commandItems.filter((item) => {
+      const haystack = `${item.label} ${item.description} ${item.to}`.toLowerCase()
+      return haystack.includes(query)
+    })
+  }, [commandItems, commandQuery])
+
+  useEffect(() => {
+    function handleGlobalShortcut(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        setIsCommandOpen((previous) => !previous)
+      }
+
+      if (event.key === 'Escape') {
+        setIsCommandOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleGlobalShortcut)
+
+    return () => {
+      window.removeEventListener('keydown', handleGlobalShortcut)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isCommandOpen) {
+      setCommandQuery('')
+    }
+  }, [isCommandOpen])
+
+  function handleCommandNavigate(to: string) {
+    setIsCommandOpen(false)
+    navigate(to)
+  }
+
   return (
-    <aside
-      className="bg-grid flex-shrink-0 flex flex-col"
-      style={{
-        width: '232px',
-        height: '100vh',
-        position: 'sticky',
-        top: 0,
-        backgroundColor: 'var(--bg-surface)',
-        borderRight: '1px solid var(--border)',
-        overflowY: 'auto',
-      }}
-    >
-      {/* ── Logo ── */}
-      <div
-        className="flex items-center gap-3 px-5"
-        style={{
-          height: '64px',
-          borderBottom: '1px solid var(--border)',
-          flexShrink: 0,
-        }}
+    <>
+      <aside
+        className="surface-panel-plain flex flex-col border-b border-subtle lg:sticky lg:top-0 lg:h-screen lg:w-72 lg:border-b-0 lg:border-r"
       >
-        <div
-          className="flex items-center justify-center font-display font-extrabold flex-shrink-0"
-          style={{
-            width: '34px',
-            height: '34px',
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, var(--accent-gold) 0%, #f0c050 100%)',
-            color: '#06101e',
-            fontSize: '13px',
-            letterSpacing: '-0.5px',
-          }}
-        >
-          TG
-        </div>
-        <div>
-          <p
-            className="font-display"
-            style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)', lineHeight: 1 }}
-          >
-            TraceGrade
-          </p>
-          <p
-            className="font-mono"
-            style={{ fontSize: '9.5px', color: 'var(--text-muted)', marginTop: '3px', letterSpacing: '0.1em' }}
-          >
-            TEACHER PORTAL
+        <div className="border-b border-subtle px-5 py-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold-500 text-sm font-display font-bold text-navy-950">
+              TG
+            </div>
+            <div>
+              <p className="font-display text-lg font-semibold text-white">TraceGrade</p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-gold-300/80">Teacher workspace</p>
+            </div>
+          </div>
+          <p className="mt-4 max-w-[18rem] font-body text-sm text-sec">
+            Review grading activity, move between classes, and stay on top of manual checks.
           </p>
         </div>
-      </div>
 
-      {/* ── Section label ── */}
-      <div className="px-5 pt-5 pb-2">
-        <p
-          className="font-mono"
-          style={{
-            fontSize: '9px',
-            letterSpacing: '0.18em',
-            textTransform: 'uppercase',
-            color: 'var(--text-muted)',
-            fontWeight: 500,
-          }}
-        >
-          Menu
-        </p>
-      </div>
-
-      {/* ── Nav links ── */}
-      <nav className="flex-1 px-3" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-        {NAV_LINKS.map(({ label, to, Icon, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            style={({ isActive }) => ({
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '9px 12px',
-              borderRadius: '8px',
-              textDecoration: 'none',
-              fontFamily: "'Syne', sans-serif",
-              fontSize: '13.5px',
-              fontWeight: isActive ? 600 : 500,
-              color: isActive ? 'var(--accent-gold)' : 'var(--text-secondary)',
-              background: isActive ? 'rgba(232, 164, 40, 0.09)' : 'transparent',
-              borderLeft: isActive ? '2px solid var(--accent-gold)' : '2px solid transparent',
-              transition: 'all 0.15s ease',
-            })}
-          >
-            {({ isActive }) => (
-              <>
-                <span style={{ opacity: isActive ? 1 : 0.6, flexShrink: 0 }}>
-                  <Icon />
-                </span>
-                {label}
-              </>
-            )}
-          </NavLink>
-        ))}
-      </nav>
-
-      {/* ── Version tag ── */}
-      <div
-        className="mx-3 mb-3 px-3 py-2 rounded-lg font-mono"
-        style={{
-          background: 'rgba(0, 201, 167, 0.06)',
-          border: '1px solid rgba(0, 201, 167, 0.12)',
-          fontSize: '10px',
-          color: 'var(--text-muted)',
-        }}
-      >
-        <span style={{ color: 'var(--accent-teal)', marginRight: '6px' }}>◈</span>
-        AI Grading Active
-      </div>
-
-      {/* ── User profile ── */}
-      <div style={{ borderTop: '1px solid var(--border)', padding: '12px', flexShrink: 0 }}>
-        <div
-          className="flex items-center gap-3 px-2 py-2 rounded-lg"
-          style={{ background: 'rgba(120, 180, 220, 0.04)' }}
-        >
-          {/* Avatar */}
-          <div
-            className="flex items-center justify-center font-display font-bold flex-shrink-0"
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              background: 'rgba(232, 164, 40, 0.14)',
-              border: '1px solid rgba(232, 164, 40, 0.28)',
-              color: 'var(--accent-gold)',
-              fontSize: '12px',
-            }}
-          >
-            {avatarInitials}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p
-              className="font-display"
-              style={{
-                fontWeight: 600,
-                fontSize: '13px',
-                color: 'var(--text-primary)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {displayName}
-            </p>
-            <p
-              className="font-mono"
-              style={{ fontSize: '10px', color: 'var(--text-muted)' }}
-            >
-              {displayEmail}
-            </p>
-          </div>
+        <div className="section-divider px-4 py-4">
           <button
-            title="Logout"
-            onClick={() => { logout(); navigate('/login'); }}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '4px',
-              borderRadius: '4px',
-              color: 'var(--text-muted)',
-              transition: 'color 0.15s',
-            }}
-            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'var(--accent-crimson)')}
-            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'var(--text-muted)')}
+            type="button"
+            onClick={() => setIsCommandOpen(true)}
+            className="surface-panel-plain w-full rounded-xl px-3 py-3 text-left hover:border-accent"
           >
-            <LogOutIcon />
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-display text-sm text-pri">Quick command</span>
+              <span className="rounded-full border border-subtle px-2 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-mut">
+                Ctrl+K
+              </span>
+            </div>
+            <p className="mt-1 font-body text-xs text-sec">Jump straight to a class, review queue, or creation flow.</p>
           </button>
         </div>
-      </div>
-    </aside>
+
+        <div className="px-4 pb-5">
+          <button
+            type="button"
+            className="w-full rounded-xl bg-gold-500 px-4 py-3 text-left text-navy-950 transition-colors duration-150 hover:bg-gold-600"
+            onClick={() => navigate('/exams?quick=create')}
+          >
+            <span className="block font-display text-sm font-semibold">Create exam</span>
+            <span className="mt-1 block font-body text-xs text-navy-950/80">Start a new grading workflow without leaving the workspace.</span>
+          </button>
+        </div>
+
+        <div className="px-5 pb-2">
+          <p className="font-mono text-[10px] font-medium uppercase tracking-[0.22em] text-mut">Navigation</p>
+        </div>
+
+        <nav className="flex-1 px-3 pb-4" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {NAV_LINKS.map(({ label, to, Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className="nav-item rounded-xl border border-transparent px-3 py-3 no-underline"
+              style={({ isActive }) => ({
+                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                background: isActive ? 'rgba(255, 255, 255, 0.04)' : 'transparent',
+                borderColor: isActive ? 'var(--border-strong)' : 'transparent',
+              })}
+            >
+              {({ isActive }) => (
+                <div className="flex items-center gap-3">
+                  <span
+                    className="flex h-9 w-9 items-center justify-center rounded-lg"
+                    style={{
+                      opacity: isActive ? 1 : 0.72,
+                      flexShrink: 0,
+                      background: isActive ? 'rgba(232, 164, 40, 0.1)' : 'rgba(255, 255, 255, 0.02)',
+                      color: isActive ? 'var(--accent-gold)' : 'var(--text-secondary)',
+                    }}
+                  >
+                    <Icon />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-display text-sm font-medium">{label}</p>
+                    <p className="font-body text-xs text-mut">
+                      {label === 'Dashboard' && 'Overview and workload'}
+                      {label === 'Classes' && 'Class rosters and activity'}
+                      {label === 'Students' && 'Enrollment records'}
+                      {label === 'Exams' && 'Assessments and grading'}
+                      {label === 'Homework' && 'Assignments and submissions'}
+                      {label === 'Grades' && 'Performance reporting'}
+                      {label === 'Review Queue' && 'Confidence-based checks'}
+                      {label === 'Settings' && 'Thresholds and preferences'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="section-divider px-3 py-3">
+          <div
+            className="surface-panel-plain flex items-center gap-3 rounded-xl px-3 py-3"
+          >
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-accent bg-gold-500/10 font-display text-sm font-bold text-gold-400">
+              {avatarInitials}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p className="truncate font-display text-sm font-medium text-pri">{displayName}</p>
+              <p className="font-mono text-[10px] text-mut">{displayEmail}</p>
+            </div>
+            <button
+              title="Logout"
+              onClick={() => {
+                logout()
+                navigate('/login')
+              }}
+              className="rounded-lg border border-transparent p-2 text-mut transition-colors duration-150 hover:border-subtle hover:text-crimson-400"
+            >
+              <LogOutIcon />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {isCommandOpen && (
+        <div className="command-overlay" role="dialog" aria-modal="true" aria-label="Quick command">
+          <div className="command-panel">
+            <div className="border-b border-subtle p-3">
+              <input
+                type="text"
+                autoFocus
+                value={commandQuery}
+                onChange={(event) => setCommandQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && filteredCommands.length > 0) {
+                    event.preventDefault()
+                    handleCommandNavigate(filteredCommands[0].to)
+                  }
+                }}
+                placeholder="Go to classes, review queue, create exam..."
+                className="w-full rounded-md border border-subtle bg-elevated px-3 py-2 font-body text-sm text-pri outline-none transition-colors focus:border-[var(--accent-gold)]"
+              />
+            </div>
+            <ul className="max-h-80 overflow-y-auto p-2" aria-label="Command results">
+              {filteredCommands.length === 0 && (
+                <li className="rounded-md px-3 py-2 font-body text-sm text-sec">No commands found.</li>
+              )}
+              {filteredCommands.map((command) => (
+                <li key={command.id}>
+                  <button
+                    type="button"
+                    className="w-full rounded-md px-3 py-2 text-left transition-colors duration-150 hover:bg-white/5"
+                    onClick={() => handleCommandNavigate(command.to)}
+                  >
+                    <p className="font-display text-sm text-pri">{command.label}</p>
+                    <p className="font-body text-xs text-sec">{command.description}</p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="border-t border-subtle px-3 py-2 font-mono text-xs text-mut">
+              Enter to run command • Esc to close
+            </div>
+          </div>
+          <button
+            type="button"
+            aria-label="Close quick command"
+            className="command-backdrop"
+            onClick={() => setIsCommandOpen(false)}
+          />
+        </div>
+      )}
+    </>
   )
 }

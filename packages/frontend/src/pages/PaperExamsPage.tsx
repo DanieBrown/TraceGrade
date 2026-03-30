@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import { fetchExamTemplates } from '../features/exams/examsApi'
 import { parseExamQuestions } from '../features/exams/examQuestions'
 import type { ExamTemplateListItem } from '../features/exams/examsTypes'
@@ -104,7 +105,6 @@ function GradePanel({
 }) {
   const [selectedStudentId, setSelectedStudentId] = useState('')
   const [submissionId, setSubmissionId] = useState<string | null>(null)
-  const [saveSuccess, setSaveSuccess] = useState<{ studentName: string; score: string } | null>(null)
   const { state: gradingState, grade, reset } = useGrading()
 
   const selectedStudent = useMemo(
@@ -151,8 +151,9 @@ function GradePanel({
     const scoreLabel = totalAvailable > 0
       ? `${totalAdjusted % 1 === 0 ? totalAdjusted : totalAdjusted.toFixed(1)}/${totalAvailable}`
       : 'saved'
-    setSaveSuccess({ studentName: selectedStudent.fullName, score: scoreLabel })
-    setTimeout(() => setSaveSuccess(null), 5000)
+    toast.success(`Grades saved for ${selectedStudent.fullName}.`, {
+      description: `Recorded score ${scoreLabel}.`,
+    })
 
     setSubmissionId(null)
     setSelectedStudentId('')
@@ -172,43 +173,6 @@ function GradePanel({
         border: '1px solid var(--border)',
       }}
     >
-      {/* Success banner after saving grades */}
-      {saveSuccess && (
-        <div
-          className="flex items-center gap-3 rounded-lg p-4 animate-in fade-in"
-          role="status"
-          style={{
-            background: 'rgba(0, 201, 167, 0.08)',
-            border: '1px solid rgba(0, 201, 167, 0.22)',
-          }}
-        >
-          <span
-            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(0, 201, 167, 0.15)' }}
-            aria-hidden="true"
-          >
-            <span style={{ color: 'var(--accent-teal)' }}>✓</span>
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="font-display font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-              Grades saved for {saveSuccess.studentName}
-            </p>
-            <p className="font-body text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-              Score: {saveSuccess.score} — Select another student to continue grading.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setSaveSuccess(null)}
-            className="text-xs flex-shrink-0 px-2 py-1 rounded transition-colors"
-            style={{ color: 'var(--text-muted)' }}
-            aria-label="Dismiss"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-display font-bold text-lg" style={{ color: 'var(--text-primary)' }}>
@@ -236,10 +200,10 @@ function GradePanel({
             style={{
               border: '1px solid var(--border)',
               color: 'var(--text-secondary)',
-              background: 'transparent',
+              background: 'rgba(255, 255, 255, 0.04)',
             }}
-            onMouseEnter={(event) => ((event.currentTarget as HTMLElement).style.background = 'rgba(120, 180, 220, 0.06)')}
-            onMouseLeave={(event) => ((event.currentTarget as HTMLElement).style.background = 'transparent')}
+            onMouseEnter={(event) => ((event.currentTarget as HTMLElement).style.background = 'rgba(255, 255, 255, 0.08)')}
+            onMouseLeave={(event) => ((event.currentTarget as HTMLElement).style.background = 'rgba(255, 255, 255, 0.04)')}
           >
             ← Back to Exams
           </button>

@@ -14,10 +14,10 @@ export default function ClassContextHeader({
   disabled = false,
 }: ClassContextHeaderProps) {
   return (
-    <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <header className="mb-6 flex flex-col gap-2 rounded-2xl border border-subtle bg-white/[0.03] p-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 className="font-display text-2xl font-bold text-pri">Grades</h1>
-        <p className="mt-1 font-body text-sm text-sec">View class gradebook</p>
+        <p className="font-display text-sm font-medium text-white">Class view</p>
+        <p className="mt-1 font-body text-sm text-sec">Switch between classes to update the gradebook summary below.</p>
       </div>
 
       <div className="flex flex-col gap-1 self-start">
@@ -30,7 +30,7 @@ export default function ClassContextHeader({
           onChange={(event) => onClassChange(event.target.value)}
           aria-label="Select class"
           disabled={disabled || classOptions.length === 0}
-          className="min-w-52 rounded-lg border border-subtle bg-surface px-3 py-2 font-body text-sm text-pri focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-w-52 rounded-xl border border-subtle bg-elevated px-3 py-2 font-body text-sm text-pri focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {classOptions.length === 0 ? (
             <option value="">No classes available</option>
