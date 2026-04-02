@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ClassListItem } from '../features/classes/classesTypes'
 import ClassesPage from './ClassesPage'
@@ -38,6 +39,14 @@ const BASE_CLASS: ClassListItem = {
   isActive: true,
 }
 
+function renderClassesPage() {
+  return render(
+    <MemoryRouter>
+      <ClassesPage />
+    </MemoryRouter>,
+  )
+}
+
 describe('ClassesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -54,7 +63,7 @@ describe('ClassesPage', () => {
   it('renders loading state while classes are being fetched', () => {
     fetchClassesMock.mockReturnValueOnce(new Promise(() => {}))
 
-    render(<ClassesPage />)
+    renderClassesPage()
 
     expect(screen.getByLabelText('Loading classes')).toBeInTheDocument()
   })
@@ -67,7 +76,7 @@ describe('ClassesPage', () => {
       retryable: true,
     })
 
-    render(<ClassesPage />)
+    renderClassesPage()
 
     expect(await screen.findByText('Failed to load classes.')).toBeInTheDocument()
     const retryButton = screen.getByRole('button', { name: 'Retry loading classes' })
@@ -86,7 +95,7 @@ describe('ClassesPage', () => {
       retryable: false,
     })
 
-    render(<ClassesPage />)
+    renderClassesPage()
 
     expect(
       await screen.findByText(
@@ -108,7 +117,7 @@ describe('ClassesPage', () => {
       },
     ])
 
-    render(<ClassesPage />)
+    renderClassesPage()
 
     expect(await screen.findByText('Biology 101')).toBeInTheDocument()
     expect(screen.getAllByText('Science')).toHaveLength(2)
@@ -116,47 +125,20 @@ describe('ClassesPage', () => {
     expect(screen.getAllByText('Year: 2026-2027')).toHaveLength(2)
     expect(screen.getByText('Chemistry A')).toBeInTheDocument()
     expect(screen.getByText('Period: 3')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Batch grade Biology 101' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open Biology 101 grades' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Batch grade Biology 101' })).not.toBeInTheDocument()
   })
 
-  it('opens Batch Grade route from the class card when assignment context is present', async () => {
+  it('opens Grades from the class card and preloads the selected class', async () => {
     fetchClassesMock.mockResolvedValueOnce([BASE_CLASS])
 
-    render(<ClassesPage />)
+    renderClassesPage()
 
     expect(await screen.findByText('Biology 101')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Batch grade Biology 101' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Open Biology 101 grades' }))
 
-    expect(mockNavigate).toHaveBeenCalledWith(
-      '/classes/class-1/batch-grading?className=Biology+101&assignmentId=123e4567-e89b-12d3-a456-426614174000',
-    )
-  })
-
-  it('opens Batch Grade route and lets the workflow page handle missing assignment context', async () => {
-    fetchClassesMock.mockResolvedValueOnce([{ ...BASE_CLASS, assignmentId: null }])
-
-    render(<ClassesPage />)
-
-    expect(await screen.findByText('Biology 101')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Batch grade Biology 101' }))
-
-    expect(mockNavigate).toHaveBeenCalledWith('/classes/class-1/batch-grading?className=Biology+101')
-  })
-
-  it('opens Batch Grade route and preserves malformed assignment context for route-level guidance', async () => {
-    fetchClassesMock.mockResolvedValueOnce([{ ...BASE_CLASS, assignmentId: 'assignment-not-a-uuid' }])
-
-    render(<ClassesPage />)
-
-    expect(await screen.findByText('Biology 101')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Batch grade Biology 101' }))
-
-    expect(mockNavigate).toHaveBeenCalledWith(
-      '/classes/class-1/batch-grading?className=Biology+101&assignmentId=assignment-not-a-uuid',
-    )
+    expect(mockNavigate).toHaveBeenCalledWith('/grades?classId=class-1')
   })
 
   it('creates a class from New Class flow and prepends it to list', async () => {
@@ -170,7 +152,7 @@ describe('ClassesPage', () => {
       isActive: true,
     })
 
-    render(<ClassesPage />)
+    renderClassesPage()
 
     const emptyStateHeading = await screen.findByText('No classes found')
     const emptyStateSection = emptyStateHeading.closest('section')
@@ -213,7 +195,7 @@ describe('ClassesPage', () => {
       }),
     )
 
-    render(<ClassesPage />)
+    renderClassesPage()
 
     const emptyStateHeading = await screen.findByText('No classes found')
     const emptyStateSection = emptyStateHeading.closest('section')
@@ -257,7 +239,7 @@ describe('ClassesPage', () => {
     fetchClassesMock.mockResolvedValueOnce([])
     createClassMock.mockRejectedValueOnce(new Error('Create failed upstream'))
 
-    render(<ClassesPage />)
+    renderClassesPage()
 
     const emptyStateHeading = await screen.findByText('No classes found')
     const emptyStateSection = emptyStateHeading.closest('section')
@@ -296,7 +278,7 @@ describe('ClassesPage', () => {
       period: '5',
     })
 
-    render(<ClassesPage />)
+    renderClassesPage()
 
     expect(await screen.findByText('Biology 101')).toBeInTheDocument()
 
@@ -327,7 +309,7 @@ describe('ClassesPage', () => {
     fetchClassesMock.mockResolvedValueOnce([BASE_CLASS])
     updateClassMock.mockRejectedValueOnce(new Error('Update failed upstream'))
 
-    render(<ClassesPage />)
+    renderClassesPage()
 
     expect(await screen.findByText('Biology 101')).toBeInTheDocument()
 
@@ -354,7 +336,7 @@ describe('ClassesPage', () => {
     fetchClassesMock.mockResolvedValueOnce([BASE_CLASS])
     archiveClassMock.mockResolvedValueOnce(undefined)
 
-    render(<ClassesPage />)
+    renderClassesPage()
 
     expect(await screen.findByText('Biology 101')).toBeInTheDocument()
 
@@ -382,7 +364,7 @@ describe('ClassesPage', () => {
       }),
     )
 
-    render(<ClassesPage />)
+    renderClassesPage()
 
     expect(await screen.findByText('Biology 101')).toBeInTheDocument()
 
@@ -410,7 +392,7 @@ describe('ClassesPage', () => {
     fetchClassesMock.mockResolvedValueOnce([BASE_CLASS])
     archiveClassMock.mockRejectedValueOnce(new Error('Archive failed upstream'))
 
-    render(<ClassesPage />)
+    renderClassesPage()
 
     expect(await screen.findByText('Biology 101')).toBeInTheDocument()
 

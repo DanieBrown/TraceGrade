@@ -20,7 +20,7 @@ describe('TopNav', () => {
     localStorage.clear()
   })
 
-  it('renders the authenticated teacher identity instead of static admin text', () => {
+  it('keeps authenticated identity out of the sidebar because it now lives in the workspace header', () => {
     localStorage.setItem(
       'auth_token',
       createToken({
@@ -37,9 +37,43 @@ describe('TopNav', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByText('Teacher One')).toBeInTheDocument()
-    expect(screen.getByText('teacher.one@example.com')).toBeInTheDocument()
+    expect(screen.queryByText('Teacher One')).not.toBeInTheDocument()
+    expect(screen.queryByText('teacher.one@example.com')).not.toBeInTheDocument()
     expect(screen.queryByText('Admin')).not.toBeInTheDocument()
     expect(screen.queryByText('admin@school.edu')).not.toBeInTheDocument()
+  })
+
+  it('does not render a persistent create exam shortcut button in the sidebar', () => {
+    localStorage.setItem(
+      'auth_token',
+      createToken({
+        sub: 'teacher.one@example.com',
+        firstName: 'Teacher',
+        lastName: 'One',
+        role: 'TEACHER',
+      }),
+    )
+
+    render(
+      <MemoryRouter>
+        <TopNav />
+      </MemoryRouter>,
+    )
+
+    expect(screen.queryByRole('button', { name: /Create exam/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Quick command/i })).toBeInTheDocument()
+  })
+
+  it('renders the branded logo, homework navigation, and updated students helper copy', () => {
+    render(
+      <MemoryRouter>
+        <TopNav />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByLabelText('TraceGrade logo')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Homework/i })).toBeInTheDocument()
+    expect(screen.getByText('Learner profiles and progress')).toBeInTheDocument()
+    expect(screen.queryByText('Enrollment records')).not.toBeInTheDocument()
   })
 })

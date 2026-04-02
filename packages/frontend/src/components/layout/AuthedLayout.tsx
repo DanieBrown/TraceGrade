@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import TopNav from './TopNav'
+import WorkspaceHeader from './WorkspaceHeader'
 
 export default function AuthedLayout() {
   const location = useLocation()
@@ -7,11 +8,12 @@ export default function AuthedLayout() {
   return (
     <div className="app-shell min-h-screen lg:flex">
       <TopNav />
-      <main className="min-w-0 flex-1 bg-base lg:h-screen lg:overflow-y-auto">
+      <div className="min-w-0 flex-1 bg-base lg:h-screen lg:overflow-y-auto">
+        <WorkspaceHeader />
         <div key={location.pathname} className="route-transition min-h-full">
           <Outlet />
         </div>
-      </main>
+      </div>
     </div>
   )
 }

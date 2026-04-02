@@ -22,7 +22,6 @@ export default function AddStudentModal({ onClose, onStudentAdded }: AddStudentM
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
-  const [studentNumber, setStudentNumber] = useState('')
   const [formState, setFormState] = useState<FormState>('idle')
   const [errorMessage, setErrorMessage] = useState('')
   const backdropRef = useRef<HTMLDivElement>(null)
@@ -42,7 +41,6 @@ export default function AddStudentModal({ onClose, onStudentAdded }: AddStudentM
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
-        studentNumber: studentNumber.trim() || undefined,
       }
 
       const validationError = validateForm(payload)
@@ -65,7 +63,7 @@ export default function AddStudentModal({ onClose, onStudentAdded }: AddStudentM
         setFormState('error')
       }
     },
-    [firstName, lastName, email, studentNumber, onStudentAdded],
+    [firstName, lastName, email, onStudentAdded],
   )
 
   const isSubmitting = formState === 'submitting'
@@ -171,29 +169,6 @@ export default function AddStudentModal({ onClose, onStudentAdded }: AddStudentM
                 color: 'var(--text-primary)',
               }}
               required
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="studentNumber" className="font-display text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-              Student Number
-              <span className="ml-1 font-body" style={{ color: 'var(--text-muted)', fontWeight: 400 }}>
-                (optional)
-              </span>
-            </label>
-            <input
-              id="studentNumber"
-              type="text"
-              value={studentNumber}
-              onChange={(e) => setStudentNumber(e.target.value)}
-              disabled={isSubmitting}
-              placeholder="STU-2026-001"
-              className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors font-body"
-              style={{
-                backgroundColor: 'var(--bg-elevated)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-primary)',
-              }}
             />
           </div>
 

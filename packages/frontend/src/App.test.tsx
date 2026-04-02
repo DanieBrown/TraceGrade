@@ -2,6 +2,13 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
+function createToken(payload: Record<string, unknown>): string {
+  const encode = (value: Record<string, unknown>) =>
+    window.btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+
+  return `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode(payload)}.signature`
+}
+
 vi.mock('./pages/DashboardPage', () => ({
   default: () => <h1>Dashboard Mock Page</h1>,
 }))
@@ -24,10 +31,6 @@ vi.mock('./pages/PaperExamsPage', () => ({
 
 vi.mock('./pages/ExamRubricPage', () => ({
   default: () => <h1>Exam Rubric Mock Page</h1>,
-}))
-
-vi.mock('./pages/BatchGradingPage', () => ({
-  default: () => <h1>Batch Grading Mock Page</h1>,
 }))
 
 vi.mock('./pages/ManualReviewQueuePage', () => ({
@@ -63,7 +66,7 @@ describe('App routes', () => {
     ['/exams', 'Exams Mock Page'],
     ['/exams/exam-1', 'Paper Exams Mock Page'],
     ['/exams/exam-1/rubrics', 'Exam Rubric Mock Page'],
-    ['/classes/class-1/batch-grading', 'Batch Grading Mock Page'],
+    ['/classes/class-1/batch-grading', 'Classes Mock Page'],
     ['/review', 'Review Mock Page'],
     ['/homework', 'Homework Mock Page'],
     ['/grades', 'Grades Mock Page'],
@@ -76,17 +79,13 @@ describe('App routes', () => {
     expect(screen.getByRole('heading', { name: headingText })).toBeInTheDocument()
   })
 
-  it('renders top nav in Dashboard -> Classes -> Students order', () => {
+  it('renders homework in the primary navigation', () => {
     window.history.pushState({}, '', '/classes')
 
     render(<App />)
 
     const nav = screen.getByRole('navigation')
-    const linkLabels = within(nav)
-      .getAllByRole('link')
-      .map((link) => link.textContent?.trim())
-
-    expect(linkLabels.slice(0, 3)).toEqual(['Dashboard', 'Classes', 'Students'])
+    expect(within(nav).getByRole('link', { name: /Homework/i })).toBeInTheDocument()
   })
 
   it('marks Classes as active when path is /classes', () => {
@@ -95,10 +94,30 @@ describe('App routes', () => {
     render(<App />)
 
     const nav = screen.getByRole('navigation')
-    const classesLink = within(nav).getByRole('link', { name: 'Classes' })
-    const dashboardLink = within(nav).getByRole('link', { name: 'Dashboard' })
+    const classesLink = within(nav).getByRole('link', { name: /Classes/i })
+    const dashboardLink = within(nav).getByRole('link', { name: /Dashboard/i })
 
     expect(classesLink).toHaveAttribute('aria-current', 'page')
     expect(dashboardLink).not.toHaveAttribute('aria-current')
+  })
+
+  it('renders the authenticated user in the workspace header instead of the sidebar footer', () => {
+    localStorage.setItem(
+      'auth_token',
+      createToken({
+        sub: 'teacher.one@example.com',
+        firstName: 'Teacher',
+        lastName: 'One',
+        role: 'TEACHER',
+      }),
+    )
+
+    window.history.pushState({}, '', '/classes')
+    render(<App />)
+
+    const header = screen.getByRole('banner', { name: 'Workspace header' })
+    expect(within(header).getByText('Teacher One')).toBeInTheDocument()
+    expect(within(header).getByText('teacher.one@example.com')).toBeInTheDocument()
+    expect(screen.getAllByText('teacher.one@example.com')).toHaveLength(1)
   })
 })

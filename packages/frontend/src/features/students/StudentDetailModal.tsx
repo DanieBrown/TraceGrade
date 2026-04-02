@@ -24,7 +24,6 @@ export default function StudentDetailModal({ student, onClose, onStudentUpdated 
   const [firstName, setFirstName] = useState(student.firstName ?? '')
   const [lastName, setLastName] = useState(student.lastName ?? '')
   const [email, setEmail] = useState(student.email ?? '')
-  const [studentNumber, setStudentNumber] = useState(student.studentNumber ?? '')
   const [isActive, setIsActive] = useState(student.isActive)
   const [formState, setFormState] = useState<FormState>('idle')
   const [errorMessage, setErrorMessage] = useState('')
@@ -45,7 +44,6 @@ export default function StudentDetailModal({ student, onClose, onStudentUpdated 
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
-        studentNumber: studentNumber.trim() || undefined,
         isActive,
       }
 
@@ -70,7 +68,7 @@ export default function StudentDetailModal({ student, onClose, onStudentUpdated 
         setFormState('error')
       }
     },
-    [firstName, lastName, email, studentNumber, isActive, student.id, onStudentUpdated],
+    [firstName, lastName, email, isActive, student.id, onStudentUpdated],
   )
 
   const isSubmitting = formState === 'submitting'
@@ -210,31 +208,6 @@ export default function StudentDetailModal({ student, onClose, onStudentUpdated 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isSubmitting}
-              className="w-full rounded-lg px-3 py-2 font-body text-sm outline-none transition-colors focus:ring-2 focus:ring-[var(--accent-gold)]"
-              style={{
-                backgroundColor: 'var(--bg-base)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-primary)',
-              }}
-            />
-          </div>
-
-          {/* Student Number */}
-          <div>
-            <label
-              htmlFor="sd-studentnumber"
-              className="mb-1 block font-body text-xs font-medium"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Student Number
-            </label>
-            <input
-              id="sd-studentnumber"
-              type="text"
-              value={studentNumber}
-              onChange={(e) => setStudentNumber(e.target.value)}
-              disabled={isSubmitting}
-              placeholder="Optional"
               className="w-full rounded-lg px-3 py-2 font-body text-sm outline-none transition-colors focus:ring-2 focus:ring-[var(--accent-gold)]"
               style={{
                 backgroundColor: 'var(--bg-base)',

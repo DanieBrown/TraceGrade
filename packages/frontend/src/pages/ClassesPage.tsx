@@ -204,18 +204,10 @@ export default function ClassesPage() {
   const isMutating = mutationState !== 'idle'
   const hasNonRetryableLoadError = loadState === 'error' && !canRetry
   const isNewClassDisabled = isMutating || hasNonRetryableLoadError
-  const classWithAssignment = items.find((item) => (item.assignmentId?.trim() ?? '').length > 0)
 
-  function navigateToBatchGrading(item: ClassListItem) {
-    const classId = encodeURIComponent(item.id)
-    const assignmentId = item.assignmentId?.trim() ?? ''
-    const search = new URLSearchParams({ className: item.name })
-
-    if (assignmentId) {
-      search.set('assignmentId', assignmentId)
-    }
-
-    navigate(`/classes/${classId}/batch-grading?${search.toString()}`)
+  function navigateToGrades(item: ClassListItem) {
+    const search = new URLSearchParams({ classId: item.id })
+    navigate(`/grades?${search.toString()}`)
   }
 
   return (
@@ -223,7 +215,7 @@ export default function ClassesPage() {
       <AppPageHeader
         eyebrow="Class management"
         title="Classes"
-        description="Manage class sections, roster access, and the batch-grading entry points tied to each class."
+        description="Manage class sections, roster access, and quick gradebook entry points for each class."
         actions={(
           <button
             type="button"
@@ -277,7 +269,7 @@ export default function ClassesPage() {
               setMutationError('')
               setEnrollingClass(item)
             }}
-            onBatchGrade={(item) => navigateToBatchGrading(item)}
+            onViewGrades={(item) => navigateToGrades(item)}
             onArchive={(item) => {
               setMutationError('')
               setArchivingClass(item)

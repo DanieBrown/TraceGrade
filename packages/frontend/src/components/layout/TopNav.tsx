@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { getAuthenticatedUser, logout } from '../../features/auth/authApi'
+import TraceGradeLogo from './TraceGradeLogo'
 
 // ── Inline SVG icons ──────────────────────────────────────────────────────────
 
@@ -34,6 +34,15 @@ const FileTextIcon: SvgIcon = ({ size = 17 }) => (
   </svg>
 )
 
+const HomeworkIcon: SvgIcon = ({ size = 17 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 3h6l1 2h3a1 1 0 0 1 1 1v12a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a1 1 0 0 1 1-1h3z" />
+    <path d="M9 3v3h6V3" />
+    <path d="M8 11h8" />
+    <path d="M8 15h6" />
+  </svg>
+)
+
 const BookOpenIcon: SvgIcon = ({ size = 17 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
     <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
@@ -64,22 +73,14 @@ const SettingsIcon: SvgIcon = ({ size = 17 }) => (
   </svg>
 )
 
-const LogOutIcon: SvgIcon = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-    <polyline points="16 17 21 12 16 7" />
-    <line x1="21" y1="12" x2="9" y2="12" />
-  </svg>
-)
-
 // ── Nav data ──────────────────────────────────────────────────────────────────
 
 const NAV_LINKS = [
   { label: 'Dashboard',    to: '/',            Icon: GridIcon,      end: true  },
+  { label: 'Exams',        to: '/exams',       Icon: FileTextIcon,  end: false },
+  { label: 'Homework',     to: '/homework',    Icon: HomeworkIcon,  end: false },
   { label: 'Classes',      to: '/classes',     Icon: BookOpenIcon,  end: false },
   { label: 'Students',     to: '/students',    Icon: UsersIcon,     end: false },
-  { label: 'Exams',        to: '/exams',       Icon: FileTextIcon,  end: false },
-  { label: 'Homework',     to: '/homework',    Icon: BookOpenIcon,  end: false },
   { label: 'Grades',       to: '/grades',      Icon: BarChartIcon,  end: false },
   { label: 'Review Queue', to: '/review',      Icon: ReviewIcon,    end: false },
   { label: 'Settings',     to: '/settings',    Icon: SettingsIcon,  end: false },
@@ -98,27 +99,6 @@ export default function TopNav() {
   const navigate = useNavigate()
   const [isCommandOpen, setIsCommandOpen] = useState(false)
   const [commandQuery, setCommandQuery] = useState('')
-  const authenticatedUser = getAuthenticatedUser()
-  const displayName =
-    [authenticatedUser?.firstName, authenticatedUser?.lastName].filter(Boolean).join(' ').trim() ||
-    authenticatedUser?.email?.split('@')[0] ||
-    (authenticatedUser?.role === 'ADMIN'
-      ? 'Admin'
-      : authenticatedUser?.role === 'COUNSELOR'
-        ? 'Counselor'
-        : 'Teacher')
-  const displayEmail = authenticatedUser?.email ?? 'teacher@school.edu'
-  const avatarSource =
-    [authenticatedUser?.firstName, authenticatedUser?.lastName].filter(Boolean).join(' ').trim() ||
-    authenticatedUser?.email ||
-    displayName
-  const avatarInitials =
-    avatarSource
-      .split(/[\s@._-]+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((segment) => segment[0]?.toUpperCase() ?? '')
-      .join('') || 'TG'
 
   const commandItems = useMemo<CommandItem[]>(() => {
     const navCommands = NAV_LINKS.map((item) => ({
@@ -195,8 +175,8 @@ export default function TopNav() {
       >
         <div className="border-b border-subtle px-5 py-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold-500 text-sm font-display font-bold text-navy-950">
-              TG
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-gold-500/25 bg-gold-500/10">
+              <TraceGradeLogo className="h-7 w-7" />
             </div>
             <div>
               <p className="font-display text-lg font-semibold text-white">TraceGrade</p>
@@ -221,17 +201,6 @@ export default function TopNav() {
               </span>
             </div>
             <p className="mt-1 font-body text-xs text-sec">Jump straight to a class, review queue, or creation flow.</p>
-          </button>
-        </div>
-
-        <div className="px-4 pb-5">
-          <button
-            type="button"
-            className="w-full rounded-xl bg-gold-500 px-4 py-3 text-left text-navy-950 transition-colors duration-150 hover:bg-gold-600"
-            onClick={() => navigate('/exams?quick=create')}
-          >
-            <span className="block font-display text-sm font-semibold">Create exam</span>
-            <span className="mt-1 block font-body text-xs text-navy-950/80">Start a new grading workflow without leaving the workspace.</span>
           </button>
         </div>
 
@@ -270,7 +239,7 @@ export default function TopNav() {
                     <p className="font-body text-xs text-mut">
                       {label === 'Dashboard' && 'Overview and workload'}
                       {label === 'Classes' && 'Class rosters and activity'}
-                      {label === 'Students' && 'Enrollment records'}
+                      {label === 'Students' && 'Learner profiles and progress'}
                       {label === 'Exams' && 'Assessments and grading'}
                       {label === 'Homework' && 'Assignments and submissions'}
                       {label === 'Grades' && 'Performance reporting'}
@@ -283,30 +252,6 @@ export default function TopNav() {
             </NavLink>
           ))}
         </nav>
-
-        <div className="section-divider px-3 py-3">
-          <div
-            className="surface-panel-plain flex items-center gap-3 rounded-xl px-3 py-3"
-          >
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-accent bg-gold-500/10 font-display text-sm font-bold text-gold-400">
-              {avatarInitials}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p className="truncate font-display text-sm font-medium text-pri">{displayName}</p>
-              <p className="font-mono text-[10px] text-mut">{displayEmail}</p>
-            </div>
-            <button
-              title="Logout"
-              onClick={() => {
-                logout()
-                navigate('/login')
-              }}
-              className="rounded-lg border border-transparent p-2 text-mut transition-colors duration-150 hover:border-subtle hover:text-crimson-400"
-            >
-              <LogOutIcon />
-            </button>
-          </div>
-        </div>
       </aside>
 
       {isCommandOpen && (

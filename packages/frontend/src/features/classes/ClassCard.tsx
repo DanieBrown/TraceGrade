@@ -4,12 +4,12 @@ interface ClassCardProps {
   item: ClassListItem
   onEdit: (item: ClassListItem) => void
   onEnroll: (item: ClassListItem) => void
-  onBatchGrade: (item: ClassListItem) => void
+  onViewGrades: (item: ClassListItem) => void
   onArchive: (item: ClassListItem) => void
   isBusy?: boolean
 }
 
-export default function ClassCard({ item, onEdit, onEnroll, onBatchGrade, onArchive, isBusy = false }: ClassCardProps) {
+export default function ClassCard({ item, onEdit, onEnroll, onViewGrades, onArchive, isBusy = false }: ClassCardProps) {
   return (
     <article className="surface-panel-plain flex h-full flex-col justify-between rounded-[22px] p-5 transition-colors duration-150 hover:bg-white/[0.04]">
       <div className="space-y-3">
@@ -52,12 +52,12 @@ export default function ClassCard({ item, onEdit, onEnroll, onBatchGrade, onArch
         </button>
         <button
           type="button"
-          onClick={() => onBatchGrade(item)}
+          onClick={() => onViewGrades(item)}
           disabled={isBusy}
           className="inline-flex items-center rounded-lg px-2.5 py-1.5 font-display text-sm font-semibold text-sec transition-colors duration-150 hover:text-pri focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-60"
-          aria-label={`Batch grade ${item.name}`}
+          aria-label={`Open ${item.name} grades`}
         >
-          Batch Grade
+          Grades
         </button>
         <button
           type="button"

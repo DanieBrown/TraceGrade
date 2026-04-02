@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import ClassContextHeader from '../features/grades/ClassContextHeader'
 import { EmptyGradesState, ErrorGradesState, LoadingGradesState } from '../features/grades/GradesStates'
 import {
@@ -23,6 +23,7 @@ const EMPTY_VIEW_MODEL: GradebookViewModel = {
 const ASSIGNMENTS_PER_PAGE = 4
 
 export default function GradesPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [classOptions, setClassOptions] = useState<GradebookClassOption[]>([])
   const [selectedClassId, setSelectedClassId] = useState('')
@@ -31,6 +32,7 @@ export default function GradesPage() {
   const [gradebook, setGradebook] = useState<GradebookViewModel>(EMPTY_VIEW_MODEL)
   const [errorMessage, setErrorMessage] = useState('There was a problem connecting to the server.')
   const [canRetry, setCanRetry] = useState(true)
+  const initialClassIdRef = useRef((searchParams.get('classId') ?? '').trim())
   const latestRequestIdRef = useRef(0)
   const isMountedRef = useRef(true)
 
@@ -57,7 +59,8 @@ export default function GradesPage() {
         return
       }
 
-      const initialClassId = classes[0].id
+      const initialClassId =
+        classes.find((classOption) => classOption.id === initialClassIdRef.current)?.id ?? classes[0].id
       setSelectedClassId(initialClassId)
 
       const viewModel = await fetchClassGradebook(initialClassId)
@@ -65,8 +68,8 @@ export default function GradesPage() {
         return
       }
 
-      setSelectedStudentId(viewModel.rows[0]?.studentId ?? '')
-  setAssignmentPage(1)
+        setSelectedStudentId(viewModel.rows[0]?.studentId ?? '')
+        setAssignmentPage(1)
       setGradebook(viewModel)
       setErrorMessage('There was a problem connecting to the server.')
       setCanRetry(true)
@@ -93,8 +96,8 @@ export default function GradesPage() {
         return
       }
 
-      setSelectedStudentId(viewModel.rows[0]?.studentId ?? '')
-  setAssignmentPage(1)
+        setSelectedStudentId(viewModel.rows[0]?.studentId ?? '')
+        setAssignmentPage(1)
       setGradebook(viewModel)
       setErrorMessage('There was a problem connecting to the server.')
       setCanRetry(true)
@@ -126,10 +129,14 @@ export default function GradesPage() {
         return
       }
 
+      const nextSearchParams = new URLSearchParams(searchParams)
+      nextSearchParams.set('classId', nextClassId)
+
       setSelectedClassId(nextClassId)
+      setSearchParams(nextSearchParams, { replace: true })
       void loadGradebookForClass(nextClassId)
     },
-    [loadGradebookForClass, selectedClassId],
+    [loadGradebookForClass, searchParams, selectedClassId, setSearchParams],
   )
 
   const handleRetry = useCallback(() => {

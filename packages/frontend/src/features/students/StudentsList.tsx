@@ -12,7 +12,6 @@ interface StudentCardProps {
 
 function StudentCard({ item, onClick }: StudentCardProps) {
   const hasEmail = Boolean(item.email)
-  const hasStudentNumber = Boolean(item.studentNumber)
   const hasClassLabel = Boolean(item.classLabel)
   const hasGradeLabel = Boolean(item.gradeLabel)
 
@@ -32,13 +31,8 @@ function StudentCard({ item, onClick }: StudentCardProps) {
         <div className="space-y-1.5">
           <p className="font-body text-sm text-sec">{hasEmail ? item.email : 'No email provided'}</p>
 
-          {(hasStudentNumber || hasClassLabel || hasGradeLabel || item.isActive) && (
+          {(hasClassLabel || hasGradeLabel || item.isActive) && (
             <div className="flex flex-wrap gap-2">
-              {hasStudentNumber && (
-                <span className="rounded-full border px-2 py-0.5 font-body text-xs text-sec">
-                  #{item.studentNumber}
-                </span>
-              )}
               {hasClassLabel && (
                 <span className="rounded-full border px-2 py-0.5 font-body text-xs text-sec">
                   Class: {item.classLabel}
