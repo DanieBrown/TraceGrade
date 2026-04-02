@@ -223,7 +223,9 @@ AI-notes.md
 agents.md
 mockups/*
 strategy/*
+strategy/issues.md
 specs/*
 .github/agents/*
+.github/prompts/*
 .agents-work/*
 copilot-instructions.md
