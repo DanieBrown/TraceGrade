@@ -77,4 +77,24 @@ describe('examsApi', () => {
       },
     ])
   })
+
+  it('derives questionCount from questionsJson when the backend reports zero', () => {
+    const mapped = toExamTemplateListItem({
+      id: 'exam-3',
+      title: 'Teacher Role E2E Check',
+      questionCount: 0,
+      totalPoints: 10,
+      questionsJson: '[{"questionNumber":1,"prompt":"What is 2 + 2?","pointsAvailable":10}]',
+    })
+
+    expect(mapped).toEqual({
+      id: 'exam-3',
+      assignmentId: 'exam-3',
+      title: 'Teacher Role E2E Check',
+      questionCount: 1,
+      totalPoints: 10,
+      statusLabel: 'Draft',
+      questionsJson: '[{"questionNumber":1,"prompt":"What is 2 + 2?","pointsAvailable":10}]',
+    })
+  })
 })

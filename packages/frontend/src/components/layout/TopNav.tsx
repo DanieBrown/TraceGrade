@@ -76,10 +76,9 @@ const LogOutIcon: SvgIcon = ({ size = 16 }) => (
 
 const NAV_LINKS = [
   { label: 'Dashboard',    to: '/',            Icon: GridIcon,      end: true  },
+  { label: 'Exams',        to: '/exams',       Icon: FileTextIcon,  end: false },
   { label: 'Classes',      to: '/classes',     Icon: BookOpenIcon,  end: false },
   { label: 'Students',     to: '/students',    Icon: UsersIcon,     end: false },
-  { label: 'Exams',        to: '/exams',       Icon: FileTextIcon,  end: false },
-  { label: 'Homework',     to: '/homework',    Icon: BookOpenIcon,  end: false },
   { label: 'Grades',       to: '/grades',      Icon: BarChartIcon,  end: false },
   { label: 'Review Queue', to: '/review',      Icon: ReviewIcon,    end: false },
   { label: 'Settings',     to: '/settings',    Icon: SettingsIcon,  end: false },
@@ -221,17 +220,6 @@ export default function TopNav() {
               </span>
             </div>
             <p className="mt-1 font-body text-xs text-sec">Jump straight to a class, review queue, or creation flow.</p>
-          </button>
-        </div>
-
-        <div className="px-4 pb-5">
-          <button
-            type="button"
-            className="w-full rounded-xl bg-gold-500 px-4 py-3 text-left text-navy-950 transition-colors duration-150 hover:bg-gold-600"
-            onClick={() => navigate('/exams?quick=create')}
-          >
-            <span className="block font-display text-sm font-semibold">Create exam</span>
-            <span className="mt-1 block font-body text-xs text-navy-950/80">Start a new grading workflow without leaving the workspace.</span>
           </button>
         </div>
 

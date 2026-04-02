@@ -89,7 +89,6 @@ function GradePanel({
   onRetryStudents,
   gradedStudents,
   rubricSetupPath,
-  onBack,
   onSaveGrades,
 }: {
   exam: ExamTemplateListItem
@@ -100,7 +99,6 @@ function GradePanel({
   onRetryStudents: () => void
   gradedStudents: GradedStudentRecord[]
   rubricSetupPath: string
-  onBack: () => void
   onSaveGrades: (record: GradedStudentRecord) => void
 }) {
   const [selectedStudentId, setSelectedStudentId] = useState('')
@@ -194,19 +192,6 @@ function GradePanel({
           >
             Set Up Rubric
           </Link>
-          <button
-            onClick={onBack}
-            className="px-3 py-1.5 rounded-lg text-sm font-display font-medium transition-colors"
-            style={{
-              border: '1px solid var(--border)',
-              color: 'var(--text-secondary)',
-              background: 'rgba(255, 255, 255, 0.04)',
-            }}
-            onMouseEnter={(event) => ((event.currentTarget as HTMLElement).style.background = 'rgba(255, 255, 255, 0.08)')}
-            onMouseLeave={(event) => ((event.currentTarget as HTMLElement).style.background = 'rgba(255, 255, 255, 0.04)')}
-          >
-            ← Back to Exams
-          </button>
         </div>
       </div>
 
@@ -608,14 +593,6 @@ export default function PaperExamsPage() {
               >
                 Set Up Rubric
               </Link>
-              <button
-                type="button"
-                onClick={() => navigate('/exams')}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-display font-semibold text-sm transition-colors"
-                style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-              >
-                Back to Exams
-              </button>
             </div>
           </div>
         ) : (
@@ -628,7 +605,6 @@ export default function PaperExamsPage() {
             onRetryStudents={loadStudents}
             gradedStudents={gradedStudents}
             rubricSetupPath={rubricSetupPath}
-            onBack={() => navigate('/exams')}
             onSaveGrades={handleSaveGrades}
           />
         )

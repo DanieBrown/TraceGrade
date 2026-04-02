@@ -101,6 +101,7 @@ describe('PaperExamsPage', () => {
 
     expect(await screen.findByText(/rubric coverage for 1 of 2 questions/i)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Set Up Rubric' })).toHaveAttribute('href', '/exams/template-1/rubrics')
+    expect(screen.getAllByRole('button', { name: /back to exams/i })).toHaveLength(1)
     expect(screen.queryByLabelText('Select Student to Grade')).not.toBeInTheDocument()
   })
 
@@ -133,6 +134,7 @@ describe('PaperExamsPage', () => {
     renderAtExamRoute('template-9')
 
     expect(await screen.findByText('Physics Quiz')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /back to exams/i })).toHaveLength(1)
     fireEvent.change(screen.getByLabelText('Select Student to Grade'), {
       target: { value: 'student-9' },
     })
