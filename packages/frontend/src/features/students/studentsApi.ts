@@ -217,6 +217,18 @@ function resolveStudentsEndpoint(): string {
   return `/schools/${encodedSchoolId}/students`
 }
 
+function resolveStudentEndpoint(studentId: string): string {
+  const normalizedStudentId = studentId.trim()
+
+  if (!normalizedStudentId) {
+    throw new NonRetryableStudentsError(
+      'Student details cannot be loaded because the student identifier is missing. Return to the student list and try again.'
+    )
+  }
+
+  return `${resolveStudentsEndpoint()}/${encodeURIComponent(normalizedStudentId)}`
+}
+
 export async function fetchStudents(): Promise<StudentListItem[]> {
   const endpoint = resolveStudentsEndpoint()
   const response = await api.get<ApiResponse<unknown> | unknown>(endpoint)
@@ -225,6 +237,21 @@ export async function fetchStudents(): Promise<StudentListItem[]> {
   return rawStudents
     .map((rawStudent) => toStudentListItem(rawStudent))
     .filter((item): item is StudentListItem => item !== null)
+}
+
+export async function fetchStudentById(studentId: string): Promise<StudentListItem> {
+  const endpoint = resolveStudentEndpoint(studentId)
+  const response = await api.get<ApiResponse<unknown> | unknown>(endpoint)
+
+  const data = isRecord(response.data) ? response.data : null
+  const innerData = data?.data ?? data
+  const item = toStudentListItem(innerData)
+
+  if (!item) {
+    throw new Error('Failed to parse student detail response')
+  }
+
+  return item
 }
 
 export interface CreateStudentPayload {
@@ -258,8 +285,8 @@ export interface UpdateStudentPayload {
 }
 
 export async function updateStudent(studentId: string, payload: UpdateStudentPayload): Promise<StudentListItem> {
-  const endpoint = resolveStudentsEndpoint()
-  const response = await api.put<ApiResponse<unknown> | unknown>(`${endpoint}/${encodeURIComponent(studentId)}`, payload)
+  const endpoint = resolveStudentEndpoint(studentId)
+  const response = await api.patch<ApiResponse<unknown> | unknown>(endpoint, payload)
 
   const data = isRecord(response.data) ? response.data : null
   const innerData = data?.data ?? data

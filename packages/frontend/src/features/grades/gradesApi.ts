@@ -321,6 +321,7 @@ function toRow(raw: unknown, index: number, columns: GradebookColumn[]): Gradebo
     studentId,
     studentName: toStudentName(rawRow),
     cells,
+    average: toNullableNumber(rawRow.average),
   }
 }
 

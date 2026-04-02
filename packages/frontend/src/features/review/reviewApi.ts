@@ -7,12 +7,18 @@ export interface GradingReviewRequest {
   teacherOverride: boolean
   /** Optional updated per-question scores JSON; omit to keep existing scores */
   questionScores?: string
+  overrideReason?: string
 }
 
 export function fetchPendingReviews(): Promise<GradingResultResponse[]> {
   return api
     .get<ApiResponse<GradingResultResponse[]>>('/grading/reviews/pending')
     .then((r) => r.data.data)
+}
+
+export async function fetchPendingReviewByGradeId(gradeId: string): Promise<GradingResultResponse | null> {
+  const items = await fetchPendingReviews()
+  return items.find((item) => String(item.gradeId) === gradeId) ?? null
 }
 
 export function submitReview(

@@ -5,11 +5,13 @@ import ProtectedRoute from './components/auth/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ExamRubricPage from './pages/ExamRubricPage'
+import ManualReviewDetailPage from './pages/ManualReviewDetailPage'
 import PaperExamsPage from './pages/PaperExamsPage'
 import ManualReviewQueuePage from './pages/ManualReviewQueuePage'
 import DashboardPage from './pages/DashboardPage'
 import ClassesPage from './pages/ClassesPage'
 import ExamsPage from './pages/ExamsPage'
+import StudentDetailPage from './pages/StudentDetailPage'
 import StudentsPage from './pages/StudentsPage'
 import HomeworkPage from './pages/HomeworkPage'
 import GradesPage from './pages/GradesPage'
@@ -45,6 +47,7 @@ export default function App() {
           <Route path='/' element={<DashboardPage />} />
           <Route path='/classes' element={<ClassesPage />} />
           <Route path='/students' element={<StudentsPage />} />
+          <Route path='/students/:studentId' element={<StudentDetailPage />} />
           <Route path='/exams' element={<ExamsPage />} />
           <Route path='/exams/:examId/rubrics' element={<ExamRubricPage />} />
           <Route path='/exams/:examId' element={<PaperExamsPage />} />
@@ -52,6 +55,7 @@ export default function App() {
           <Route path='/grades' element={<GradesPage />} />
           <Route path='/classes/:classId/batch-grading' element={<Navigate to='/classes' replace />} />
           <Route path='/review' element={<ManualReviewQueuePage />} />
+          <Route path='/review/:gradeId' element={<ManualReviewDetailPage />} />
           <Route path='/settings' element={<SettingsPage />} />
           <Route path='*' element={<Navigate to='/' replace />} />
         </Route>
