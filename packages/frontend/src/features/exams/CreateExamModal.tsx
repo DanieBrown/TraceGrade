@@ -36,6 +36,8 @@ export default function CreateExamModal({ onClose, onExamCreated }: CreateExamMo
   const [errorMessage, setErrorMessage] = useState('')
   const backdropRef = useRef<HTMLDivElement>(null)
   const totalPoints = calculateTotalPoints(questions)
+  const secondaryActionButtonClassName = 'rounded-lg border border-gold-500/30 bg-gold-500/10 px-4 py-2 font-display text-sm font-medium text-gold-300 transition-colors duration-150 hover:bg-gold-500/20 hover:text-gold-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950 disabled:cursor-not-allowed disabled:opacity-50'
+  const secondaryIconButtonClassName = 'rounded-lg border border-gold-500/30 bg-gold-500/10 p-1.5 text-gold-300 transition-colors duration-150 hover:bg-gold-500/20 hover:text-gold-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950 disabled:cursor-not-allowed disabled:opacity-50'
 
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -136,10 +138,7 @@ export default function CreateExamModal({ onClose, onExamCreated }: CreateExamMo
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 transition-colors"
-            style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--text-primary)')}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--text-muted)')}
+            className={secondaryIconButtonClassName}
             aria-label="Close dialog"
           >
             ✕
@@ -315,8 +314,7 @@ export default function CreateExamModal({ onClose, onExamCreated }: CreateExamMo
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-lg font-display text-sm font-medium transition-colors"
-              style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+              className={secondaryActionButtonClassName}
             >
               Cancel
             </button>

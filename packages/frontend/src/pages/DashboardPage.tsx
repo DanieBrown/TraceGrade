@@ -95,9 +95,9 @@ export default function DashboardPage() {
 
   const reviewQuickActionDescription =
     loadState === 'loading'
-      ? 'Loading review queue metrics…'
+      ? 'Loading the latest manual review workload…'
       : loadState === 'error'
-        ? 'Unable to load review queue metrics. Refresh to retry.'
+        ? 'Unable to load flagged submission counts. Refresh to retry.'
         : isEmptyState
           ? 'No submissions are currently waiting for review'
           : `${pendingReviews} submissions need your attention`
@@ -156,15 +156,15 @@ export default function DashboardPage() {
       to: '/students',
     },
     {
-      label: 'Open review queue',
-      description: reviewQuickActionDescription,
-      to: '/review',
+      label: 'Manage classes',
+      description: 'Open sections, monitor activity, and keep grading context organised.',
+      to: '/classes',
     },
   ]
 
   const workloadItems = [
     {
-      label: 'Manual review queue',
+      label: 'Pending manual reviews',
       value:
         loadState === 'loading'
           ? 'Loading'
@@ -186,11 +186,11 @@ export default function DashboardPage() {
       tone: 'var(--text-primary)',
     },
     {
-      label: 'Next best action',
-      value: loadState === 'done' && !isEmptyState && pendingReviews > 0 ? 'Review queue' : 'Create exam',
+      label: 'Priority focus',
+      value: loadState === 'done' && !isEmptyState && pendingReviews > 0 ? 'Flagged work' : 'Create exam',
       description:
         loadState === 'done' && !isEmptyState && pendingReviews > 0
-          ? 'There are submissions waiting for a manual decision.'
+          ? 'There are flagged submissions waiting for a manual decision.'
           : 'No urgent review backlog. Prepare the next assessment workflow.',
       tone: 'var(--text-primary)',
     },

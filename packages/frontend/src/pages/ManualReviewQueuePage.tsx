@@ -67,7 +67,6 @@ export default function ManualReviewQueuePage() {
   return (
     <AppPage width="standard">
       <AppPageHeader
-        eyebrow="AI confidence review"
         title="Manual Review Queue"
         description={`Review submissions that fell below ${thresholdLabel ?? 'your current'} confidence threshold before finalising grades.`}
       />

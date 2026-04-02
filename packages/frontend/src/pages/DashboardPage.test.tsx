@@ -106,6 +106,24 @@ describe('DashboardPage threshold messaging', () => {
     expect(screen.getAllByRole('link', { name: /Create exam/i })).toHaveLength(1)
   })
 
+  it('keeps the review queue to a single dashboard entry point', async () => {
+    getTeacherThresholdMock.mockResolvedValueOnce({
+      effectiveThreshold: 0.875,
+      source: 'teacher_override',
+      teacherThreshold: 0.875,
+    })
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findAllByRole('link', { name: /review queue/i })).toHaveLength(1)
+    expect(screen.queryByText('Open review queue')).not.toBeInTheDocument()
+    expect(screen.queryByText('Manual review queue')).not.toBeInTheDocument()
+  })
+
   it('falls back to generic threshold copy when threshold lookup fails', async () => {
     getTeacherThresholdMock.mockRejectedValueOnce(new Error('threshold lookup failed'))
 
