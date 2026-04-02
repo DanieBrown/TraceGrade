@@ -5,7 +5,7 @@ interface ClassesListProps {
   items: ClassListItem[]
   onEdit: (item: ClassListItem) => void
   onEnroll: (item: ClassListItem) => void
-  onBatchGrade: (item: ClassListItem) => void
+  onViewGrades: (item: ClassListItem) => void
   onArchive: (item: ClassListItem) => void
   isMutating?: boolean
 }
@@ -14,7 +14,7 @@ export default function ClassesList({
   items,
   onEdit,
   onEnroll,
-  onBatchGrade,
+  onViewGrades,
   onArchive,
   isMutating = false,
 }: ClassesListProps) {
@@ -26,7 +26,7 @@ export default function ClassesList({
             item={item}
             onEdit={onEdit}
             onEnroll={onEnroll}
-            onBatchGrade={onBatchGrade}
+            onViewGrades={onViewGrades}
             onArchive={onArchive}
             isBusy={isMutating}
           />

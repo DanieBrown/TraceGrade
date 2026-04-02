@@ -93,7 +93,7 @@ describe('StudentsPage', () => {
 
     expect(await screen.findByText('Alice Smith')).toBeInTheDocument()
     expect(screen.getByText('alice@example.com')).toBeInTheDocument()
-    expect(screen.getByText('#12345')).toBeInTheDocument()
+  expect(screen.queryByText('#12345')).not.toBeInTheDocument()
     expect(screen.getByText('Class: Math 101')).toBeInTheDocument()
     expect(screen.getByText('Grade: A')).toBeInTheDocument()
     expect(screen.getByText('Active')).toBeInTheDocument()

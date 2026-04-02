@@ -93,7 +93,7 @@ describe('GradesPage', () => {
     expect(screen.getByText("This class doesn't have any students or assignments yet.")).toBeInTheDocument()
   })
 
-  it('renders populated table and shows missing grades with em dash fallback', async () => {
+  it('renders populated recorded grades and shows missing grades with fallback text', async () => {
     fetchClassesForGradebookMock.mockResolvedValueOnce([{ id: 'class-1', label: 'Math 101' }])
     fetchClassGradebookMock.mockResolvedValueOnce({
       classId: 'class-1',
@@ -120,13 +120,15 @@ describe('GradesPage', () => {
       </MemoryRouter>,
     )
 
-    expect(await screen.findByRole('table', { name: 'Class gradebook' })).toBeInTheDocument()
+    expect(await screen.findByText('Recorded grades')).toBeInTheDocument()
     expect(
-      screen.getByText('This gradebook is read-only. Homework entries from the Homework page do not create columns here.'),
+      screen.getByText('Choose one student to review their full set of recorded grades.'),
     ).toBeInTheDocument()
-    expect(screen.getByText('Alex Kim')).toBeInTheDocument()
+    expect(screen.getAllByText('Alex Kim').length).toBeGreaterThan(0)
+    expect(screen.getByText('Quiz 1')).toBeInTheDocument()
+    expect(screen.getByText('Homework 1')).toBeInTheDocument()
     expect(screen.getByText('18')).toBeInTheDocument()
-    expect(screen.getByLabelText('No grade')).toBeInTheDocument()
+    expect(screen.getByText('No grade yet')).toBeInTheDocument()
   })
 
   it('renders error with retry and retries fetch for the selected class', async () => {
@@ -155,7 +157,8 @@ describe('GradesPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Retry loading grades' }))
 
-    expect(await screen.findByRole('table', { name: 'Class gradebook' })).toBeInTheDocument()
+    expect((await screen.findAllByText('Alex Kim')).length).toBeGreaterThan(0)
+    expect(screen.getByText('19')).toBeInTheDocument()
     expect(fetchClassGradebookMock).toHaveBeenCalledTimes(2)
   })
 
@@ -213,7 +216,7 @@ describe('GradesPage', () => {
     const classSelect = await screen.findByRole('combobox', { name: 'Select class' })
     fireEvent.change(classSelect, { target: { value: 'class-2' } })
 
-    expect(await screen.findByText('Latest Student')).toBeInTheDocument()
+    expect((await screen.findAllByText('Latest Student')).length).toBeGreaterThan(0)
 
     classOneRequest.resolve({
       classId: 'class-1',
@@ -229,8 +232,38 @@ describe('GradesPage', () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByText('Latest Student')).toBeInTheDocument()
+      expect(screen.getAllByText('Latest Student').length).toBeGreaterThan(0)
       expect(screen.queryByText('Stale Student')).not.toBeInTheDocument()
     })
+  })
+
+  it('prefers the class from the URL when loading the initial gradebook', async () => {
+    fetchClassesForGradebookMock.mockResolvedValueOnce([
+      { id: 'class-1', label: 'Math 101' },
+      { id: 'class-2', label: 'Science 202' },
+    ])
+    fetchClassGradebookMock.mockResolvedValueOnce({
+      classId: 'class-2',
+      classLabel: 'Science 202',
+      columns: [{ id: 'col-1', label: 'Lab 1', categoryLabel: null, maxPoints: 10 }],
+      rows: [
+        {
+          studentId: 'student-2',
+          studentName: 'Taylor Reed',
+          cells: [{ columnId: 'col-1', score: 9, displayValue: '9' }],
+        },
+      ],
+    })
+
+    render(
+      <MemoryRouter initialEntries={['/grades?classId=class-2']}>
+        <GradesPage />
+      </MemoryRouter>,
+    )
+
+    const classSelect = await screen.findByRole('combobox', { name: 'Select class' })
+    expect(classSelect).toHaveValue('class-2')
+    expect(fetchClassGradebookMock).toHaveBeenCalledWith('class-2')
+    expect(screen.getAllByText('Taylor Reed').length).toBeGreaterThan(0)
   })
 })
