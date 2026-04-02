@@ -8,6 +8,16 @@ const fetchExamTemplatesMock = vi.fn()
 const createExamTemplateMock = vi.fn()
 const fetchExamTemplateByIdMock = vi.fn()
 const updateExamTemplateMock = vi.fn()
+const toastSuccessMock = vi.fn()
+const toastErrorMock = vi.fn()
+
+vi.mock('sonner', () => ({
+  toast: {
+    success: (...args: unknown[]) => toastSuccessMock(...args),
+    error: (...args: unknown[]) => toastErrorMock(...args),
+  },
+  Toaster: () => null,
+}))
 
 vi.mock('../features/exams/examsApi', () => ({
   fetchExamTemplates: (...args: unknown[]) => fetchExamTemplatesMock(...args),
@@ -25,6 +35,8 @@ describe('ExamsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.setItem('auth_token', 'test-token')
+    toastSuccessMock.mockReset()
+    toastErrorMock.mockReset()
   })
 
   afterEach(() => {
@@ -112,6 +124,58 @@ describe('ExamsPage', () => {
     expect(await screen.findByRole('dialog', { name: 'Create exam template' })).toBeInTheDocument()
   })
 
+  it('clarifies that Exams imports are JSON templates and points paper uploads to Grade exam', async () => {
+    fetchExamTemplatesMock.mockResolvedValueOnce([
+      {
+        id: 'exam-42',
+        title: 'Algebra Final',
+        questionCount: 20,
+        totalPoints: 100,
+        statusLabel: 'Published',
+        questionsJson: '[]',
+      },
+    ])
+
+    render(
+      <MemoryRouter>
+        <ExamsPage />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('Algebra Final')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /import json/i })).toBeInTheDocument()
+    expect(screen.getByText(/import json backups or shared exam templates here/i)).toBeInTheDocument()
+    expect(screen.getByText(/to upload jpg, png, pdf, or heic student work, create or open an exam and choose grade exam/i)).toBeInTheDocument()
+
+    const importInput = screen.getByLabelText('Import exam JSON')
+    expect(importInput).toHaveAttribute('accept', '.json,.tracegradeexam.json')
+  })
+
+  it('shows guidance instead of attempting to import a paper exam image file', async () => {
+    fetchExamTemplatesMock.mockResolvedValueOnce([])
+
+    render(
+      <MemoryRouter>
+        <ExamsPage />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('No exam templates found')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Import exam JSON'), {
+      target: {
+        files: [new File(['png bytes'], 'scan.png', { type: 'image/png' })],
+      },
+    })
+
+    await waitFor(() => {
+      expect(createExamTemplateMock).not.toHaveBeenCalled()
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        'Exam template import accepts JSON only. Use Grade exam for JPG, PNG, PDF, or HEIC student uploads.',
+      )
+    })
+  })
+
   it('uses accent styling for exams secondary actions so they stand out from the background', async () => {
     fetchExamTemplatesMock.mockResolvedValueOnce([
       {
@@ -132,7 +196,7 @@ describe('ExamsPage', () => {
 
     expect(await screen.findByText('Algebra Final')).toBeInTheDocument()
 
-    const importButton = screen.getByRole('button', { name: /import/i })
+    const importButton = screen.getByRole('button', { name: /import json/i })
     expect(importButton).toHaveClass('border-gold-500/30', 'bg-gold-500/10', 'text-gold-300')
 
     fireEvent.click(screen.getByRole('button', { name: '+ Create Exam' }))

@@ -62,10 +62,6 @@ vi.mock('../features/grading/GradingResultCard', () => ({
   ),
 }))
 
-vi.mock('../features/grading/GradingResultsList', () => ({
-  default: () => <div data-testid="graded-results-list">Graded results list</div>,
-}))
-
 describe('PaperExamsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()

@@ -9,9 +9,15 @@ import ExamsList from '../features/exams/ExamsList'
 import { EmptyExamsState, ErrorExamsState, LoadingExamsState } from '../features/exams/ExamsStates'
 import { fetchExamTemplates, isExamTemplateListEmpty, createExamTemplate, type CreateExamTemplatePayload } from '../features/exams/examsApi'
 import type { ExamTemplateListItem } from '../features/exams/examsTypes'
-import { AppPage, AppPageHeader } from '../components/layout/AppPage'
+import { AppNotice, AppPage, AppPageHeader } from '../components/layout/AppPage'
 
 type LoadState = 'loading' | 'error' | 'done'
+const EXAM_TEMPLATE_IMPORT_ACCEPT = '.json,.tracegradeexam.json'
+
+function isJsonExamImportFile(file: File): boolean {
+  const normalizedName = file.name.trim().toLowerCase()
+  return normalizedName.endsWith('.json') || file.type === 'application/json'
+}
 
 export default function ExamsPage() {
   const navigate = useNavigate()
@@ -99,6 +105,11 @@ export default function ExamsPage() {
 
   const handleImportExam = useCallback(
     async (file: File) => {
+      if (!isJsonExamImportFile(file)) {
+        toast.error('Exam template import accepts JSON only. Use Grade exam for JPG, PNG, PDF, or HEIC student uploads.')
+        return
+      }
+
       try {
         const text = await file.text()
         const parsed = JSON.parse(text) as Record<string, unknown>
@@ -143,7 +154,7 @@ export default function ExamsPage() {
             <input
               ref={importInputRef}
               type="file"
-              accept=".json,.tracegradeexam.json"
+              accept={EXAM_TEMPLATE_IMPORT_ACCEPT}
               onChange={handleImportFileChange}
               className="hidden"
               aria-label="Import exam JSON"
@@ -153,7 +164,7 @@ export default function ExamsPage() {
               onClick={() => importInputRef.current?.click()}
               className="inline-flex items-center justify-center rounded-xl border border-gold-500/30 bg-gold-500/10 px-4 py-3 font-display text-sm font-medium text-gold-300 transition-colors duration-150 hover:bg-gold-500/20 hover:text-gold-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950"
             >
-              ⬆ Import
+              ⬆ Import JSON
             </button>
             <button
               type="button"
@@ -165,6 +176,13 @@ export default function ExamsPage() {
           </div>
         )}
       />
+
+      <AppNotice>
+        <div className="flex flex-col gap-2">
+          <p className="font-display text-sm font-semibold text-white">Import JSON backups or shared exam templates here.</p>
+          <p className="font-body text-sm text-white/85">To upload JPG, PNG, PDF, or HEIC student work, create or open an exam and choose Grade exam.</p>
+        </div>
+      </AppNotice>
 
       {loadState === 'loading' && <LoadingExamsState />}
 
