@@ -182,6 +182,10 @@ export default function FileUpload({ assignmentId, studentId, onUploadComplete }
   )
 
   const openPicker = () => inputRef.current?.click()
+  const handleChooseFilesClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
+    openPicker()
+  }
 
   const hasFiles = queue.length > 0
   const allDone = hasFiles && doneCount === queue.length
@@ -220,6 +224,13 @@ export default function FileUpload({ assignmentId, studentId, onUploadComplete }
           </p>
           <p className="mt-0.5 text-xs text-sec">or click to browse files</p>
         </div>
+        <button
+          type="button"
+          onClick={handleChooseFilesClick}
+          className="rounded-xl border border-gold-500/30 bg-gold-500/10 px-4 py-2 text-sm font-semibold text-gold-300 transition-colors hover:bg-gold-500/20 hover:text-gold-200"
+        >
+          Choose files
+        </button>
         <p className="text-xs text-mut">
           JPEG, PNG, PDF, HEIC · Max 10 MB per file
         </p>

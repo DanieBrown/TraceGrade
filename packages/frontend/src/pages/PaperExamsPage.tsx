@@ -10,6 +10,7 @@ import GradingResultsList from '../features/grading/GradingResultsList'
 import type { GradedStudentRecord } from '../features/grading/GradingResultsList'
 import { useGrading } from '../features/grading/useGrading'
 import { fetchAnswerRubrics } from '../features/rubrics/rubricsApi'
+import { AppNotice, AppPage, AppPageHeader, AppPanel } from '../components/layout/AppPage'
 import {
   fetchStudents,
   getStudentsLoadErrorDetails,
@@ -496,105 +497,81 @@ export default function PaperExamsPage() {
   }, [loadRubrics])
 
   return (
-    <div style={{ padding: '40px', maxWidth: '860px' }}>
-      <div className="flex items-start justify-between" style={{ marginBottom: '28px' }}>
-        <div>
-          <p
-            className="font-mono"
-            style={{ fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '6px' }}
+    <AppPage width="standard">
+      <AppPageHeader
+        eyebrow="AI Grading"
+        title="Paper Exams"
+        description="Grade real student submissions using your existing exam templates."
+        actions={(
+          <button
+            type="button"
+            onClick={() => navigate('/exams')}
+            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl border border-subtle px-4 py-2 font-display text-sm font-semibold text-sec transition-colors hover:bg-white/[0.05]"
           >
-            AI Grading
-          </p>
-          <h1 className="font-display" style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>
-            Paper Exams
-          </h1>
-          <p className="font-body text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Grade real student submissions using your existing exam templates.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => navigate('/exams')}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-display font-semibold text-sm transition-colors flex-shrink-0"
-          style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-        >
-          ← Back to Exams
-        </button>
-      </div>
+            ← Back to Exams
+          </button>
+        )}
+      />
 
       {!gradingExam && (
-        <div
-          className="rounded-xl p-5"
-          style={{
-            background: 'rgba(0, 201, 167, 0.05)',
-            border: '1px solid rgba(0, 201, 167, 0.15)',
-            marginBottom: '24px',
-          }}
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <span style={{ color: 'var(--accent-teal)', fontSize: '14px' }} aria-hidden="true">✦</span>
-            <p className="font-display font-semibold text-sm" style={{ color: 'var(--accent-teal)' }}>
+        <AppNotice>
+          <div className="mb-3 flex items-center gap-2">
+            <span className="text-sm text-teal-400" aria-hidden="true">✦</span>
+            <p className="font-display text-sm font-semibold text-teal-400">
               AI-Powered Features
             </p>
           </div>
-          <ul className="space-y-1.5 font-body text-xs" style={{ color: 'var(--text-secondary)' }}>
+          <ul className="space-y-1.5 font-body text-xs text-sec">
             <li>· Select from your real exam templates</li>
             <li>· Upload handwritten student submissions for each template</li>
             <li>· Trigger AI grading with confidence scoring and review support</li>
             <li>· Save adjusted grades for each student submission</li>
           </ul>
-        </div>
+        </AppNotice>
       )}
 
       {gradingExam ? (
         rubricsLoading ? (
-          <div
-            className="rounded-xl p-6 font-body text-sm"
-            role="status"
-            aria-live="polite"
-            style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-          >
-            Checking rubric setup…
-          </div>
+          <AppPanel className="font-body text-sm text-sec">
+            <div role="status" aria-live="polite">
+              Checking rubric setup…
+            </div>
+          </AppPanel>
         ) : rubricsError ? (
-          <div
-            className="rounded-xl p-6 space-y-2"
-            role="alert"
-            style={{ background: 'rgba(232, 69, 90, 0.08)', border: '1px solid rgba(232, 69, 90, 0.25)' }}
-          >
-            <p className="font-display font-semibold text-sm" style={{ color: 'var(--accent-crimson)' }}>
-              Failed to load rubric setup
-            </p>
-            <p className="font-body text-xs" style={{ color: 'var(--text-secondary)' }}>
-              {rubricsError}
-            </p>
-            <button onClick={() => void loadRubrics()} className="text-xs underline" style={{ color: 'var(--accent-crimson)' }}>
-              Retry loading rubrics
-            </button>
-          </div>
+          <AppNotice tone="danger">
+            <div className="space-y-2" role="alert">
+              <p className="font-display text-sm font-semibold text-crimson-400">
+                Failed to load rubric setup
+              </p>
+              <p className="font-body text-xs text-sec">
+                {rubricsError}
+              </p>
+              <button onClick={() => void loadRubrics()} className="text-xs underline text-crimson-300">
+                Retry loading rubrics
+              </button>
+            </div>
+          </AppNotice>
         ) : !rubricsReady ? (
-          <div
-            className="rounded-xl p-6 space-y-4"
-            style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}
-          >
-            <div>
-              <p className="font-display font-semibold text-base" style={{ color: 'var(--text-primary)' }}>
-                AI grading is blocked until the rubric is complete
-              </p>
-              <p className="font-body text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                This exam currently has rubric coverage for {configuredRubricCount} of {requiredRubricCount || 1} questions. Add the missing expected answers before uploading student work.
-              </p>
+          <AppPanel>
+            <div className="space-y-4">
+              <div>
+                <p className="font-display text-base font-semibold text-pri">
+                  AI grading is blocked until the rubric is complete
+                </p>
+                <p className="mt-1 font-body text-sm text-sec">
+                  This exam currently has rubric coverage for {configuredRubricCount} of {requiredRubricCount || 1} questions. Add the missing expected answers before uploading student work.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  to={rubricSetupPath}
+                  className="inline-flex items-center gap-2 rounded-lg bg-gold-500 px-5 py-2.5 font-display text-sm font-semibold text-navy-950 transition-colors hover:bg-gold-600"
+                >
+                  Set Up Rubric
+                </Link>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                to={rubricSetupPath}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-display font-semibold text-sm transition-colors"
-                style={{ background: 'var(--accent-gold)', color: '#06101e' }}
-              >
-                Set Up Rubric
-              </Link>
-            </div>
-          </div>
+          </AppPanel>
         ) : (
           <GradePanel
             exam={gradingExam}
@@ -609,45 +586,35 @@ export default function PaperExamsPage() {
           />
         )
       ) : examsLoading ? (
-        <div
-          className="rounded-xl p-6 font-body text-sm"
-          role="status"
-          aria-live="polite"
-          style={{
-            backgroundColor: 'var(--bg-surface)',
-            border: '1px solid var(--border)',
-            color: 'var(--text-secondary)',
-          }}
-        >
-          Loading exam templates…
-        </div>
+        <AppPanel className="font-body text-sm text-sec">
+          <div role="status" aria-live="polite">
+            Loading exam templates…
+          </div>
+        </AppPanel>
       ) : examsError ? (
-        <div
-          className="rounded-xl p-6 space-y-2"
-          role="alert"
-          style={{
-            background: 'rgba(232, 69, 90, 0.08)',
-            border: '1px solid rgba(232, 69, 90, 0.25)',
-          }}
-        >
-          <p className="font-display font-semibold text-sm" style={{ color: 'var(--accent-crimson)' }}>
-            Failed to load exam templates
-          </p>
-          <p className="font-body text-xs" style={{ color: 'var(--text-secondary)' }}>
-            {examsError}
-          </p>
-          <button onClick={loadExams} className="text-xs underline" style={{ color: 'var(--accent-crimson)' }}>
-            Retry loading exam templates
-          </button>
-        </div>
+        <AppNotice tone="danger">
+          <div className="space-y-2" role="alert">
+            <p className="font-display text-sm font-semibold text-crimson-400">
+              Failed to load exam templates
+            </p>
+            <p className="font-body text-xs text-sec">
+              {examsError}
+            </p>
+            <button onClick={loadExams} className="text-xs underline text-crimson-300">
+              Retry loading exam templates
+            </button>
+          </div>
+        </AppNotice>
       ) : (
-        <EmptyState
-          title="Exam not found"
-          description="The exam template could not be found. Return to the exams list and try again."
-          primaryLinkLabel="Back to Exams"
-          primaryLinkTo="/exams"
-        />
+        <AppPanel>
+          <EmptyState
+            title="Exam not found"
+            description="The exam template could not be found. Return to the exams list and try again."
+            primaryLinkLabel="Back to Exams"
+            primaryLinkTo="/exams"
+          />
+        </AppPanel>
       )}
-    </div>
+    </AppPage>
   )
 }

@@ -25,18 +25,18 @@ type SortMode = 'name-asc' | 'score-desc' | 'confidence-desc'
 function confidencePill(score: number) {
   if (score >= 80)
     return (
-      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+      <span className="rounded-full border border-teal-500/25 bg-teal-500/10 px-2 py-0.5 text-xs font-medium text-teal-400">
         {score.toFixed(0)}% confident
       </span>
     )
   if (score >= 60)
     return (
-      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+      <span className="rounded-full border border-gold-500/25 bg-gold-500/10 px-2 py-0.5 text-xs font-medium text-gold-300">
         {score.toFixed(0)}% confident
       </span>
     )
   return (
-    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
+    <span className="rounded-full border border-crimson-500/25 bg-crimson-500/10 px-2 py-0.5 text-xs font-medium text-crimson-400">
       {score.toFixed(0)}% confident
     </span>
   )
@@ -53,13 +53,13 @@ function ResultRow({ record }: { record: GradedStudentRecord }) {
   return (
     <div
       role="row"
-      className="flex items-center gap-3 px-4 py-3 bg-white border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors flex-wrap"
+      className="grid gap-3 rounded-2xl border border-subtle bg-white/[0.03] px-4 py-3 transition-colors hover:bg-white/[0.05] sm:grid-cols-[minmax(0,1.4fr)_auto_auto_auto] sm:items-center"
     >
-      <span className="text-sm font-medium text-gray-900 min-w-24 flex-shrink-0" role="cell">
+      <span className="min-w-0 truncate font-display text-sm font-semibold text-pri" role="cell" title={record.studentName}>
         {record.studentName}
       </span>
 
-      <span className="text-sm font-semibold text-gray-800 flex-shrink-0" role="cell">
+      <span className="font-mono text-sm font-semibold text-gold-300" role="cell">
         {scoreLabel}
       </span>
 
@@ -68,7 +68,7 @@ function ResultRow({ record }: { record: GradedStudentRecord }) {
       {record.result.needsReview && (
         <span
           role="cell"
-          className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200"
+          className="rounded-full border border-crimson-500/25 bg-crimson-500/10 px-2 py-0.5 text-xs font-medium text-crimson-400"
         >
           Needs Review
         </span>
@@ -93,17 +93,17 @@ function FilterTab({
       onClick={onClick}
       aria-pressed={active}
       className={[
-        'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors',
+        'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors',
         active
-          ? 'bg-indigo-600 text-white'
-          : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50',
+          ? 'border border-gold-500/30 bg-gold-500/10 text-gold-300'
+          : 'border border-subtle bg-white/[0.03] text-sec hover:bg-white/[0.05]',
       ].join(' ')}
     >
       {label}
       <span
         className={[
-          'px-1.5 py-0.5 rounded-full text-xs',
-          active ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-500',
+          'rounded-full px-1.5 py-0.5 text-xs',
+          active ? 'bg-gold-500/20 text-gold-200' : 'bg-white/[0.06] text-mut',
         ].join(' ')}
       >
         {count}
@@ -143,25 +143,25 @@ export default function GradingResultsList({ records }: { records: GradedStudent
   return (
     <section
       aria-label={`Graded results (${records.length} student${records.length !== 1 ? 's' : ''})`}
-      className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4"
+      className="surface-panel-plain rounded-[24px] p-5 space-y-4 sm:p-6"
     >
       {/* Header row */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <p className="text-sm font-semibold text-gray-800">
+        <p className="font-display text-sm font-semibold text-pri">
           Graded Results{' '}
-          <span className="font-normal text-gray-500">({records.length})</span>
+          <span className="font-body font-normal text-mut">({records.length})</span>
         </p>
 
         {/* Sort */}
         <div className="flex items-center gap-2">
-          <label htmlFor="results-sort" className="text-xs text-gray-500 flex-shrink-0">
+          <label htmlFor="results-sort" className="flex-shrink-0 font-body text-xs text-mut">
             Sort by
           </label>
           <select
             id="results-sort"
             value={sort}
             onChange={(e) => setSort(e.target.value as SortMode)}
-            className="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="rounded-lg border border-subtle bg-elevated px-2 py-1 text-xs text-pri focus:outline-none focus:ring-2 focus:ring-gold-500/40"
           >
             <option value="name-asc">Student name</option>
             <option value="score-desc">Score (highest)</option>
@@ -194,7 +194,7 @@ export default function GradingResultsList({ records }: { records: GradedStudent
 
       {/* Results */}
       {sorted.length === 0 ? (
-        <p className="text-sm text-gray-500 text-center py-6">
+        <p className="py-6 text-center font-body text-sm text-sec">
           No results match the selected filter.
         </p>
       ) : (
