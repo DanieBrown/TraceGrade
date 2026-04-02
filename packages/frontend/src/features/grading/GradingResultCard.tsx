@@ -86,37 +86,39 @@ function AccordionQuestionRow({
   const panelId = `q-panel-${q.questionNumber}`
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-subtle bg-white/[0.03]">
       <button
         id={headingId}
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-gray-50 transition-colors text-left"
+        className="w-full text-left transition-colors hover:bg-white/[0.03]"
       >
-        <span className="text-sm font-semibold text-gray-700 w-7 flex-shrink-0">
-          Q{q.questionNumber}
-        </span>
-
-        <span
-          className={`text-xs font-medium px-2 py-0.5 rounded-full border ${cls.bg} ${cls.text}`}
-        >
-          {formatScore(q.confidenceScore)}% confident
-        </span>
-
-        {q.illegible && (
-          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
-            Illegible
+        <div className="flex items-center gap-3 px-4 py-3">
+          <span className="w-7 flex-shrink-0 text-sm font-semibold text-pri">
+            Q{q.questionNumber}
           </span>
-        )}
 
-        <span className="ml-auto text-sm font-semibold text-gray-900">
-          {formatScore(adjustedPoints)} / {formatScore(q.pointsAvailable)}
-        </span>
+          <span
+            className={`rounded-full border px-2 py-0.5 text-xs font-medium ${cls.bg} ${cls.text}`}
+          >
+            {formatScore(q.confidenceScore)}% confident
+          </span>
 
-        <span className="text-gray-400 text-xs ml-1" aria-hidden="true">
-          {open ? '▲' : '▼'}
-        </span>
+          {q.illegible && (
+            <span className="rounded-full border border-crimson-500/25 bg-crimson-500/10 px-2 py-0.5 text-xs font-medium text-crimson-400">
+              Illegible
+            </span>
+          )}
+
+          <span className="ml-auto text-sm font-semibold text-pri">
+            {formatScore(adjustedPoints)} / {formatScore(q.pointsAvailable)}
+          </span>
+
+          <span className="ml-1 text-xs text-mut" aria-hidden="true">
+            {open ? '▲' : '▼'}
+          </span>
+        </div>
       </button>
 
       {open && (
@@ -124,19 +126,19 @@ function AccordionQuestionRow({
           id={panelId}
           role="region"
           aria-labelledby={headingId}
-          className="px-4 py-3 bg-gray-50 border-t border-gray-200 space-y-3"
+          className="space-y-3 border-t border-subtle bg-white/[0.02] px-4 py-3"
         >
           {q.feedback && (
             <div>
-              <p className="text-xs font-semibold text-gray-600 mb-1">AI Feedback</p>
-              <p className="text-xs text-gray-700 leading-relaxed">{q.feedback}</p>
+              <p className="mb-1 text-xs font-semibold text-sec">AI Feedback</p>
+              <p className="text-xs leading-relaxed text-sec">{q.feedback}</p>
             </div>
           )}
 
           <div className="flex items-center gap-3 flex-wrap">
             <label
               htmlFor={`adj-${q.questionNumber}`}
-              className="text-xs font-semibold text-gray-600 flex-shrink-0"
+              className="flex-shrink-0 text-xs font-semibold text-sec"
             >
               Manual Adjustment
             </label>
@@ -154,10 +156,10 @@ function AccordionQuestionRow({
                     onAdjust(q.questionNumber, Math.min(Math.max(val, 0), q.pointsAvailable))
                   }
                 }}
-                className="w-16 border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-16 rounded-lg border border-subtle bg-elevated px-2 py-1 text-center text-sm text-pri focus:outline-none focus:ring-2 focus:ring-gold-500/40"
                 aria-label={`Adjusted points for question ${q.questionNumber}`}
               />
-              <span className="text-xs text-gray-500">/ {formatScore(q.pointsAvailable)} pts</span>
+              <span className="text-xs text-mut">/ {formatScore(q.pointsAvailable)} pts</span>
             </div>
           </div>
         </div>

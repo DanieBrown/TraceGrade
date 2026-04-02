@@ -133,6 +133,7 @@ describe('PaperExamsPage', () => {
 
     renderAtExamRoute('template-9')
 
+    expect(screen.getByRole('main')).toBeInTheDocument()
     expect(await screen.findByText('Physics Quiz')).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /back to exams/i })).toHaveLength(1)
     fireEvent.change(screen.getByLabelText('Select Student to Grade'), {
