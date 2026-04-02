@@ -5,9 +5,15 @@ import App from '../App'
 import ExamsPage from './ExamsPage'
 
 const fetchExamTemplatesMock = vi.fn()
+const createExamTemplateMock = vi.fn()
+const fetchExamTemplateByIdMock = vi.fn()
+const updateExamTemplateMock = vi.fn()
 
 vi.mock('../features/exams/examsApi', () => ({
   fetchExamTemplates: (...args: unknown[]) => fetchExamTemplatesMock(...args),
+  createExamTemplate: (...args: unknown[]) => createExamTemplateMock(...args),
+  fetchExamTemplateById: (...args: unknown[]) => fetchExamTemplateByIdMock(...args),
+  updateExamTemplate: (...args: unknown[]) => updateExamTemplateMock(...args),
   isExamTemplateListEmpty: (items: unknown[]) => items.length === 0,
 }))
 
@@ -72,6 +78,7 @@ describe('ExamsPage', () => {
         questionCount: 20,
         totalPoints: 100,
         statusLabel: 'Published',
+        questionsJson: '[]',
       },
     ])
 
@@ -81,28 +88,60 @@ describe('ExamsPage', () => {
     expect(await screen.findByText('Algebra Final')).toBeInTheDocument()
     expect(screen.getByText('20 questions · 100 total points')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Manage exam Algebra Final' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Grade exam Algebra Final' }))
 
     await waitFor(() => {
-      expect(window.location.pathname).toBe('/paper-exams')
-      expect(window.location.search).toContain('examId=exam-42')
+      expect(window.location.pathname).toBe('/exams/exam-42')
     })
   })
 
-  it('navigates to /paper-exams when Create Exam is clicked', async () => {
+  it('opens the create exam modal when Create Exam is clicked', async () => {
     fetchExamTemplatesMock.mockResolvedValueOnce([])
 
-    window.history.pushState({}, '', '/exams')
-    render(<App />)
+    render(
+      <MemoryRouter>
+        <ExamsPage />
+      </MemoryRouter>,
+    )
 
     expect(await screen.findByText('No exam templates found')).toBeInTheDocument()
 
     const createButtons = screen.getAllByRole('button', { name: '+ Create Exam' })
     fireEvent.click(createButtons[0])
 
-    await waitFor(() => {
-      expect(window.location.pathname).toBe('/paper-exams')
-    })
+    expect(await screen.findByRole('dialog', { name: 'Create exam template' })).toBeInTheDocument()
+  })
+
+  it('uses accent styling for exams secondary actions so they stand out from the background', async () => {
+    fetchExamTemplatesMock.mockResolvedValueOnce([
+      {
+        id: 'exam-42',
+        title: 'Algebra Final',
+        questionCount: 20,
+        totalPoints: 100,
+        statusLabel: 'Published',
+        questionsJson: '[]',
+      },
+    ])
+
+    render(
+      <MemoryRouter>
+        <ExamsPage />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('Algebra Final')).toBeInTheDocument()
+
+    const importButton = screen.getByRole('button', { name: /import/i })
+    expect(importButton).toHaveClass('border-gold-500/30', 'bg-gold-500/10', 'text-gold-300')
+
+    fireEvent.click(screen.getByRole('button', { name: '+ Create Exam' }))
+
+    const closeDialogButton = await screen.findByRole('button', { name: 'Close dialog' })
+    const cancelButton = screen.getByRole('button', { name: 'Cancel' })
+
+    expect(closeDialogButton).toHaveClass('border-gold-500/30', 'bg-gold-500/10', 'text-gold-300')
+    expect(cancelButton).toHaveClass('border-gold-500/30', 'bg-gold-500/10', 'text-gold-300')
   })
 })
 
@@ -123,13 +162,13 @@ describe('App routing non-regression', () => {
     window.history.pushState({}, '', '/exams')
     render(<App />)
 
-    expect(await screen.findByText('Manage your exam templates')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Exams' })).toBeInTheDocument()
   })
 
-  it('still renders Paper Exams page on /paper-exams route', async () => {
+  it('still renders the exam detail route on /exams/:id', async () => {
     fetchExamTemplatesMock.mockResolvedValue([])
 
-    window.history.pushState({}, '', '/paper-exams')
+    window.history.pushState({}, '', '/exams/exam-42')
     render(<App />)
 
     expect(await screen.findByRole('heading', { name: 'Paper Exams Mock Page' })).toBeInTheDocument()

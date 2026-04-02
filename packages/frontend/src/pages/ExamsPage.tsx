@@ -151,8 +151,7 @@ export default function ExamsPage() {
             <button
               type="button"
               onClick={() => importInputRef.current?.click()}
-              className="inline-flex items-center justify-center rounded-xl px-4 py-3 font-display text-sm font-medium transition-colors duration-150"
-              style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+              className="inline-flex items-center justify-center rounded-xl border border-gold-500/30 bg-gold-500/10 px-4 py-3 font-display text-sm font-medium text-gold-300 transition-colors duration-150 hover:bg-gold-500/20 hover:text-gold-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950"
             >
               ⬆ Import
             </button>

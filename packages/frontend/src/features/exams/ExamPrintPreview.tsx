@@ -40,6 +40,7 @@ interface ExamPrintPreviewProps {
 
 export default function ExamPrintPreview({ exam, onClose }: ExamPrintPreviewProps) {
   const questions = parseForPrint(exam.questionsJson)
+  const secondaryActionButtonClassName = 'rounded-lg border border-gold-500/30 bg-gold-500/10 px-3 py-2 font-display text-sm font-medium text-gold-300 transition-colors duration-150 hover:bg-gold-500/20 hover:text-gold-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950'
 
   const handlePrint = () => {
     window.print()
@@ -66,8 +67,7 @@ export default function ExamPrintPreview({ exam, onClose }: ExamPrintPreviewProp
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg px-3 py-2 font-display text-sm font-medium transition-colors"
-              style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+              className={secondaryActionButtonClassName}
             >
               Close
             </button>
