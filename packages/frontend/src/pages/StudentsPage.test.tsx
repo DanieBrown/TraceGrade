@@ -1,8 +1,17 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import App from '../App'
 import StudentsPage from './StudentsPage'
+
+const navigateMock = vi.fn()
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return {
+    ...actual,
+    useNavigate: () => navigateMock,
+  }
+})
 
 const fetchStudentsMock = vi.fn()
 const getStudentsLoadErrorDetailsMock = vi.fn((error: unknown) => ({
@@ -19,6 +28,7 @@ vi.mock('../features/students/studentsApi', () => ({
 describe('StudentsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    navigateMock.mockReset()
     getStudentsLoadErrorDetailsMock.mockImplementation((error: unknown) => ({
       message: error instanceof Error ? error.message : 'There was a problem connecting to the server.',
       retryable: true,
@@ -100,6 +110,27 @@ describe('StudentsPage', () => {
 
     expect(screen.getByText('Bob Jones')).toBeInTheDocument()
     expect(screen.getByText('No email provided')).toBeInTheDocument()
+  })
+
+  it('navigates to a dedicated student detail page when a student card is clicked', async () => {
+    fetchStudentsMock.mockResolvedValueOnce([
+      {
+        id: 'student-1',
+        fullName: 'Alice Smith',
+        email: 'alice@example.com',
+        isActive: true,
+      },
+    ])
+
+    render(
+      <MemoryRouter>
+        <StudentsPage />
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(await screen.findByText('Alice Smith'))
+
+    expect(navigateMock).toHaveBeenCalledWith('/students/student-1')
   })
 
   it('retries fetching students when Try Again is clicked', async () => {

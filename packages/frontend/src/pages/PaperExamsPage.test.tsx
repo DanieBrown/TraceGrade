@@ -3,13 +3,27 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import PaperExamsPage from './PaperExamsPage'
 
+const navigateMock = vi.fn()
 const fetchExamTemplatesMock = vi.fn()
 const fetchStudentsMock = vi.fn()
 const fetchAnswerRubricsMock = vi.fn()
+const gradeMock = vi.fn()
+const resetMock = vi.fn()
+const gradingHookState = {
+  phase: 'idle' as const,
+}
 const getStudentsLoadErrorDetailsMock = vi.fn(() => ({
   message: 'There was a problem connecting to the server.',
   retryable: true,
 }))
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return {
+    ...actual,
+    useNavigate: () => navigateMock,
+  }
+})
 
 vi.mock('../features/exams/examsApi', () => ({
   fetchExamTemplates: (...args: unknown[]) => fetchExamTemplatesMock(...args),
@@ -34,23 +48,31 @@ vi.mock('../features/submissions/FileUpload', () => ({
 
 vi.mock('../features/grading/useGrading', () => ({
   useGrading: () => ({
-    state: { phase: 'idle' as const },
-    grade: vi.fn(),
-    reset: vi.fn(),
+    state: gradingHookState,
+    grade: gradeMock,
+    reset: resetMock,
   }),
 }))
 
 vi.mock('../features/grading/GradingResultCard', () => ({
-  default: () => null,
+  default: ({ studentName, onSave }: { studentName: string; onSave: (scores: Array<{ questionNumber: number; adjustedPoints: number }>) => void }) => (
+    <button type="button" onClick={() => onSave([{ questionNumber: 1, adjustedPoints: 20 }])}>
+      Save mocked grades for {studentName}
+    </button>
+  ),
 }))
 
 vi.mock('../features/grading/GradingResultsList', () => ({
-  default: () => null,
+  default: () => <div data-testid="graded-results-list">Graded results list</div>,
 }))
 
 describe('PaperExamsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    navigateMock.mockReset()
+    gradeMock.mockReset()
+    resetMock.mockReset()
+    gradingHookState.phase = 'idle'
   })
 
   afterEach(() => {
@@ -142,5 +164,76 @@ describe('PaperExamsPage', () => {
 
     expect(await screen.findByTestId('file-upload-props')).toHaveTextContent('assignmentId=assignment-real-9')
     expect(screen.getByTestId('file-upload-props')).not.toHaveTextContent('00000000-0000-0000-0000-000000000001')
+  })
+
+  it('hands saved grades off to the student detail page instead of rendering an in-page graded results pane', async () => {
+    gradingHookState.phase = 'success'
+    Object.assign(gradingHookState, {
+      result: {
+        gradeId: 'grade-9',
+        submissionId: 'submission-9',
+        status: 'COMPLETED',
+        aiScore: 80,
+        finalScore: 80,
+        confidenceScore: 92,
+        needsReview: false,
+        questionScores: '[{"questionNumber":1,"pointsAwarded":20,"pointsAvailable":25,"confidenceScore":92,"illegible":false,"feedback":"Strong work"}]',
+        aiFeedback: 'Strong work',
+        teacherOverride: false,
+        reviewedBy: null,
+        reviewedAt: null,
+        submissionImageUrl: null,
+        processingTimeMs: 1200,
+        createdAt: '2026-04-02T00:00:00Z',
+        updatedAt: '2026-04-02T00:00:00Z',
+      },
+      parsedQuestions: [
+        {
+          questionNumber: 1,
+          pointsAwarded: 20,
+          pointsAvailable: 25,
+          confidenceScore: 92,
+          illegible: false,
+          feedback: 'Strong work',
+        },
+      ],
+    })
+
+    fetchExamTemplatesMock.mockResolvedValueOnce([
+      {
+        id: 'template-9',
+        assignmentId: 'assignment-real-9',
+        title: 'Physics Quiz',
+        questionCount: 1,
+        totalPoints: 25,
+        statusLabel: 'Draft',
+        questionsJson: '[{"number":1}]',
+      },
+    ])
+    fetchStudentsMock.mockResolvedValueOnce([
+      {
+        id: 'student-9',
+        fullName: 'Mia Torres',
+      },
+    ])
+    fetchAnswerRubricsMock.mockResolvedValueOnce([
+      {
+        id: 'rubric-9',
+        examTemplateId: 'template-9',
+        questionNumber: 1,
+      },
+    ])
+
+    renderAtExamRoute('template-9')
+
+    expect(await screen.findByText('Physics Quiz')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Select Student to Grade'), {
+      target: { value: 'student-9' },
+    })
+
+    fireEvent.click(await screen.findByRole('button', { name: /save mocked grades for mia torres/i }))
+
+    expect(navigateMock).toHaveBeenCalledWith('/students/student-9?source=grading')
+    expect(screen.queryByTestId('graded-results-list')).not.toBeInTheDocument()
   })
 })

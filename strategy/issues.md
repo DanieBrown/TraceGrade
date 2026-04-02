@@ -53,9 +53,5 @@ For each bullet, I will treat it as a separate issue and:
 
 ## Active Issues
 
- // exams view
- - [frontend][exams] the import button appears to not work on the exams view, it should import a jpeg, png, or pdf from the users computer
-  - [frontend][exams] when completing a grading result flow, I am given a graded results pane that appears with its own list of grades for that student, can we instead move this functionality to the student details page and remove it from the exam/:id view?
-  - [fullstack][students] when clicking on a student details view, instead of a pop up modal, lets make it an independant page where we can get a view of the students classes, grades, performance, and other relevant details as needed
-  - [frontend][review queue] replace the current "Save with Adjustments" flow with a dedicated manual grading view that lets the teacher work question-by-question, assign scores, add scoring rationale, and then save the final grade to the student record
+- [frontend][exams] clarify or implement non-JSON import on the Exams view; the current product flow imports exam template JSON, but the requested workflow expects JPEG, PNG, or PDF files from the teacher's computer
 

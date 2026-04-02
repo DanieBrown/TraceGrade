@@ -21,6 +21,10 @@ vi.mock('./pages/StudentsPage', () => ({
   default: () => <h1>Students Mock Page</h1>,
 }))
 
+vi.mock('./pages/StudentDetailPage', () => ({
+  default: () => <h1>Student Detail Mock Page</h1>,
+}))
+
 vi.mock('./pages/ExamsPage', () => ({
   default: () => <h1>Exams Mock Page</h1>,
 }))
@@ -35,6 +39,10 @@ vi.mock('./pages/ExamRubricPage', () => ({
 
 vi.mock('./pages/ManualReviewQueuePage', () => ({
   default: () => <h1>Review Mock Page</h1>,
+}))
+
+vi.mock('./pages/ManualReviewDetailPage', () => ({
+  default: () => <h1>Manual Grading Mock Page</h1>,
 }))
 
 vi.mock('./pages/HomeworkPage', () => ({
@@ -63,11 +71,13 @@ describe('App routes', () => {
     ['/', 'Dashboard Mock Page'],
     ['/classes', 'Classes Mock Page'],
     ['/students', 'Students Mock Page'],
+    ['/students/student-1', 'Student Detail Mock Page'],
     ['/exams', 'Exams Mock Page'],
     ['/exams/exam-1', 'Paper Exams Mock Page'],
     ['/exams/exam-1/rubrics', 'Exam Rubric Mock Page'],
     ['/classes/class-1/batch-grading', 'Classes Mock Page'],
     ['/review', 'Review Mock Page'],
+    ['/review/grade-1', 'Manual Grading Mock Page'],
     ['/homework', 'Homework Mock Page'],
     ['/grades', 'Grades Mock Page'],
     ['/settings', 'Settings Mock Page'],

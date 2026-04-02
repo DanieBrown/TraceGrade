@@ -6,8 +6,6 @@ import { parseExamQuestions } from '../features/exams/examQuestions'
 import type { ExamTemplateListItem } from '../features/exams/examsTypes'
 import type { SavedScore } from '../features/grading/GradingResultCard'
 import GradingResultCard from '../features/grading/GradingResultCard'
-import GradingResultsList from '../features/grading/GradingResultsList'
-import type { GradedStudentRecord } from '../features/grading/GradingResultsList'
 import { useGrading } from '../features/grading/useGrading'
 import { fetchAnswerRubrics } from '../features/rubrics/rubricsApi'
 import { AppNotice, AppPage, AppPageHeader, AppPanel } from '../components/layout/AppPage'
@@ -88,9 +86,8 @@ function GradePanel({
   studentsError,
   studentsRetryable,
   onRetryStudents,
-  gradedStudents,
   rubricSetupPath,
-  onSaveGrades,
+  onGradesSaved,
 }: {
   exam: ExamTemplateListItem
   students: StudentListItem[]
@@ -98,9 +95,8 @@ function GradePanel({
   studentsError: string | null
   studentsRetryable: boolean
   onRetryStudents: () => void
-  gradedStudents: GradedStudentRecord[]
   rubricSetupPath: string
-  onSaveGrades: (record: GradedStudentRecord) => void
+  onGradesSaved: (studentId: string) => void
 }) {
   const [selectedStudentId, setSelectedStudentId] = useState('')
   const [submissionId, setSubmissionId] = useState<string | null>(null)
@@ -110,16 +106,8 @@ function GradePanel({
     () => students.find((student) => student.id === selectedStudentId) ?? null,
     [selectedStudentId, students],
   )
-  const gradedStudentIds = useMemo(
-    () => new Set(gradedStudents.map((gradedStudent) => gradedStudent.studentId)),
-    [gradedStudents],
-  )
   const showRubricRecoveryLink =
     gradingState.phase === 'error' && gradingState.message.toLowerCase().includes('rubric')
-  const ungradedStudents = useMemo(
-    () => students.filter((student) => !gradedStudentIds.has(student.id)),
-    [students, gradedStudentIds],
-  )
 
   useEffect(() => {
     setSubmissionId(null)
@@ -136,17 +124,6 @@ function GradePanel({
     const totalAdjusted = savedScores.reduce((sum, score) => sum + score.adjustedPoints, 0)
     const totalAvailable = gradingState.parsedQuestions.reduce((sum, question) => sum + question.pointsAvailable, 0)
 
-    onSaveGrades({
-      studentId: selectedStudent.id,
-      studentName: selectedStudent.fullName,
-      submissionId: submissionId ?? '',
-      result: gradingState.result,
-      parsedQuestions: gradingState.parsedQuestions,
-      savedScores,
-      totalAdjusted,
-      totalAvailable,
-    })
-
     const scoreLabel = totalAvailable > 0
       ? `${totalAdjusted % 1 === 0 ? totalAdjusted : totalAdjusted.toFixed(1)}/${totalAvailable}`
       : 'saved'
@@ -154,9 +131,7 @@ function GradePanel({
       description: `Recorded score ${scoreLabel}.`,
     })
 
-    setSubmissionId(null)
-    setSelectedStudentId('')
-    reset()
+    onGradesSaved(selectedStudent.id)
   }
 
   function handleCancel() {
@@ -214,8 +189,8 @@ function GradePanel({
           </p>
         </div>
         <p className="font-mono" style={{ color: 'var(--text-secondary)' }}>
-          <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Graded:</span>{' '}
-          {gradedStudents.length}/{students.length}
+          <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Students:</span>{' '}
+          {students.length}
         </p>
       </div>
 
@@ -227,7 +202,7 @@ function GradePanel({
           id="student-select"
           value={selectedStudentId}
           onChange={(event) => setSelectedStudentId(event.target.value)}
-          disabled={studentsLoading || !!studentsError || ungradedStudents.length === 0}
+          disabled={studentsLoading || !!studentsError || students.length === 0}
           className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors font-body"
           style={{
             backgroundColor: 'var(--bg-elevated)',
@@ -237,16 +212,9 @@ function GradePanel({
           }}
         >
           <option value="">Choose a student…</option>
-          {ungradedStudents.map((student) => (
+          {students.map((student) => (
             <option key={student.id} value={student.id}>{student.fullName}</option>
           ))}
-          {gradedStudents.length > 0 && (
-            <optgroup label="Already graded">
-              {gradedStudents.map((gradedStudent) => (
-                <option key={gradedStudent.studentId} value={gradedStudent.studentId}>{gradedStudent.studentName} ✓</option>
-              ))}
-            </optgroup>
-          )}
         </select>
 
         {studentsLoading && (
@@ -278,7 +246,7 @@ function GradePanel({
           </div>
         )}
 
-        {!studentsLoading && !studentsError && ungradedStudents.length === 0 && (
+        {!studentsLoading && !studentsError && students.length === 0 && (
           <p className="font-body text-xs" style={{ color: 'var(--text-secondary)' }}>
             No students available for grading yet.{' '}
             <Link to="/students" className="underline" style={{ color: 'var(--accent-gold)' }}>
@@ -381,7 +349,6 @@ function GradePanel({
         </div>
       )}
 
-      {gradedStudents.length > 0 && <GradingResultsList records={gradedStudents} />}
     </div>
   )
 }
@@ -389,7 +356,6 @@ function GradePanel({
 export default function PaperExamsPage() {
   const { examId: urlExamId } = useParams<{ examId: string }>()
   const navigate = useNavigate()
-  const [gradedStudents, setGradedStudents] = useState<GradedStudentRecord[]>([])
 
   const [exams, setExams] = useState<ExamTemplateListItem[]>([])
   const [examsLoading, setExamsLoading] = useState(true)
@@ -424,13 +390,6 @@ export default function PaperExamsPage() {
       ? configuredRubricCount >= requiredRubricCount
       : configuredRubricCount > 0
     : false
-
-  function handleSaveGrades(record: GradedStudentRecord) {
-    setGradedStudents((previousRecords) => {
-      const otherRecords = previousRecords.filter((gradedStudent) => gradedStudent.studentId !== record.studentId)
-      return [...otherRecords, record]
-    })
-  }
 
   const loadExams = useCallback(async () => {
     setExamsLoading(true)
@@ -580,9 +539,8 @@ export default function PaperExamsPage() {
             studentsError={studentsError}
             studentsRetryable={studentsRetryable}
             onRetryStudents={loadStudents}
-            gradedStudents={gradedStudents}
             rubricSetupPath={rubricSetupPath}
-            onSaveGrades={handleSaveGrades}
+            onGradesSaved={(studentId) => navigate(`/students/${encodeURIComponent(studentId)}?source=grading`)}
           />
         )
       ) : examsLoading ? (

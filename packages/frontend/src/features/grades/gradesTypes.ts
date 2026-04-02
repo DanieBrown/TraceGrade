@@ -20,6 +20,7 @@ export interface GradebookStudentRow {
   studentId: string
   studentName: string
   cells: GradebookCell[]
+  average?: number | null
 }
 
 export interface GradebookViewModel {
@@ -80,6 +81,7 @@ export interface RawGradebookStudentRow {
   cells?: unknown
   grades?: unknown
   scores?: unknown
+  average?: unknown
 }
 
 export interface RawGradebookPayload {
