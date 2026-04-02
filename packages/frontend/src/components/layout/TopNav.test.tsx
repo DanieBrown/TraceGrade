@@ -42,4 +42,25 @@ describe('TopNav', () => {
     expect(screen.queryByText('Admin')).not.toBeInTheDocument()
     expect(screen.queryByText('admin@school.edu')).not.toBeInTheDocument()
   })
+
+  it('does not render a persistent create exam shortcut button in the sidebar', () => {
+    localStorage.setItem(
+      'auth_token',
+      createToken({
+        sub: 'teacher.one@example.com',
+        firstName: 'Teacher',
+        lastName: 'One',
+        role: 'TEACHER',
+      }),
+    )
+
+    render(
+      <MemoryRouter>
+        <TopNav />
+      </MemoryRouter>,
+    )
+
+    expect(screen.queryByRole('button', { name: /Create exam/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Quick command/i })).toBeInTheDocument()
+  })
 })

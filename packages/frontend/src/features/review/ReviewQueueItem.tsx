@@ -144,6 +144,8 @@ export default function ReviewQueueItem({
 }) {
   const [expanded, setExpanded] = useState(false)
   const [reviewed, setReviewed] = useState(false)
+  const [reviewOutcome, setReviewOutcome] = useState<'approved' | 'adjusted' | null>(null)
+  const [savedPoints, setSavedPoints] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -171,9 +173,11 @@ export default function ReviewQueueItem({
         finalScore: result.aiScore,
         teacherOverride: false,
       })
+      setReviewOutcome('approved')
+      setSavedPoints(totalAiPoints)
       setReviewed(true)
       setExpanded(false)
-      toast.success('AI grade approved.')
+      toast.success('AI grade approved and saved to the student record.')
       onReviewed(updated)
     } catch {
       toast.error('Unable to save approval.')
@@ -205,9 +209,11 @@ export default function ReviewQueueItem({
         teacherOverride: true,
         questionScores: JSON.stringify(updatedQuestions),
       })
+      setReviewOutcome('adjusted')
+      setSavedPoints(totalAdjusted)
       setReviewed(true)
       setExpanded(false)
-      toast.success('Review adjustments saved.')
+      toast.success('Manual adjustments saved to the student record.')
       onReviewed(updated)
     } catch {
       toast.error('Unable to save adjustments.')
@@ -239,9 +245,22 @@ export default function ReviewQueueItem({
           <p className="truncate text-sm font-semibold text-pri">
             Submission {String(result.submissionId).slice(0, 8)}…
           </p>
-          <p className="mt-0.5 text-xs text-mut">
-            AI score: {formatScore(totalAiPoints)} / {totalAvailable} pts
-          </p>
+          {reviewed ? (
+            <div className="mt-1 space-y-1">
+              <p className="text-xs text-teal-400">
+                {reviewOutcome === 'adjusted'
+                  ? 'Manual adjustments saved to the student record.'
+                  : 'AI grade approved and saved to the student record.'}
+              </p>
+              <p className="text-xs text-mut">
+                Saved score: {formatScore(savedPoints ?? totalAiPoints)} / {formatScore(totalAvailable)} pts
+              </p>
+            </div>
+          ) : (
+            <p className="mt-0.5 text-xs text-mut">
+              AI score: {formatScore(totalAiPoints)} / {formatScore(totalAvailable)} pts
+            </p>
+          )}
         </div>
 
         <span className={`flex-shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${cls.bg} ${cls.text}`}>

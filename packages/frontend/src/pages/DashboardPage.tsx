@@ -139,7 +139,7 @@ export default function DashboardPage() {
         {
           label: 'Pending review',
           value: `${stats.pendingReviews}`,
-          detail: reviewThresholdLabel ? `Below ${reviewThresholdLabel} confidence` : 'Below your confidence threshold',
+          detail: reviewThresholdLabel ? `Confidence below ${reviewThresholdLabel}` : 'Confidence below your configured threshold',
         },
         {
           label: 'Class average',
@@ -150,11 +150,6 @@ export default function DashboardPage() {
     : []
 
   const actionItems = [
-    {
-      label: 'Create exam',
-      description: 'Start a new exam and move directly into grading setup.',
-      to: '/exams?quick=create',
-    },
     {
       label: 'Manage students',
       description: 'Review rosters, enroll new learners, and fix records.',
@@ -219,19 +214,20 @@ export default function DashboardPage() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[23rem]">
             <Link
-              to="/review"
+              to="/exams?quick=create"
               className="rounded-2xl border border-accent bg-gold-500/10 px-4 py-4 no-underline transition-colors duration-150 hover:bg-gold-500/14"
+            >
+              <p className="font-display text-sm font-medium text-white">Create exam</p>
+              <p className="mt-2 font-mono text-2xl text-gold-400">+</p>
+              <p className="mt-2 font-body text-xs leading-5 text-sec">Build a paper exam with rubrics and print it for your classroom.</p>
+            </Link>
+            <Link
+              to="/review"
+              className="rounded-2xl border border-subtle bg-white/[0.03] px-4 py-4 no-underline transition-colors duration-150 hover:bg-white/[0.05]"
             >
               <p className="font-display text-sm font-medium text-white">Review queue</p>
               <p className="mt-2 font-mono text-2xl text-gold-400">{loadState === 'done' ? reviewQuickActionBadge : '...'}</p>
               <p className="mt-2 font-body text-xs leading-5 text-sec">{reviewQuickActionDescription}</p>
-            </Link>
-            <Link
-              to="/exams?quick=create"
-              className="rounded-2xl border border-subtle bg-white/[0.03] px-4 py-4 no-underline transition-colors duration-150 hover:bg-white/[0.05]"
-            >
-              <p className="font-display text-sm font-medium text-white">Create exam</p>
-              <p className="mt-2 font-body text-xs leading-5 text-sec">Open a new assessment and keep the next grading cycle moving.</p>
             </Link>
           </div>
         </div>
