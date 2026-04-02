@@ -5,6 +5,8 @@ interface ExamCardProps {
   item: ExamTemplateListItem
   onOpen: (examId: string) => void
   onCardClick: (item: ExamTemplateListItem) => void
+  onPrint?: (item: ExamTemplateListItem) => void
+  onExport?: (item: ExamTemplateListItem) => void
 }
 
 function getStatusBadgeStyle(statusLabel: string): CSSProperties {
@@ -33,7 +35,7 @@ function getStatusBadgeStyle(statusLabel: string): CSSProperties {
   }
 }
 
-export default function ExamCard({ item, onOpen, onCardClick }: ExamCardProps) {
+export default function ExamCard({ item, onOpen, onCardClick, onPrint, onExport }: ExamCardProps) {
   return (
     <article
       className="card-glow flex h-full cursor-pointer flex-col justify-between rounded-xl border bg-surface p-5 transition-colors hover:border-[var(--accent-gold)]"
@@ -64,7 +66,7 @@ export default function ExamCard({ item, onOpen, onCardClick }: ExamCardProps) {
         </p>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 flex items-center gap-2">
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onOpen(item.id) }}
@@ -74,6 +76,35 @@ export default function ExamCard({ item, onOpen, onCardClick }: ExamCardProps) {
         >
           Grade Exam →
         </button>
+        <span className="flex-1" />
+        {onPrint && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onPrint(item) }}
+            className="rounded-lg p-1.5 text-xs transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)' }}
+            aria-label={`Print ${item.title}`}
+            title="Print"
+          >
+            🖨️
+          </button>
+        )}
+        {onExport && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onExport(item) }}
+            className="rounded-lg p-1.5 text-xs transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)' }}
+            aria-label={`Export ${item.title}`}
+            title="Export JSON"
+          >
+            ⬇
+          </button>
+        )}
       </div>
     </article>
   )

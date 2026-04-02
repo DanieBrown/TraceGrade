@@ -169,3 +169,34 @@
     }
   }
 }
+
+/* ── Print styles ─────────────────────────────────────────────────────────── */
+
+@media print {
+  /* Hide everything except the printable content */
+  body {
+    background: white !important;
+    color: #111 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide sidebar, nav, modals, toasts */
+  body > #root > *:not(.print\\:block) {
+    display: none !important;
+  }
+
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  .print\\:block {
+    display: block !important;
+  }
+
+  .exam-print-content {
+    page-break-before: auto;
+    widows: 3;
+    orphans: 3;
+  }
+}

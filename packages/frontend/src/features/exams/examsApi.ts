@@ -1,5 +1,6 @@
 import api from '../../lib/api'
 import type { ApiResponse } from '../../lib/apiTypes'
+import { parseExamQuestions } from './examQuestions'
 import type { ExamTemplateListItem, RawExamTemplate } from './examsTypes'
 
 const EXAM_TEMPLATES_ENDPOINT = '/exam-templates'
@@ -109,7 +110,7 @@ export function toExamTemplateListItem(raw: unknown): ExamTemplateListItem | nul
   )
 
   const title = toStringOrDefault(rawTemplate.title ?? rawTemplate.name, DEFAULT_TITLE)
-  const questionCount = toFiniteNonNegativeNumber(
+  const backendQuestionCount = toFiniteNonNegativeNumber(
     rawTemplate.questionCount ?? rawTemplate.questions,
     0,
   )
@@ -119,6 +120,8 @@ export function toExamTemplateListItem(raw: unknown): ExamTemplateListItem | nul
     DEFAULT_STATUS_LABEL,
   )
   const questionsJson = toOptionalTrimmedString(rawTemplate.questionsJson)
+  const derivedQuestionCount = questionsJson ? parseExamQuestions(questionsJson).length : 0
+  const questionCount = backendQuestionCount > 0 ? backendQuestionCount : derivedQuestionCount
 
   return {
     id,

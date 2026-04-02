@@ -20,6 +20,8 @@ export default function ExamDetailModal({ exam, onClose, onExamUpdated, onGradeE
   const [formState, setFormState] = useState<FormState>('loading')
   const [errorMessage, setErrorMessage] = useState('')
   const backdropRef = useRef<HTMLDivElement>(null)
+  const secondaryActionButtonClassName = 'rounded-lg border border-gold-500/30 bg-gold-500/10 px-4 py-2 font-display text-sm font-semibold text-gold-300 transition-colors duration-150 hover:bg-gold-500/20 hover:text-gold-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950 disabled:cursor-not-allowed disabled:opacity-50'
+  const secondaryIconButtonClassName = 'flex h-8 w-8 items-center justify-center rounded-lg border border-gold-500/30 bg-gold-500/10 text-gold-300 transition-colors duration-150 hover:bg-gold-500/20 hover:text-gold-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950 disabled:cursor-not-allowed disabled:opacity-50'
 
   // Load full exam details
   useEffect(() => {
@@ -113,8 +115,7 @@ export default function ExamDetailModal({ exam, onClose, onExamUpdated, onGradeE
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
-            style={{ color: 'var(--text-muted)' }}
+            className={secondaryIconButtonClassName}
             aria-label="Close"
           >
             ✕
@@ -297,8 +298,7 @@ export default function ExamDetailModal({ exam, onClose, onExamUpdated, onGradeE
                   type="button"
                   onClick={onClose}
                   disabled={isSubmitting}
-                  className="rounded-lg px-4 py-2 font-display text-sm font-semibold transition-colors"
-                  style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+                  className={secondaryActionButtonClassName}
                 >
                   Cancel
                 </button>

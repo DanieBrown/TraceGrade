@@ -47,7 +47,25 @@ describe('ManualReviewQueuePage threshold messaging', () => {
     expect(screen.queryByText(/below 95%/i)).not.toBeInTheDocument()
   })
 
-  it('falls back to generic threshold copy and keeps settings link when threshold lookup fails', async () => {
+  it('removes the legacy AI confidence review eyebrow copy', async () => {
+    fetchPendingReviewsMock.mockResolvedValueOnce([])
+    getTeacherThresholdMock.mockResolvedValueOnce({
+      effectiveThreshold: 0.875,
+      source: 'teacher_override',
+      teacherThreshold: 0.875,
+    })
+
+    render(
+      <MemoryRouter>
+        <ManualReviewQueuePage />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Manual Review Queue' })).toBeInTheDocument()
+    expect(screen.queryByText(/AI confidence review/i)).not.toBeInTheDocument()
+  })
+
+  it('falls back to generic threshold copy when threshold lookup fails', async () => {
     fetchPendingReviewsMock.mockResolvedValueOnce([])
     getTeacherThresholdMock.mockRejectedValueOnce(new Error('threshold lookup failed'))
 
@@ -57,8 +75,6 @@ describe('ManualReviewQueuePage threshold messaging', () => {
       </MemoryRouter>,
     )
 
-    expect(await screen.findByText(/below your configured threshold/i)).toBeInTheDocument()
-    const settingsLink = screen.getByRole('link', { name: 'Adjust this in Settings.' })
-    expect(settingsLink).toHaveAttribute('href', '/settings')
+    expect(await screen.findByText(/below your current confidence threshold/i)).toBeInTheDocument()
   })
 })

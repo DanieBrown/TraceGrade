@@ -1,5 +1,14 @@
 import { useCallback, useRef, useState } from 'react'
 import { createExamTemplate, type CreateExamTemplatePayload } from './examsApi'
+import { createAnswerRubric } from '../rubrics/rubricsApi'
+import ExamBuilder from './ExamBuilder'
+import {
+  type BuilderQuestion,
+  calculateTotalPoints,
+  createEmptyQuestion,
+  serializeQuestionsToJson,
+  buildRubricPayloads,
+} from './examQuestions'
 
 interface CreateExamModalProps {
   onClose: () => void
@@ -22,11 +31,13 @@ export default function CreateExamModal({ onClose, onExamCreated }: CreateExamMo
   const [gradeLevel, setGradeLevel] = useState('')
   const [description, setDescription] = useState('')
   const [difficultyLevel, setDifficultyLevel] = useState<string>('MEDIUM')
-  const [totalPoints, setTotalPoints] = useState('100')
-  const [questionsJson, setQuestionsJson] = useState('[]')
+  const [questions, setQuestions] = useState<BuilderQuestion[]>([createEmptyQuestion(1)])
   const [formState, setFormState] = useState<FormState>('idle')
   const [errorMessage, setErrorMessage] = useState('')
   const backdropRef = useRef<HTMLDivElement>(null)
+  const totalPoints = calculateTotalPoints(questions)
+  const secondaryActionButtonClassName = 'rounded-lg border border-gold-500/30 bg-gold-500/10 px-4 py-2 font-display text-sm font-medium text-gold-300 transition-colors duration-150 hover:bg-gold-500/20 hover:text-gold-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950 disabled:cursor-not-allowed disabled:opacity-50'
+  const secondaryIconButtonClassName = 'rounded-lg border border-gold-500/30 bg-gold-500/10 p-1.5 text-gold-300 transition-colors duration-150 hover:bg-gold-500/20 hover:text-gold-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950 disabled:cursor-not-allowed disabled:opacity-50'
 
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -45,18 +56,18 @@ export default function CreateExamModal({ onClose, onExamCreated }: CreateExamMo
         return
       }
 
-      const points = Number(totalPoints)
-      if (!points || points <= 0) {
-        setErrorMessage('Total points must be a positive number.')
+      if (questions.length === 0) {
+        setErrorMessage('Add at least one question.')
         setFormState('error')
         return
       }
 
-      // Validate questions JSON
-      try {
-        JSON.parse(questionsJson)
-      } catch {
-        setErrorMessage('Questions must be valid JSON.')
+      // Validate every MC question has a correct answer selected
+      const missingCorrect = questions.find(
+        (q) => q.type === 'multiple-choice' && q.correctOptionIndex === null,
+      )
+      if (missingCorrect) {
+        setErrorMessage(`Question ${missingCorrect.questionNumber}: select the correct answer.`)
         setFormState('error')
         return
       }
@@ -65,6 +76,7 @@ export default function CreateExamModal({ onClose, onExamCreated }: CreateExamMo
       setErrorMessage('')
 
       try {
+        const questionsJson = serializeQuestionsToJson(questions)
         const payload: CreateExamTemplatePayload = {
           name: name.trim(),
           subject: subject.trim() || undefined,
@@ -72,11 +84,19 @@ export default function CreateExamModal({ onClose, onExamCreated }: CreateExamMo
           gradeLevel: gradeLevel.trim() || undefined,
           description: description.trim() || undefined,
           difficultyLevel: difficultyLevel as CreateExamTemplatePayload['difficultyLevel'],
-          totalPoints: points,
-          questionsJson: questionsJson.trim(),
+          totalPoints,
+          questionsJson,
         }
 
-        await createExamTemplate(payload)
+        const created = await createExamTemplate(payload)
+
+        // Auto-create rubrics for each question
+        const rubricPayloads = buildRubricPayloads(questions)
+        const examId = (created as Record<string, unknown>).id as string | undefined
+        if (examId && rubricPayloads.length > 0) {
+          await Promise.all(rubricPayloads.map((rp) => createAnswerRubric(examId, rp)))
+        }
+
         onExamCreated()
       } catch (err: unknown) {
         const message =
@@ -85,7 +105,7 @@ export default function CreateExamModal({ onClose, onExamCreated }: CreateExamMo
         setFormState('error')
       }
     },
-    [name, subject, topic, gradeLevel, description, difficultyLevel, totalPoints, questionsJson, onExamCreated],
+    [name, subject, topic, gradeLevel, description, difficultyLevel, totalPoints, questions, onExamCreated],
   )
 
   const isSubmitting = formState === 'submitting'
@@ -98,7 +118,7 @@ export default function CreateExamModal({ onClose, onExamCreated }: CreateExamMo
       style={{ backgroundColor: 'rgba(6, 16, 30, 0.7)', backdropFilter: 'blur(4px)' }}
     >
       <div
-        className="rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col"
+        className="rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col"
         style={{
           backgroundColor: 'var(--bg-surface)',
           border: '1px solid var(--border)',
@@ -118,10 +138,7 @@ export default function CreateExamModal({ onClose, onExamCreated }: CreateExamMo
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 transition-colors"
-            style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--text-primary)')}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--text-muted)')}
+            className={secondaryIconButtonClassName}
             aria-label="Close dialog"
           >
             ✕
@@ -215,52 +232,29 @@ export default function CreateExamModal({ onClose, onExamCreated }: CreateExamMo
             />
           </div>
 
-          {/* Difficulty + Total Points */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label htmlFor="examDifficulty" className="font-display text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                Difficulty Level
-              </label>
-              <select
-                id="examDifficulty"
-                value={difficultyLevel}
-                onChange={(e) => setDifficultyLevel(e.target.value)}
-                disabled={isSubmitting}
-                className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors font-body"
-                style={{
-                  backgroundColor: 'var(--bg-elevated)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text-primary)',
-                }}
-              >
-                {DIFFICULTY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="examTotalPoints" className="font-display text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                Total Points *
-              </label>
-              <input
-                id="examTotalPoints"
-                type="number"
-                min="1"
-                value={totalPoints}
-                onChange={(e) => setTotalPoints(e.target.value)}
-                disabled={isSubmitting}
-                placeholder="100"
-                className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors font-body"
-                style={{
-                  backgroundColor: 'var(--bg-elevated)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text-primary)',
-                }}
-                required
-              />
-            </div>
+          {/* Difficulty */}
+          <div className="space-y-1.5">
+            <label htmlFor="examDifficulty" className="font-display text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Difficulty Level
+            </label>
+            <select
+              id="examDifficulty"
+              value={difficultyLevel}
+              onChange={(e) => setDifficultyLevel(e.target.value)}
+              disabled={isSubmitting}
+              className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors font-body"
+              style={{
+                backgroundColor: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
+              }}
+            >
+              {DIFFICULTY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Description */}
@@ -287,26 +281,15 @@ export default function CreateExamModal({ onClose, onExamCreated }: CreateExamMo
             />
           </div>
 
-          {/* Questions JSON */}
+          {/* Questions — structured builder */}
           <div className="space-y-1.5">
-            <label htmlFor="examQuestions" className="font-display text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-              Questions (JSON) *
+            <label className="font-display text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Questions & Rubrics
             </label>
-            <textarea
-              id="examQuestions"
-              value={questionsJson}
-              onChange={(e) => setQuestionsJson(e.target.value)}
+            <ExamBuilder
+              questions={questions}
+              onChange={setQuestions}
               disabled={isSubmitting}
-              placeholder='[{"number": 1, "question": "Solve for x: 2x + 3 = 7", "points": 10}]'
-              rows={4}
-              className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors font-mono resize-none"
-              style={{
-                backgroundColor: 'var(--bg-elevated)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-primary)',
-                fontSize: '12px',
-              }}
-              required
             />
           </div>
 
@@ -331,8 +314,7 @@ export default function CreateExamModal({ onClose, onExamCreated }: CreateExamMo
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-lg font-display text-sm font-medium transition-colors"
-              style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+              className={secondaryActionButtonClassName}
             >
               Cancel
             </button>
