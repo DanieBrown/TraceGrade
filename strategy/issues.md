@@ -62,5 +62,3 @@ For each bullet, I will treat it as a separate issue and:
 - [frontend] I would like to add a breadcrumb trail of the users navigation from page to page. The bread crum trail will reside at the top of every view for the user and only display the 5 most recent navigations they have completed. If they go over 5 items simply do a FIFO pattern on the items. THe bread crumb items will only appear for pages that are the "main pages" of the application, as in ignore views such as "/exams/:ID" and only append items like "/exams", "/grades", etc.
 - [full stack][students] for the students details page, I am seeing their overall average may be fake data, lets match that and update the structure to actually use real data for this. Also the students details page has a student number involved, lets get rid of this end to end.
 - [full stack][students] The class performance section. Doesnt appear to be very utilizing of whitespace, can we have a slider like functrionality to switch between classes for that student? Also giving a breif of the number of classes they have and what we are looking at? for example alregrab class is class 3 of 5 for this student.
-
-
