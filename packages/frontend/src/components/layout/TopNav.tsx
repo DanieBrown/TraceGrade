@@ -113,7 +113,7 @@ export default function TopNav() {
         id: 'quick-new-exam',
         label: 'New Exam',
         description: 'Open exam creator',
-        to: '/exams?quick=create',
+        to: '/exams/new',
       },
       {
         id: 'quick-new-class',
@@ -184,7 +184,7 @@ export default function TopNav() {
             </div>
           </div>
           <p className="mt-4 max-w-[18rem] font-body text-sm text-sec">
-            Review grading activity, move between classes, and stay on top of manual checks.
+            Review grading activity and move between classes.
           </p>
         </div>
 

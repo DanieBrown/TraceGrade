@@ -46,6 +46,12 @@ describe('RegisterPage', () => {
     expect(screen.getByLabelText('Last name')).toBeInTheDocument()
     expect(screen.getByLabelText('Email')).toBeInTheDocument()
     expect(screen.getByLabelText('Password')).toBeInTheDocument()
+    expect(
+      screen.getByText('Set up your workspace and start organizing classes and exams.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('Set up your teacher workspace and start organizing classes, exams, and review thresholds.'),
+    ).not.toBeInTheDocument()
   })
 
   it('shows client-side error when password is less than 8 characters (no API call made)', () => {

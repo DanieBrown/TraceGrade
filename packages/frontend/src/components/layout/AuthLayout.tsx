@@ -1,5 +1,6 @@
 import type { FormEvent, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import TraceGradeLogo from './TraceGradeLogo'
 
 interface AuthLayoutProps {
   title: string
@@ -19,12 +20,12 @@ interface AuthLayoutProps {
 function BrandBlock() {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold-500 text-sm font-display font-bold text-navy-950">
-        TG
+      <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-gold-500/25 bg-gold-500/10 text-gold-300">
+        <TraceGradeLogo className="h-7 w-7" label="TraceGrade mark" />
       </div>
       <div>
         <p className="font-display text-lg font-semibold text-white">TraceGrade</p>
-        <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-gold-300/80">Teacher workspace</p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-gold-300/80">Bringing the power of paper back to education</p>
       </div>
     </div>
   )
@@ -62,16 +63,9 @@ export default function AuthLayout({
           <div>
             <BrandBlock />
             <div className="mt-12 max-w-md">
-              <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-gold-300/80">Focused grading flow</p>
               <h1 className="mt-4 font-display text-4xl font-semibold leading-tight text-white">{asideTitle}</h1>
               <p className="mt-4 font-body text-base leading-7 text-sec">{asideBody}</p>
             </div>
-          </div>
-          <div className="rounded-[24px] border border-subtle bg-white/[0.03] p-5">
-            <p className="font-display text-sm font-medium text-white">Designed for quieter work</p>
-            <p className="mt-2 font-body text-sm leading-6 text-sec">
-              One clear accent, calmer spacing, and less visual competition so the interface stays out of the way.
-            </p>
           </div>
         </section>
 

@@ -56,12 +56,12 @@ export default function LoginPage() {
   return (
     <AuthLayout
       title="Sign in"
-      description="Use your school account to return to grading, review queues, and class management."
+      description="Use your account to return to grading and class management."
       footerText="Don't have an account?"
       footerLinkLabel="Register"
       footerLinkTo="/register"
       onSubmit={handleSubmit}
-      submitLabel={loading ? 'Signing in...' : 'Sign In'}
+      submitLabel={loading ? 'Signing in…' : 'Sign In'}
       isSubmitting={loading}
       error={error}
       asideTitle="Keep grading clear, calm, and easy to scan."

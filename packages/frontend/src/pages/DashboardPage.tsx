@@ -214,7 +214,7 @@ export default function DashboardPage() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[23rem]">
             <Link
-              to="/exams?quick=create"
+              to="/exams/new"
               className="rounded-2xl border border-accent bg-gold-500/10 px-4 py-4 no-underline transition-colors duration-150 hover:bg-gold-500/14"
             >
               <p className="font-display text-sm font-medium text-white">Create exam</p>

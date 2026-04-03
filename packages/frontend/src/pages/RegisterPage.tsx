@@ -72,7 +72,7 @@ export default function RegisterPage() {
   return (
     <AuthLayout
       title="Create account"
-      description="Set up your teacher workspace and start organizing classes, exams, and review thresholds."
+      description="Set up your workspace and start organizing classes and exams."
       footerText="Already have an account?"
       footerLinkLabel="Sign in"
       footerLinkTo="/login"

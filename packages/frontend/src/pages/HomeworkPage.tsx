@@ -67,7 +67,7 @@ export default function HomeworkPage() {
       <AppPageHeader
         eyebrow="Homework planning"
         title="Homework"
-        description="Plan assignments and due dates for your classes without mixing them into the gradebook workflow."
+        description="Plan assignments and due dates for your classes."
         actions={(
           <button
           type="button"
