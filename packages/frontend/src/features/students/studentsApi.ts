@@ -191,7 +191,6 @@ export function toStudentListItem(raw: unknown): StudentListItem | null {
     firstName,
     lastName,
     email: toNullableString(rawStudent.email),
-    studentNumber: toNullableString(rawStudent.studentNumber ?? rawStudent.rollNumber),
     classLabel,
     gradeLabel,
     isActive: toBoolean(rawStudent.isActive ?? rawStudent.active, true),
@@ -258,7 +257,6 @@ export interface CreateStudentPayload {
   firstName: string
   lastName: string
   email: string
-  studentNumber?: string
 }
 
 export async function createStudent(payload: CreateStudentPayload): Promise<StudentListItem> {
@@ -280,7 +278,6 @@ export interface UpdateStudentPayload {
   firstName?: string
   lastName?: string
   email?: string
-  studentNumber?: string
   isActive?: boolean
 }
 

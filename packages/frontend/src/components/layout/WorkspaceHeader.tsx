@@ -1,40 +1,13 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { getAuthenticatedUser, logout } from '../../features/auth/authApi'
 import TraceGradeLogo from './TraceGradeLogo'
+import { getSectionMeta, type NavigationHistoryEntry } from './workspaceNavigation'
 
-function getSectionMeta(pathname: string): { eyebrow: string; title: string } {
-  if (pathname.startsWith('/classes')) {
-    return { eyebrow: 'Teacher workspace', title: 'Classes' }
-  }
-
-  if (pathname.startsWith('/students')) {
-    return { eyebrow: 'Teacher workspace', title: 'Students' }
-  }
-
-  if (pathname.startsWith('/exams')) {
-    return { eyebrow: 'Teacher workspace', title: 'Exams' }
-  }
-
-  if (pathname.startsWith('/homework')) {
-    return { eyebrow: 'Teacher workspace', title: 'Homework' }
-  }
-
-  if (pathname.startsWith('/grades')) {
-    return { eyebrow: 'Teacher workspace', title: 'Grades' }
-  }
-
-  if (pathname.startsWith('/review')) {
-    return { eyebrow: 'Teacher workspace', title: 'Review Queue' }
-  }
-
-  if (pathname.startsWith('/settings')) {
-    return { eyebrow: 'Teacher workspace', title: 'Settings' }
-  }
-
-  return { eyebrow: 'Teacher workspace', title: 'Dashboard' }
+interface WorkspaceHeaderProps {
+  recentHistory: NavigationHistoryEntry[]
 }
 
-export default function WorkspaceHeader() {
+export default function WorkspaceHeader({ recentHistory }: WorkspaceHeaderProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const authenticatedUser = getAuthenticatedUser()
@@ -70,6 +43,22 @@ export default function WorkspaceHeader() {
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gold-300/80">{eyebrow}</p>
             <p className="font-display text-lg font-semibold text-white">{title}</p>
+            {recentHistory.length > 0 && (
+              <nav aria-label="Recent page history" className="mt-2 flex flex-wrap items-center gap-2 font-body text-sm text-sec">
+                {recentHistory.map((entry, index) => (
+                  <span key={`${entry.path}-${index}`} className="inline-flex items-center gap-2">
+                    {index > 0 && <span aria-hidden="true" className="text-mut">/</span>}
+                    <Link
+                      to={entry.path}
+                      className="no-underline transition-colors hover:text-gold-200"
+                      style={{ color: index === recentHistory.length - 1 ? 'var(--text-primary)' : 'var(--accent-gold)' }}
+                    >
+                      {entry.label}
+                    </Link>
+                  </span>
+                ))}
+              </nav>
+            )}
           </div>
         </div>
 

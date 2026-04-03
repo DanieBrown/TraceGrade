@@ -5,7 +5,7 @@ import { AppNotice, AppPage, AppPageHeader, AppPanel } from '../components/layou
 import { fetchClasses, getClassesLoadErrorDetails } from '../features/classes/classesApi'
 import type { ClassListItem } from '../features/classes/classesTypes'
 import { fetchClassGradebook, getGradesLoadErrorDetails } from '../features/grades/gradesApi'
-import type { GradebookStudentRow, GradebookViewModel } from '../features/grades/gradesTypes'
+import type { GradebookColumn, GradebookStudentRow, GradebookViewModel } from '../features/grades/gradesTypes'
 import {
   fetchStudentById,
   getStudentsLoadErrorDetails,
@@ -31,6 +31,8 @@ interface StudentClassPerformance {
   period: string
   schoolYear: string
   average: number | null
+  earnedPoints: number
+  possiblePoints: number
   completedAssignments: number
   totalAssignments: number
   assignments: StudentAssignmentSnapshot[]
@@ -78,17 +80,52 @@ function validateStudentProfile(data: UpdateStudentPayload): string | null {
   return null
 }
 
-function computeRowAverage(row: GradebookStudentRow): number | null {
+function calculateRecordedPoints(assignments: StudentAssignmentSnapshot[]): { earnedPoints: number; possiblePoints: number } {
+  return assignments.reduce(
+    (totals, assignment) => {
+      if (
+        assignment.score === null ||
+        assignment.maxPoints === null ||
+        !Number.isFinite(assignment.maxPoints) ||
+        assignment.maxPoints <= 0
+      ) {
+        return totals
+      }
+
+      return {
+        earnedPoints: totals.earnedPoints + assignment.score,
+        possiblePoints: totals.possiblePoints + assignment.maxPoints,
+      }
+    },
+    { earnedPoints: 0, possiblePoints: 0 },
+  )
+}
+
+function computeAverageFromRecordedPoints(earnedPoints: number, possiblePoints: number): number | null {
+  if (!Number.isFinite(earnedPoints) || !Number.isFinite(possiblePoints) || possiblePoints <= 0) {
+    return null
+  }
+
+  return (earnedPoints / possiblePoints) * 100
+}
+
+function computeRowAverage(row: GradebookStudentRow, columns: GradebookColumn[]): number | null {
   if (typeof row.average === 'number' && Number.isFinite(row.average)) {
     return row.average
   }
 
-  const populatedScores = row.cells.map((cell) => cell.score).filter((score): score is number => score !== null)
-  if (populatedScores.length === 0) {
-    return null
-  }
+  const assignments = columns.map((column) => {
+    const cell = row.cells.find((candidate) => candidate.columnId === column.id) ?? null
+    return {
+      columnId: column.id,
+      label: column.label,
+      score: cell?.score ?? null,
+      maxPoints: column.maxPoints ?? null,
+    }
+  })
+  const { earnedPoints, possiblePoints } = calculateRecordedPoints(assignments)
 
-  return populatedScores.reduce((sum, score) => sum + score, 0) / populatedScores.length
+  return computeAverageFromRecordedPoints(earnedPoints, possiblePoints)
 }
 
 function buildClassPerformance(
@@ -118,6 +155,7 @@ function buildClassPerformance(
         }
       })
       const completedAssignments = assignments.filter((assignment) => assignment.score !== null).length
+      const { earnedPoints, possiblePoints } = calculateRecordedPoints(assignments)
 
       return {
         classId: classItem.id,
@@ -125,7 +163,9 @@ function buildClassPerformance(
         subject: classItem.subject,
         period: classItem.period,
         schoolYear: classItem.schoolYear,
-        average: computeRowAverage(studentRow),
+        average: computeRowAverage(studentRow, gradebook.columns),
+        earnedPoints,
+        possiblePoints,
         completedAssignments,
         totalAssignments: assignments.length,
         assignments,
@@ -146,10 +186,10 @@ export default function StudentDetailPage() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
-  const [studentNumber, setStudentNumber] = useState('')
   const [isActive, setIsActive] = useState(true)
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [saveError, setSaveError] = useState('')
+  const [selectedClassIndex, setSelectedClassIndex] = useState(0)
 
   const loadStudent = useCallback(async () => {
     setStudentLoadState('loading')
@@ -161,7 +201,6 @@ export default function StudentDetailPage() {
       setFirstName(loadedStudent.firstName ?? '')
       setLastName(loadedStudent.lastName ?? '')
       setEmail(loadedStudent.email ?? '')
-      setStudentNumber(loadedStudent.studentNumber ?? '')
       setIsActive(loadedStudent.isActive)
       setSaveError('')
       setSaveState('idle')
@@ -207,22 +246,34 @@ export default function StudentDetailPage() {
     void loadPerformance()
   }, [loadPerformance])
 
+  useEffect(() => {
+    setSelectedClassIndex((currentIndex) => {
+      if (classPerformance.length === 0) {
+        return 0
+      }
+
+      return Math.min(currentIndex, classPerformance.length - 1)
+    })
+  }, [classPerformance.length])
+
   const overallAverage = useMemo(() => {
-    const populatedAverages = classPerformance
-      .map((item) => item.average)
-      .filter((value): value is number => value !== null)
+    const totals = classPerformance.reduce(
+      (aggregate, item) => ({
+        earnedPoints: aggregate.earnedPoints + item.earnedPoints,
+        possiblePoints: aggregate.possiblePoints + item.possiblePoints,
+      }),
+      { earnedPoints: 0, possiblePoints: 0 },
+    )
 
-    if (populatedAverages.length === 0) {
-      return null
-    }
-
-    return populatedAverages.reduce((sum, value) => sum + value, 0) / populatedAverages.length
+    return computeAverageFromRecordedPoints(totals.earnedPoints, totals.possiblePoints)
   }, [classPerformance])
 
   const completedGradeCount = useMemo(
     () => classPerformance.reduce((sum, item) => sum + item.completedAssignments, 0),
     [classPerformance],
   )
+
+  const selectedClassPerformance = classPerformance[selectedClassIndex] ?? null
 
   const handleSaveProfile = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -235,7 +286,6 @@ export default function StudentDetailPage() {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim(),
-      studentNumber: studentNumber.trim() || undefined,
       isActive,
     }
 
@@ -255,7 +305,6 @@ export default function StudentDetailPage() {
       setFirstName(updatedStudent.firstName ?? '')
       setLastName(updatedStudent.lastName ?? '')
       setEmail(updatedStudent.email ?? '')
-      setStudentNumber(updatedStudent.studentNumber ?? '')
       setIsActive(updatedStudent.isActive)
       setSaveState('idle')
       toast.success('Student profile updated.')
@@ -263,7 +312,7 @@ export default function StudentDetailPage() {
       setSaveError(error instanceof Error ? error.message : 'Failed to update student profile.')
       setSaveState('error')
     }
-  }, [email, firstName, isActive, lastName, student, studentNumber])
+  }, [email, firstName, isActive, lastName, student])
 
   const openedFromGrading = searchParams.get('source') === 'grading'
 
@@ -355,7 +404,7 @@ export default function StudentDetailPage() {
         <AppPanel className="space-y-2">
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gold-300/80">Overall Average</p>
           <p className={`font-mono text-3xl font-semibold ${getAverageTone(overallAverage)}`}>{formatPercent(overallAverage)}</p>
-          <p className="font-body text-sm text-sec">Across every class where this student already has recorded grades.</p>
+          <p className="font-body text-sm text-sec">Across all recorded assignment and exam points visible in current gradebooks.</p>
         </AppPanel>
         <AppPanel className="space-y-2">
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gold-300/80">Active Classes</p>
@@ -409,16 +458,7 @@ export default function StudentDetailPage() {
                 className="w-full rounded-xl border border-subtle bg-elevated px-3 py-2 text-sm text-white outline-none transition-colors focus:border-gold-500/40 focus:ring-2 focus:ring-gold-500/20"
               />
             </label>
-
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="space-y-1.5">
-                <span className="font-body text-xs uppercase tracking-wide text-sec">Student Number</span>
-                <input
-                  value={studentNumber}
-                  onChange={(event) => setStudentNumber(event.target.value)}
-                  className="w-full rounded-xl border border-subtle bg-elevated px-3 py-2 text-sm text-white outline-none transition-colors focus:border-gold-500/40 focus:ring-2 focus:ring-gold-500/20"
-                />
-              </label>
               <label className="space-y-1.5">
                 <span className="font-body text-xs uppercase tracking-wide text-sec">Status</span>
                 <select
@@ -486,56 +526,88 @@ export default function StudentDetailPage() {
             </div>
           )}
 
-          {classPerformance.length > 0 && (
+          {selectedClassPerformance && (
             <div className="space-y-4">
-              {classPerformance.map((performance) => (
-                <section key={performance.classId} className="rounded-2xl border border-subtle bg-white/[0.03] px-5 py-5">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-display text-lg font-semibold text-white">{performance.classLabel}</h3>
-                        <span className="rounded-full border border-subtle px-2.5 py-0.5 text-xs text-sec">{performance.subject}</span>
-                        <span className="rounded-full border border-subtle px-2.5 py-0.5 text-xs text-sec">{performance.schoolYear}</span>
-                      </div>
-                      <p className="mt-1 font-body text-sm text-sec">Period {performance.period} · {performance.completedAssignments} of {performance.totalAssignments} scores recorded.</p>
-                    </div>
+              <div className="rounded-2xl border border-subtle bg-white/[0.03] px-4 py-4">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gold-300/80">
+                      Class {selectedClassIndex + 1} of {classPerformance.length}
+                    </p>
+                    <p className="mt-1 font-body text-sm text-sec">
+                      Viewing {selectedClassPerformance.classLabel} for this student across {classPerformance.length} active classes.
+                    </p>
+                  </div>
 
-                    <div className="text-left lg:text-right">
-                      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gold-300/80">Class Average</p>
-                      <p className={`mt-1 font-mono text-2xl font-semibold ${getAverageTone(performance.average)}`}>
-                        {formatPercent(performance.average)}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedClassIndex((currentIndex) => Math.max(0, currentIndex - 1))}
+                      disabled={selectedClassIndex === 0}
+                      className="inline-flex items-center rounded-xl border border-subtle px-4 py-2 text-sm font-display font-semibold text-sec transition-colors hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label="Previous class"
+                    >
+                      ← Previous
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedClassIndex((currentIndex) => Math.min(classPerformance.length - 1, currentIndex + 1))}
+                      disabled={selectedClassIndex === classPerformance.length - 1}
+                      className="inline-flex items-center rounded-xl border border-gold-500/30 bg-gold-500/10 px-4 py-2 text-sm font-display font-semibold text-gold-300 transition-colors hover:bg-gold-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label="Next class"
+                    >
+                      Next class →
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <section key={selectedClassPerformance.classId} className="rounded-2xl border border-subtle bg-white/[0.03] px-5 py-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-display text-lg font-semibold text-white">{selectedClassPerformance.classLabel}</h3>
+                      <span className="rounded-full border border-subtle px-2.5 py-0.5 text-xs text-sec">{selectedClassPerformance.subject}</span>
+                      <span className="rounded-full border border-subtle px-2.5 py-0.5 text-xs text-sec">{selectedClassPerformance.schoolYear}</span>
+                    </div>
+                    <p className="mt-1 font-body text-sm text-sec">Period {selectedClassPerformance.period} · {selectedClassPerformance.completedAssignments} of {selectedClassPerformance.totalAssignments} scores recorded.</p>
+                  </div>
+
+                  <div className="text-left lg:text-right">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-gold-300/80">Class Average</p>
+                    <p className={`mt-1 font-mono text-2xl font-semibold ${getAverageTone(selectedClassPerformance.average)}`}>
+                      {formatPercent(selectedClassPerformance.average)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {selectedClassPerformance.assignments.length === 0 && (
+                    <div className="rounded-xl border border-subtle bg-base/40 px-4 py-4 text-sm text-sec">
+                      No published assignments are available for this class yet.
+                    </div>
+                  )}
+
+                  {selectedClassPerformance.assignments.map((assignment) => (
+                    <div key={assignment.columnId} className="rounded-xl border border-subtle bg-base/40 px-4 py-4">
+                      <p className="font-display text-sm font-semibold text-white">{assignment.label}</p>
+                      <p className="mt-2 font-mono text-lg text-white">
+                        {formatScore(assignment.score)}
+                        <span className="text-sm text-sec"> / {formatScore(assignment.maxPoints)}</span>
                       </p>
                     </div>
-                  </div>
+                  ))}
+                </div>
 
-                  <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {performance.assignments.length === 0 && (
-                      <div className="rounded-xl border border-subtle bg-base/40 px-4 py-4 text-sm text-sec">
-                        No published assignments are available for this class yet.
-                      </div>
-                    )}
-
-                    {performance.assignments.map((assignment) => (
-                      <div key={assignment.columnId} className="rounded-xl border border-subtle bg-base/40 px-4 py-4">
-                        <p className="font-display text-sm font-semibold text-white">{assignment.label}</p>
-                        <p className="mt-2 font-mono text-lg text-white">
-                          {formatScore(assignment.score)}
-                          <span className="text-sm text-sec"> / {formatScore(assignment.maxPoints)}</span>
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-4">
-                    <Link
-                      to={`/grades?classId=${encodeURIComponent(performance.classId)}`}
-                      className="inline-flex items-center rounded-xl border border-gold-500/30 bg-gold-500/10 px-4 py-2 text-sm font-display font-semibold text-gold-300 transition-colors hover:bg-gold-500/20"
-                    >
-                      Open {performance.classLabel} in Gradebook
-                    </Link>
-                  </div>
-                </section>
-              ))}
+                <div className="mt-4">
+                  <Link
+                    to={`/grades?classId=${encodeURIComponent(selectedClassPerformance.classId)}`}
+                    className="inline-flex items-center rounded-xl border border-gold-500/30 bg-gold-500/10 px-4 py-2 text-sm font-display font-semibold text-gold-300 transition-colors hover:bg-gold-500/20"
+                  >
+                    Open {selectedClassPerformance.classLabel} in Gradebook
+                  </Link>
+                </div>
+              </section>
             </div>
           )}
         </AppPanel>

@@ -4,7 +4,6 @@ export interface StudentListItem {
   firstName: string | null
   lastName: string | null
   email: string | null
-  studentNumber: string | null
   classLabel: string | null
   gradeLabel: string | null
   isActive: boolean
@@ -18,8 +17,6 @@ export interface RawStudent {
   firstName?: unknown
   lastName?: unknown
   email?: unknown
-  studentNumber?: unknown
-  rollNumber?: unknown
   className?: unknown
   classLabel?: unknown
   classRoom?: unknown

@@ -82,3 +82,6 @@ Inline accordion adjustments work for tiny corrections, but they break down once
 
 ### Class-linked exam creation should scaffold the gradebook relationship automatically
 Teachers think in terms of classes first, not detached templates. The exam builder now creates or reuses an "Exams" grade category, creates the class assignment, and then saves the exam template against that assignment so the workflow stays class-scoped without asking teachers to manage extra setup steps.
+
+### Breadcrumb history should track only main pages
+Recent-navigation breadcrumbs are most useful when they reflect workspace changes, not every detail route. Track only top-level pages like Dashboard, Students, Grades, and Settings, keep the list FIFO-capped at five entries, and let detail workspaces reuse the last main-page context instead of polluting history.

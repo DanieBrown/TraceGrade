@@ -57,17 +57,11 @@ public class StudentService {
             throw new DuplicateResourceException("Student", "email", request.getEmail());
         }
 
-        if (request.getStudentNumber() != null &&
-                studentRepository.existsByStudentNumberAndSchoolId(request.getStudentNumber(), request.getSchoolId())) {
-            throw new DuplicateResourceException("Student", "studentNumber", request.getStudentNumber());
-        }
-
         Student student = Student.builder()
                 .school(school)
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .email(request.getEmail().toLowerCase())
-                .studentNumber(request.getStudentNumber())
                 .build();
 
         log.info("Creating student: email={}, schoolId={}", request.getEmail(), request.getSchoolId());
@@ -83,13 +77,6 @@ public class StudentService {
                 throw new DuplicateResourceException("Student", "email", request.getEmail());
             }
             student.setEmail(request.getEmail().toLowerCase());
-        }
-
-        if (request.getStudentNumber() != null && !request.getStudentNumber().equals(student.getStudentNumber())) {
-            if (studentRepository.existsByStudentNumberAndSchoolId(request.getStudentNumber(), schoolId)) {
-                throw new DuplicateResourceException("Student", "studentNumber", request.getStudentNumber());
-            }
-            student.setStudentNumber(request.getStudentNumber());
         }
 
         if (request.getFirstName() != null) student.setFirstName(request.getFirstName());
@@ -129,7 +116,6 @@ public class StudentService {
                 .firstName(s.getFirstName())
                 .lastName(s.getLastName())
                 .email(s.getEmail())
-                .studentNumber(s.getStudentNumber())
                 .isActive(s.getIsActive())
                 .createdAt(s.getCreatedAt())
                 .updatedAt(s.getUpdatedAt())

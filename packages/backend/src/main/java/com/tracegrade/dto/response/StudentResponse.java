@@ -31,9 +31,6 @@ public class StudentResponse {
     @Schema(description = "Student's email address", example = "jane.doe@school.edu")
     private String email;
 
-    @Schema(description = "Optional external student ID / roll number", example = "STU-2026-001")
-    private String studentNumber;
-
     @Schema(description = "Whether the student is currently active", example = "true")
     private Boolean isActive;
 

@@ -46,10 +46,6 @@ public class Student extends BaseEntity {
     @Column(name = "email", nullable = false, length = 200)
     private String email;
 
-    @Size(max = 50)
-    @Column(name = "student_number", length = 50)
-    private String studentNumber;
-
     @NotNull
     @Column(name = "is_active", nullable = false)
     @Builder.Default
