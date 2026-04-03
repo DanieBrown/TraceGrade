@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 interface ErrorHomeworkStateProps {
   onRetry: () => void
   message?: string
@@ -62,7 +64,7 @@ export function ErrorHomeworkState({ onRetry, message, canRetry = true }: ErrorH
   )
 }
 
-export function EmptyHomeworkState({ onCreateHomework }: { onCreateHomework?: () => void }) {
+export function EmptyHomeworkState() {
   return (
     <section className="flex flex-col items-center justify-center gap-5 py-24 text-center">
       <div
@@ -84,9 +86,8 @@ export function EmptyHomeworkState({ onCreateHomework }: { onCreateHomework?: ()
           Create your first homework assignment to get started.
         </p>
       </div>
-      <button
-        type="button"
-        onClick={onCreateHomework}
+      <Link
+        to="/homework/new"
         className="inline-flex items-center rounded-lg px-5 py-2.5 font-display text-sm font-semibold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] active:scale-95"
         style={{
           background: 'var(--accent-gold)',
@@ -95,7 +96,7 @@ export function EmptyHomeworkState({ onCreateHomework }: { onCreateHomework?: ()
         aria-label="Create homework"
       >
         + Create Homework
-      </button>
+      </Link>
     </section>
   )
 }

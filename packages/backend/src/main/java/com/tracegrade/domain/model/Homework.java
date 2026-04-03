@@ -55,4 +55,7 @@ public class Homework extends BaseEntity {
 
     @Column(name = "max_points", precision = 10, scale = 2)
     private BigDecimal maxPoints;
+
+    @Column(name = "materials_json", columnDefinition = "TEXT")
+    private String materialsJson;
 }
