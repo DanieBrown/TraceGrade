@@ -145,6 +145,7 @@ export async function fetchExamTemplates(): Promise<ExamTemplateListItem[]> {
 
 export interface CreateExamTemplatePayload {
   name: string
+  assignmentId?: string
   subject?: string
   topic?: string
   gradeLevel?: string

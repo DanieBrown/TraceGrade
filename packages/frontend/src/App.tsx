@@ -11,6 +11,7 @@ import ManualReviewQueuePage from './pages/ManualReviewQueuePage'
 import DashboardPage from './pages/DashboardPage'
 import ClassesPage from './pages/ClassesPage'
 import ExamsPage from './pages/ExamsPage'
+import CreateExamPage from './pages/CreateExamPage'
 import StudentDetailPage from './pages/StudentDetailPage'
 import StudentsPage from './pages/StudentsPage'
 import HomeworkPage from './pages/HomeworkPage'
@@ -49,6 +50,7 @@ export default function App() {
           <Route path='/students' element={<StudentsPage />} />
           <Route path='/students/:studentId' element={<StudentDetailPage />} />
           <Route path='/exams' element={<ExamsPage />} />
+          <Route path='/exams/new' element={<CreateExamPage />} />
           <Route path='/exams/:examId/rubrics' element={<ExamRubricPage />} />
           <Route path='/exams/:examId' element={<PaperExamsPage />} />
           <Route path='/homework' element={<HomeworkPage />} />

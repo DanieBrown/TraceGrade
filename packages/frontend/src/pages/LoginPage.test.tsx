@@ -45,6 +45,15 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText('Email')).toBeInTheDocument()
     expect(screen.getByLabelText('Password')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Sign In' })).toBeInTheDocument()
+    expect(
+      screen.getByText('Use your account to return to grading and class management.'),
+    ).toBeInTheDocument()
+    expect(screen.getAllByText('Bringing the power of paper back to education')).toHaveLength(2)
+    expect(
+      screen.queryByText('Use your school account to return to grading, review queues, and class management.'),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('Focused grading flow')).not.toBeInTheDocument()
+    expect(screen.queryByText('Designed for quieter work')).not.toBeInTheDocument()
   })
 
   it("shows 'Invalid email or password.' when the login API returns 401", async () => {

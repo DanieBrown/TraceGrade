@@ -33,7 +33,11 @@ describe('HomeworkPage', () => {
       </MemoryRouter>,
     )
 
-    expect(await screen.findByText('Homework and Gradebook are separate')).toBeInTheDocument()
+    expect(await screen.findByText(/Homework and gradebook are separate/i)).toBeInTheDocument()
+    expect(screen.getByText('Plan assignments and due dates for your classes.')).toBeInTheDocument()
+    expect(
+      screen.queryByText('Plan assignments and due dates for your classes without mixing them into the gradebook workflow.'),
+    ).not.toBeInTheDocument()
     expect(
       screen.getByText('Homework entries on this page are planning records. They do not create gradebook columns or editable grade rows. Gradebook reflects published class assignments and finalized exam grades.'),
     ).toBeInTheDocument()

@@ -74,6 +74,10 @@ describe('TopNav', () => {
     expect(screen.getByLabelText('TraceGrade logo')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Homework/i })).toBeInTheDocument()
     expect(screen.getByText('Learner profiles and progress')).toBeInTheDocument()
+    expect(screen.getByText(/Review grading activity and move between classes\./i)).toBeInTheDocument()
+    expect(
+      screen.queryByText('Review grading activity, move between classes, and stay on top of manual checks.'),
+    ).not.toBeInTheDocument()
     expect(screen.queryByText('Enrollment records')).not.toBeInTheDocument()
   })
 })
