@@ -30,10 +30,6 @@ public class UpdateStudentRequest {
     @Schema(description = "Updated email address (must be unique within the school)", example = "janet.smith@school.edu")
     private String email;
 
-    @Size(max = 50)
-    @Schema(description = "Updated external student ID / roll number", example = "STU-2026-002")
-    private String studentNumber;
-
     @Schema(description = "Set to false to deactivate the student", example = "true")
     private Boolean isActive;
 }

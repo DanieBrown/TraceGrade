@@ -38,8 +38,4 @@ public class CreateStudentRequest {
     @Size(max = 200)
     @Schema(description = "Student's email address (unique per school)", example = "jane.doe@school.edu", requiredMode = Schema.RequiredMode.REQUIRED)
     private String email;
-
-    @Size(max = 50)
-    @Schema(description = "Optional external student ID / roll number", example = "STU-2026-001")
-    private String studentNumber;
 }

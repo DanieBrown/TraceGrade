@@ -190,7 +190,7 @@ Feature: Student Management
   Scenario: Edit student information from the student profile page
     Given a student exists in a class
     When the teacher opens the student's profile page
-    And updates the student's name, email, student number, or active status
+    And updates the student's name, email, or active status
     And saves
     Then the student record reflects the updated information
     And the teacher remains on the student's profile page
@@ -206,7 +206,9 @@ Feature: Student Management
     When the teacher clicks on the student's name
     Then a dedicated student profile page opens
     And it shows the student's profile information, class context, current status, and recorded grades
+    And it calculates the student's overall average from recorded gradebook points
     And it summarizes the student's class performance where gradebook data exists
+    And the teacher can page through one class summary at a time when multiple classes are available
 ```
 
 ---
@@ -566,4 +568,23 @@ Feature: Account Settings
     Given the teacher is on the Settings page
     When they click the main navigation link to Dashboard
     Then they are taken back to the Dashboard without losing any changes they saved
+```
+
+---
+
+### UC-T-12: Workspace Navigation
+
+**Feature:** The teacher moves between main workspaces and keeps recent context visible in the header.
+
+```gherkin
+Feature: Workspace Navigation
+
+  Background:
+    Given the teacher is logged in
+
+  Scenario: Review recent main-page navigation in the workspace header
+    Given the teacher has navigated between multiple main workspace pages
+    When they view the workspace header on any authenticated page
+    Then they see up to five recent main-page destinations in order
+    And opening a detail route does not add a new history entry
 ```

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import TraceGradeLogo from './TraceGradeLogo'
+import { WORKSPACE_NAVIGATION_ITEMS } from './workspaceNavigation'
 
 // ── Inline SVG icons ──────────────────────────────────────────────────────────
 
@@ -75,16 +76,21 @@ const SettingsIcon: SvgIcon = ({ size = 17 }) => (
 
 // ── Nav data ──────────────────────────────────────────────────────────────────
 
-const NAV_LINKS = [
-  { label: 'Dashboard',    to: '/',            Icon: GridIcon,      end: true  },
-  { label: 'Exams',        to: '/exams',       Icon: FileTextIcon,  end: false },
-  { label: 'Homework',     to: '/homework',    Icon: HomeworkIcon,  end: false },
-  { label: 'Classes',      to: '/classes',     Icon: BookOpenIcon,  end: false },
-  { label: 'Students',     to: '/students',    Icon: UsersIcon,     end: false },
-  { label: 'Grades',       to: '/grades',      Icon: BarChartIcon,  end: false },
-  { label: 'Review Queue', to: '/review',      Icon: ReviewIcon,    end: false },
-  { label: 'Settings',     to: '/settings',    Icon: SettingsIcon,  end: false },
-]
+const ICON_BY_PATH = {
+  '/': GridIcon,
+  '/exams': FileTextIcon,
+  '/homework': HomeworkIcon,
+  '/classes': BookOpenIcon,
+  '/students': UsersIcon,
+  '/grades': BarChartIcon,
+  '/review': ReviewIcon,
+  '/settings': SettingsIcon,
+} as const
+
+const NAV_LINKS = WORKSPACE_NAVIGATION_ITEMS.map((item) => ({
+  ...item,
+  Icon: ICON_BY_PATH[item.to as keyof typeof ICON_BY_PATH],
+}))
 
 interface CommandItem {
   id: string
@@ -238,13 +244,7 @@ export default function TopNav() {
                     <p className="font-display text-sm font-medium">{label}</p>
                     <p className="font-body text-xs text-mut">
                       {label === 'Dashboard' && 'Overview and workload'}
-                      {label === 'Classes' && 'Class rosters and activity'}
-                      {label === 'Students' && 'Learner profiles and progress'}
-                      {label === 'Exams' && 'Assessments and grading'}
-                      {label === 'Homework' && 'Assignments and submissions'}
-                      {label === 'Grades' && 'Performance reporting'}
-                      {label === 'Review Queue' && 'Confidence-based checks'}
-                      {label === 'Settings' && 'Thresholds and preferences'}
+                      {label !== 'Dashboard' && NAV_LINKS.find((item) => item.label === label)?.description}
                     </p>
                   </div>
                 </div>

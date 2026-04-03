@@ -65,14 +65,14 @@ const EnrollmentStudentSearch = React.forwardRef<
           type="text"
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Name or student number…"
+          placeholder="Name or email…"
           className="w-full rounded-lg px-3 py-2 text-sm font-body transition-colors focus:outline-none"
           style={{
             backgroundColor: 'var(--bg-elevated)',
             border: '1px solid var(--border)',
             color: 'var(--text-primary)',
           }}
-          aria-label="Search students by name or student number"
+          aria-label="Search students by name or email"
           autoComplete="off"
           spellCheck={false}
         />
@@ -171,7 +171,7 @@ const EnrollmentStudentSearch = React.forwardRef<
                         isEnrolled ? ' opacity-60' : ' hover:bg-elevated cursor-default'
                       }`}
                     >
-                      {/* Left: name + student number */}
+                      {/* Left: name + email */}
                       <div className="min-w-0 flex-1">
                         <p
                           className="truncate font-display text-sm font-medium"
@@ -179,12 +179,12 @@ const EnrollmentStudentSearch = React.forwardRef<
                         >
                           {firstName} {lastName}
                         </p>
-                        {student.studentNumber && (
+                        {student.email && (
                           <p
                             className="font-body text-xs"
                             style={{ color: 'var(--text-muted)' }}
                           >
-                            #{student.studentNumber}
+                            {student.email}
                           </p>
                         )}
                       </div>

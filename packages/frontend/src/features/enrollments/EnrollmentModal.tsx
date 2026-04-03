@@ -79,8 +79,8 @@ export default function EnrollmentModal({ item, onClose }: EnrollmentModalProps)
     const lower = debouncedSearch.toLowerCase()
     return allStudents.filter((s) => {
       const fullName = `${s.firstName ?? ''} ${s.lastName ?? ''}`.toLowerCase()
-      const studentNumber = (s.studentNumber ?? '').toLowerCase()
-      return fullName.includes(lower) || studentNumber.includes(lower)
+      const email = (s.email ?? '').toLowerCase()
+      return fullName.includes(lower) || email.includes(lower)
     })
   }, [allStudents, debouncedSearch])
 

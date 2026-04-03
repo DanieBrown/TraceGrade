@@ -20,6 +20,4 @@ public interface StudentRepository extends JpaRepository<Student, UUID> {
     Optional<Student> findByIdAndSchoolId(UUID id, UUID schoolId);
 
     boolean existsByEmailAndSchoolId(String email, UUID schoolId);
-
-    boolean existsByStudentNumberAndSchoolId(String studentNumber, UUID schoolId);
 }
