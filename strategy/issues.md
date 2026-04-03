@@ -58,4 +58,3 @@ For each bullet, I will treat it as a separate issue and:
  https://mui.com/material-ui/all-components/
 
  Try to use context 7 as much as necessary along with fonrent design skill to accomplish this task.
-- [full stack][homework] When creating homework. There is no flow to assign a question and answer for the material of this work item on that page. Lets make it similar to a full page experience and match it with the experience we have for creating exams.

@@ -41,6 +41,10 @@ describe('HomeworkPage', () => {
     expect(
       screen.getByText('Homework entries on this page are planning records. They do not create gradebook columns or editable grade rows. Gradebook reflects published class assignments and finalized exam grades.'),
     ).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /Create homework/i })).toHaveLength(2)
+    screen.getAllByRole('link', { name: /Create homework/i }).forEach((link) => {
+      expect(link).toHaveAttribute('href', '/homework/new')
+    })
     expect(screen.getByRole('link', { name: 'Open Gradebook' })).toHaveAttribute('href', '/grades')
     expect(screen.getByRole('link', { name: 'Open Exams' })).toHaveAttribute('href', '/exams')
   })

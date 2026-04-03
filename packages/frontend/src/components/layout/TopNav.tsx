@@ -214,7 +214,7 @@ export default function TopNav() {
           <p className="font-mono text-[10px] font-medium uppercase tracking-[0.22em] text-mut">Navigation</p>
         </div>
 
-        <nav className="flex-1 px-3 pb-4" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <nav aria-label="Primary navigation" className="flex-1 px-3 pb-4" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {NAV_LINKS.map(({ label, to, Icon, end }) => (
             <NavLink
               key={to}

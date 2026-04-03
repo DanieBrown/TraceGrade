@@ -42,14 +42,14 @@ Features are ordered by priority. The paper exam lifecycle is the product's prim
 | 5 | **AI Paper Grading** | Upload a photo (or PDF) of a student's completed paper exam → AI grades every question against the rubric → returns per-question scores, confidence levels, and feedback — instantly. |
 | 6 | **Confidence Review** | Submissions where AI confidence falls below the teacher's threshold are flagged for manual review. Teacher can approve, adjust, or re-scan. |
 | 7 | **Classes & Students** | Create classes, enroll students, manage rosters. Lightweight — exists to support the grading pipeline. |
-| 8 | **Gradebook** | View and edit per-student grades across classes. Auto-calculated averages. Populated by AI grading results and manual entry. |
-| 9 | **Auth** | Register/login with JWT. Role selection at signup (only Teacher active for MVP). |
+| 8 | **Homework Builder** | Create homework records in a dedicated two-step flow: set planning details first, then define structured questions and expected answers. Homework remains separate from Gradebook rows and AI grading. |
+| 9 | **Gradebook** | View and edit per-student grades across classes. Auto-calculated averages. Populated by AI grading results and manual entry. |
+| 10 | **Auth** | Register/login with JWT. Role selection at signup (only Teacher active for MVP). |
 
 ## Post-MVP Features
 
 | Feature | Priority |
 |---------|----------|
-| Homework assignment tracking | P2 |
 | Admin & Counselor portals | P2 |
 | Parent/Student read-only portal | P2 |
 | Advanced analytics (trends, at-risk alerts) | P2 |

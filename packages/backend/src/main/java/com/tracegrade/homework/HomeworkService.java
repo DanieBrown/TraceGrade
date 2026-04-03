@@ -55,6 +55,7 @@ public class HomeworkService {
                 .className(request.getClassName())
                 .dueDate(request.getDueDate())
                 .maxPoints(request.getMaxPoints())
+            .materialsJson(request.getMaterialsJson())
                 .build();
 
         log.info("Creating homework: title={}, schoolId={}", request.getTitle(), request.getSchoolId());
@@ -92,6 +93,7 @@ public class HomeworkService {
                 .dueDate(h.getDueDate())
                 .status(h.getStatus())
                 .maxPoints(h.getMaxPoints())
+                .materialsJson(h.getMaterialsJson())
                 .createdAt(h.getCreatedAt())
                 .updatedAt(h.getUpdatedAt())
                 .build();

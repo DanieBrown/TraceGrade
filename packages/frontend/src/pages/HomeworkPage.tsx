@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { toast } from 'sonner'
-import CreateHomeworkModal from '../features/homework/CreateHomeworkModal'
 import HomeworkList from '../features/homework/HomeworkList'
 import {
   EmptyHomeworkState,
@@ -23,7 +21,6 @@ export default function HomeworkPage() {
   const [items, setItems] = useState<HomeworkListItem[]>([])
   const [errorMessage, setErrorMessage] = useState('There was a problem connecting to the server.')
   const [canRetry, setCanRetry] = useState(true)
-  const [showCreateModal, setShowCreateModal] = useState(false)
   const latestRequestIdRef = useRef(0)
   const isMountedRef = useRef(true)
 
@@ -69,14 +66,13 @@ export default function HomeworkPage() {
         title="Homework"
         description="Plan assignments and due dates for your classes."
         actions={(
-          <button
-          type="button"
-          onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center justify-center rounded-xl bg-gold-500 px-5 py-3 font-display text-sm font-semibold text-navy-950 transition-colors duration-150 hover:bg-gold-600"
-          aria-label="Create homework"
-        >
-          + Create Homework
-        </button>
+          <Link
+            to="/homework/new"
+            className="inline-flex items-center justify-center rounded-xl bg-gold-500 px-5 py-3 font-display text-sm font-semibold text-navy-950 transition-colors duration-150 hover:bg-gold-600"
+            aria-label="Create homework"
+          >
+            + Create Homework
+          </Link>
         )}
       />
 
@@ -106,22 +102,9 @@ export default function HomeworkPage() {
         />
       )}
 
-      {loadState === 'done' && isHomeworkListEmpty(items) && (
-        <EmptyHomeworkState onCreateHomework={() => setShowCreateModal(true)} />
-      )}
+      {loadState === 'done' && isHomeworkListEmpty(items) && <EmptyHomeworkState />}
 
       {loadState === 'done' && !isHomeworkListEmpty(items) && <HomeworkList items={items} />}
-
-      {showCreateModal && (
-        <CreateHomeworkModal
-          onClose={() => setShowCreateModal(false)}
-          onHomeworkCreated={() => {
-            setShowCreateModal(false)
-            toast.success('Homework created.')
-            void loadHomework()
-          }}
-        />
-      )}
     </AppPage>
   )
 }

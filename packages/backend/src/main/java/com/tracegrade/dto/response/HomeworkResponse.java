@@ -42,6 +42,9 @@ public class HomeworkResponse {
     @Schema(description = "Maximum points for the assignment")
     private BigDecimal maxPoints;
 
+    @Schema(description = "Structured homework materials payload as JSON")
+    private String materialsJson;
+
     @Schema(description = "UTC timestamp when the homework was created")
     private Instant createdAt;
 

@@ -44,4 +44,8 @@ public class CreateHomeworkRequest {
     @Positive
     @Schema(description = "Maximum points for the assignment", example = "100")
     private BigDecimal maxPoints;
+
+    @Size(max = 50000)
+    @Schema(description = "Structured homework materials payload as JSON", example = "[{\"questionNumber\":1,\"type\":\"open-ended\",\"prompt\":\"What is 8 x 7?\",\"pointsAvailable\":10,\"answerText\":\"56\"}]")
+    private String materialsJson;
 }

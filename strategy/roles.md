@@ -20,6 +20,7 @@ The primary user. TraceGrade is built around the teacher's paper exam lifecycle:
 | **Exam Export** | Export any exam template as JSON for backup or sharing. |
 | **AI Paper Grading** | Upload a photo or PDF of a student's completed paper exam → AI grades every question against the rubric → per-question scores, confidence, and feedback — instantly. |
 | **Confidence Review** | Submissions below the teacher's active review threshold are flagged for manual review; teacher can open a dedicated grading workspace, adjust per-question scores, record scoring rationale, approve, override, or request re-scan. |
+| **Homework Builder** | Create homework records in a full-page two-step flow: capture assignment basics, then define questions and expected answers in a structured materials builder. Homework remains a planning workspace and does not create Gradebook rows or columns. |
 | **Classes** | Create, edit, archive classes with grading scale / school year / period. |
 | **Students** | Add, edit, deactivate students; open a full student profile page with roster details, class placement, recorded grades, and performance summaries. |
 | **Grades** | View gradebook per class; enter/edit individual grades; auto-calculated averages. |
@@ -29,7 +30,6 @@ The primary user. TraceGrade is built around the teacher's paper exam lifecycle:
 ### Planned additions
 
 - Drawable canvas for handwritten answer keys (currently image upload only)
-- Homework assignment tracking
 - Batch grade upload via CSV
 - Grade category weighting configuration
 - Student performance trends / analytics
@@ -49,7 +49,10 @@ Navigate to Grade Exam → select exam and student → upload photo of completed
 #### 4. Confidence Review
 Dashboard shows flagged submissions count → open Manual Review queue → launch a dedicated manual grading workspace → review AI breakdown question-by-question → adjust scores and add scoring rationale when needed → save the final grade to the student record or approve the AI score as-is.
 
-#### 5. Gradebook
+#### 5. Homework Planning
+Navigate to Homework → open the full-page builder → enter the homework title, optional class label, and due date → continue to Materials → add one or more questions with expected answers → save → return to the Homework list without creating Gradebook rows or columns.
+
+#### 6. Gradebook
 AI-graded and manually-entered scores populate the Gradebook → review the grade summary by class → averages auto-calculated.
 
 ---

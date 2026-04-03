@@ -49,6 +49,10 @@ vi.mock('./pages/HomeworkPage', () => ({
   default: () => <h1>Homework Mock Page</h1>,
 }))
 
+vi.mock('./pages/CreateHomeworkPage', () => ({
+  default: () => <h1>Create Homework Mock Page</h1>,
+}))
+
 vi.mock('./pages/GradesPage', () => ({
   default: () => <h1>Grades Mock Page</h1>,
 }))
@@ -79,6 +83,7 @@ describe('App routes', () => {
     ['/review', 'Review Mock Page'],
     ['/review/grade-1', 'Manual Grading Mock Page'],
     ['/homework', 'Homework Mock Page'],
+    ['/homework/new', 'Create Homework Mock Page'],
     ['/grades', 'Grades Mock Page'],
     ['/settings', 'Settings Mock Page'],
   ])('renders %s route without regressions', (route, headingText) => {
@@ -94,7 +99,7 @@ describe('App routes', () => {
 
     render(<App />)
 
-    const nav = screen.getByRole('navigation')
+    const nav = screen.getByRole('navigation', { name: /primary navigation/i })
     expect(within(nav).getByRole('link', { name: /Homework/i })).toBeInTheDocument()
   })
 
@@ -103,7 +108,7 @@ describe('App routes', () => {
 
     render(<App />)
 
-    const nav = screen.getByRole('navigation')
+    const nav = screen.getByRole('navigation', { name: /primary navigation/i })
     const classesLink = within(nav).getByRole('link', { name: /Classes/i })
     const dashboardLink = within(nav).getByRole('link', { name: /Dashboard/i })
 

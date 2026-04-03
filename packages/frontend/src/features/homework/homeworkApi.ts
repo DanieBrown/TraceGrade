@@ -17,6 +17,7 @@ export interface CreateHomeworkPayload {
   className?: string
   dueDate?: string
   maxPoints?: number
+  materialsJson?: string
 }
 
 export class NonRetryableHomeworkError extends Error {

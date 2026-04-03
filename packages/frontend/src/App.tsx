@@ -15,6 +15,7 @@ import CreateExamPage from './pages/CreateExamPage'
 import StudentDetailPage from './pages/StudentDetailPage'
 import StudentsPage from './pages/StudentsPage'
 import HomeworkPage from './pages/HomeworkPage'
+import CreateHomeworkPage from './pages/CreateHomeworkPage'
 import GradesPage from './pages/GradesPage'
 import SettingsPage from './pages/SettingsPage'
 
@@ -54,6 +55,7 @@ export default function App() {
           <Route path='/exams/:examId/rubrics' element={<ExamRubricPage />} />
           <Route path='/exams/:examId' element={<PaperExamsPage />} />
           <Route path='/homework' element={<HomeworkPage />} />
+          <Route path='/homework/new' element={<CreateHomeworkPage />} />
           <Route path='/grades' element={<GradesPage />} />
           <Route path='/classes/:classId/batch-grading' element={<Navigate to='/classes' replace />} />
           <Route path='/review' element={<ManualReviewQueuePage />} />

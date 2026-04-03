@@ -511,11 +511,11 @@ Feature: Gradebook
 
 ---
 
-### UC-T-10: Homework Management (Post-MVP)
+### UC-T-10: Homework Management
 
-> **Status:** Deferred to Post-MVP. Homework tracking is not part of the core paper exam lifecycle. The planner remains accessible from the main navigation as a lightweight companion workspace and does not create Gradebook records.
+> **Status:** Active planning workflow. Homework remains separate from Gradebook records and AI grading.
 
-**Feature:** The teacher creates homework assignments for planning and due-date tracking.
+**Feature:** The teacher creates homework assignments in a full-page two-step flow so questions and expected answers stay attached to the planning record.
 
 ```gherkin
 Feature: Homework Management
@@ -523,22 +523,35 @@ Feature: Homework Management
   Background:
     Given the teacher is logged in
 
-  Scenario: Create a homework assignment
+  Scenario: Create a homework assignment with structured materials
     Given the teacher navigates to the Homework page
-    When they click "Create Assignment"
-    And they enter an assignment name, due date, and point value
-    And submit
+    When they click "Create Homework"
+    Then a full-page builder opens with a "Basic information" step and a "Materials" step
+    When they enter a homework title and optional planning details
+    And they continue to the Materials step
+    And they add one or more questions with expected answers
+    And they save the homework
     Then the assignment appears in the homework list
+    And the saved homework keeps the structured questions and expected answers with the record
+    And no Gradebook rows or columns are created
 
   Scenario: View upcoming homework assignments
     Given the teacher has one or more homework assignments
     When they view the Homework page
-    Then assignments are listed with their name, due date, and point value
+    Then assignments are listed with their name, due date, and class label
+    And the page explains that homework records do not create Gradebook rows or columns
 
-  Scenario: Creating a homework assignment without a due date fails
-    Given the teacher opens the "Create Assignment" form
-    When they submit without entering a due date
-    Then a validation error appears for the due date field
+  Scenario: Creating a homework assignment without a title fails
+    Given the teacher opens the homework builder
+    When they continue or save without entering a homework title
+    Then a validation error appears for the title field
+    And the homework is not saved
+
+  Scenario: Creating a homework assignment without expected answers fails
+    Given the teacher is on the Materials step of the homework builder
+    And one or more questions are missing an expected answer
+    When they click "Create homework"
+    Then a validation error explains which question needs answer coverage
     And the assignment is not saved
 ```
 

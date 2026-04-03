@@ -17,6 +17,7 @@ interface ExamBuilderProps {
   onChange: (questions: BuilderQuestion[]) => void
   /** When available (during edit), used for rubric image uploads */
   examTemplateId?: string
+  allowAnswerImageUpload?: boolean
   disabled?: boolean
 }
 
@@ -32,7 +33,13 @@ const OPTION_LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function ExamBuilder({ questions, onChange, examTemplateId, disabled }: ExamBuilderProps) {
+export default function ExamBuilder({
+  questions,
+  onChange,
+  examTemplateId,
+  allowAnswerImageUpload = true,
+  disabled,
+}: ExamBuilderProps) {
   const totalPoints = calculateTotalPoints(questions)
 
   const updateQuestion = useCallback(
@@ -92,6 +99,7 @@ export default function ExamBuilder({ questions, onChange, examTemplateId, disab
           onRemove={() => removeQuestion(index)}
           onMove={(dir) => moveQuestion(index, dir)}
           examTemplateId={examTemplateId}
+          allowAnswerImageUpload={allowAnswerImageUpload}
           disabled={disabled}
         />
       ))}
@@ -126,10 +134,21 @@ interface QuestionEditorProps {
   onRemove: () => void
   onMove: (direction: -1 | 1) => void
   examTemplateId?: string
+  allowAnswerImageUpload: boolean
   disabled?: boolean
 }
 
-function QuestionEditor({ question, index, total, onChange, onRemove, onMove, examTemplateId, disabled }: QuestionEditorProps) {
+function QuestionEditor({
+  question,
+  index,
+  total,
+  onChange,
+  onRemove,
+  onMove,
+  examTemplateId,
+  allowAnswerImageUpload,
+  disabled,
+}: QuestionEditorProps) {
   const handleTypeChange = useCallback(
     (type: QuestionType) => {
       const patch: Partial<BuilderQuestion> = { type }
@@ -263,6 +282,7 @@ function QuestionEditor({ question, index, total, onChange, onRemove, onMove, ex
             question={question}
             onChange={onChange}
             examTemplateId={examTemplateId}
+            allowAnswerImageUpload={allowAnswerImageUpload}
             disabled={disabled}
           />
         )}
@@ -272,6 +292,7 @@ function QuestionEditor({ question, index, total, onChange, onRemove, onMove, ex
             rubric={question.rubric}
             onChange={(rubric) => onChange({ rubric })}
             examTemplateId={examTemplateId}
+            allowAnswerImageUpload={allowAnswerImageUpload}
             disabled={disabled}
           />
         )}
@@ -373,10 +394,17 @@ interface MultiPartEditorProps {
   question: BuilderQuestion
   onChange: (patch: Partial<BuilderQuestion>) => void
   examTemplateId?: string
+  allowAnswerImageUpload: boolean
   disabled?: boolean
 }
 
-function MultiPartEditor({ question, onChange, examTemplateId, disabled }: MultiPartEditorProps) {
+function MultiPartEditor({
+  question,
+  onChange,
+  examTemplateId,
+  allowAnswerImageUpload,
+  disabled,
+}: MultiPartEditorProps) {
   const { subQuestions } = question
 
   const addSub = () => {
@@ -443,6 +471,7 @@ function MultiPartEditor({ question, onChange, examTemplateId, disabled }: Multi
             rubric={sub.rubric}
             onChange={(rubric) => updateSub(i, { rubric })}
             examTemplateId={examTemplateId}
+            allowAnswerImageUpload={allowAnswerImageUpload}
             disabled={disabled}
             compact
           />
@@ -467,11 +496,19 @@ interface OpenEndedRubricEditorProps {
   rubric: BuilderQuestion['rubric']
   onChange: (rubric: BuilderQuestion['rubric']) => void
   examTemplateId?: string
+  allowAnswerImageUpload: boolean
   disabled?: boolean
   compact?: boolean
 }
 
-function OpenEndedRubricEditor({ rubric, onChange, examTemplateId, disabled, compact }: OpenEndedRubricEditorProps) {
+function OpenEndedRubricEditor({
+  rubric,
+  onChange,
+  examTemplateId,
+  allowAnswerImageUpload,
+  disabled,
+  compact,
+}: OpenEndedRubricEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleImageUpload = useCallback(
@@ -509,7 +546,9 @@ function OpenEndedRubricEditor({ rubric, onChange, examTemplateId, disabled, com
       <div className="space-y-1">
         <label className="font-display text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
           Expected Answer
-          <span className="ml-1 font-body font-normal" style={{ color: 'var(--text-muted)' }}>(text or image)</span>
+          <span className="ml-1 font-body font-normal" style={{ color: 'var(--text-muted)' }}>
+            {allowAnswerImageUpload ? '(text or image)' : '(text)'}
+          </span>
         </label>
         <textarea
           value={rubric.answerText}
@@ -527,45 +566,47 @@ function OpenEndedRubricEditor({ rubric, onChange, examTemplateId, disabled, com
       </div>
 
       {/* Image upload for handwritten answer key */}
-      <div className="flex items-center gap-3">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/heic,.jpg,.jpeg,.png,.heic"
-          onChange={handleFileChange}
-          className="hidden"
-          aria-label="Upload answer key image"
-        />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={disabled}
-          className="rounded-lg border px-3 py-1.5 font-body text-xs transition-colors"
-          style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
-        >
-          📷 Upload Answer Key Image
-        </button>
-        {rubric.answerImageUrl && (
-          <div className="flex items-center gap-2">
-            <img
-              src={rubric.answerImageUrl}
-              alt="Answer key preview"
-              className="h-8 w-8 rounded border object-cover"
-              style={{ borderColor: 'var(--border)' }}
-            />
-            <button
-              type="button"
-              onClick={() => onChange({ ...rubric, answerImageUrl: '' })}
-              disabled={disabled}
-              className="text-xs"
-              style={{ color: 'var(--accent-crimson)' }}
-              aria-label="Remove answer key image"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-      </div>
+      {allowAnswerImageUpload && (
+        <div className="flex items-center gap-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/heic,.jpg,.jpeg,.png,.heic"
+            onChange={handleFileChange}
+            className="hidden"
+            aria-label="Upload answer key image"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={disabled}
+            className="rounded-lg border px-3 py-1.5 font-body text-xs transition-colors"
+            style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+          >
+            📷 Upload Answer Key Image
+          </button>
+          {rubric.answerImageUrl && (
+            <div className="flex items-center gap-2">
+              <img
+                src={rubric.answerImageUrl}
+                alt="Answer key preview"
+                className="h-8 w-8 rounded border object-cover"
+                style={{ borderColor: 'var(--border)' }}
+              />
+              <button
+                type="button"
+                onClick={() => onChange({ ...rubric, answerImageUrl: '' })}
+                disabled={disabled}
+                className="text-xs"
+                style={{ color: 'var(--accent-crimson)' }}
+                aria-label="Remove answer key image"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Acceptable variations + grading notes */}
       {!compact && (
