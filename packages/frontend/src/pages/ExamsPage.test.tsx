@@ -27,6 +27,10 @@ vi.mock('./PaperExamsPage', () => ({
   default: () => <h1>Paper Exams Mock Page</h1>,
 }))
 
+vi.mock('./CreateExamPage', () => ({
+  default: () => <h1>Create Exam Mock Page</h1>,
+}))
+
 describe('ExamsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -100,6 +104,33 @@ describe('ExamsPage', () => {
     await waitFor(() => {
       expect(window.location.pathname).toBe('/exams/exam-42')
     })
+  })
+
+  it('routes exam card clicks into the shared editor flow instead of opening a modal', async () => {
+    fetchExamTemplatesMock.mockResolvedValueOnce([
+      {
+        id: 'exam-42',
+        title: 'Algebra Final',
+        questionCount: 20,
+        totalPoints: 100,
+        statusLabel: 'Published',
+        questionsJson: '[]',
+      },
+    ])
+
+    window.history.pushState({}, '', '/exams')
+    render(<App />)
+
+    expect(await screen.findByText('Algebra Final')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Algebra Final'))
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/exams/new')
+      expect(window.location.search).toBe('?examId=exam-42')
+    })
+
+    expect(await screen.findByRole('heading', { name: 'Create Exam Mock Page' })).toBeInTheDocument()
   })
 
   it('keeps the exams page focused on creating templates instead of importing JSON', async () => {

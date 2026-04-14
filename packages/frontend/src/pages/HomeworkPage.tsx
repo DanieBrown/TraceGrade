@@ -15,10 +15,12 @@ import type { HomeworkListItem } from '../features/homework/homeworkTypes'
 import { AppNotice, AppPage, AppPageHeader } from '../components/layout/AppPage'
 
 type LoadState = 'loading' | 'error' | 'done'
+const HOMEWORKS_PER_PAGE = 10
 
 export default function HomeworkPage() {
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [items, setItems] = useState<HomeworkListItem[]>([])
+  const [pageIndex, setPageIndex] = useState(0)
   const [errorMessage, setErrorMessage] = useState('There was a problem connecting to the server.')
   const [canRetry, setCanRetry] = useState(true)
   const latestRequestIdRef = useRef(0)
@@ -58,6 +60,18 @@ export default function HomeworkPage() {
       isMountedRef.current = false
     }
   }, [loadHomework])
+
+  useEffect(() => {
+    const maxPageIndex = Math.max(0, Math.ceil(items.length / HOMEWORKS_PER_PAGE) - 1)
+    setPageIndex((currentPageIndex) => Math.min(currentPageIndex, maxPageIndex))
+  }, [items.length])
+
+  const startIndex = pageIndex * HOMEWORKS_PER_PAGE
+  const paginatedItems = items.slice(startIndex, startIndex + HOMEWORKS_PER_PAGE)
+  const showingStart = items.length === 0 ? 0 : startIndex + 1
+  const showingEnd = Math.min(items.length, startIndex + HOMEWORKS_PER_PAGE)
+  const hasPreviousPage = pageIndex > 0
+  const hasNextPage = showingEnd < items.length
 
   return (
     <AppPage>
@@ -104,7 +118,38 @@ export default function HomeworkPage() {
 
       {loadState === 'done' && isHomeworkListEmpty(items) && <EmptyHomeworkState />}
 
-      {loadState === 'done' && !isHomeworkListEmpty(items) && <HomeworkList items={items} />}
+      {loadState === 'done' && !isHomeworkListEmpty(items) && (
+        <div className="space-y-4">
+          <HomeworkList items={paginatedItems} />
+
+          <div className="flex flex-col gap-3 rounded-2xl border border-subtle bg-white/[0.03] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="font-body text-sm text-sec">
+              Showing {showingStart}-{showingEnd} of {items.length} homework records
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPageIndex((currentPageIndex) => Math.max(0, currentPageIndex - 1))}
+                disabled={!hasPreviousPage}
+                className="inline-flex items-center rounded-xl border border-subtle px-4 py-2 text-sm font-display font-semibold text-sec transition-colors hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Previous page"
+              >
+                Previous page
+              </button>
+              <button
+                type="button"
+                onClick={() => setPageIndex((currentPageIndex) => currentPageIndex + 1)}
+                disabled={!hasNextPage}
+                className="inline-flex items-center rounded-xl border border-gold-500/30 bg-gold-500/10 px-4 py-2 text-sm font-display font-semibold text-gold-300 transition-colors hover:bg-gold-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Next page"
+              >
+                Next page
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppPage>
   )
 }

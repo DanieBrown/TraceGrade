@@ -2,6 +2,11 @@ export interface ExamTemplateListItem {
   id: string
   assignmentId: string
   title: string
+  subject?: string
+  topic?: string
+  description?: string
+  gradeLevel?: string
+  difficultyLevel?: string
   questionCount: number
   totalPoints: number
   statusLabel: string
@@ -17,6 +22,11 @@ export interface RawExamTemplate {
   assignment_id?: string | null
   title?: string | null
   name?: string | null
+  subject?: string | null
+  topic?: string | null
+  description?: string | null
+  gradeLevel?: string | null
+  difficultyLevel?: string | null
   questionCount?: number | string | null
   questions?: number | string | null
   totalPoints?: number | string | null
