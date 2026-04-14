@@ -3,8 +3,16 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchClasses } from '../features/classes/classesApi'
 import { ensureExamAssignmentForClass } from '../features/exams/examCreationApi'
-import { createExamTemplate } from '../features/exams/examsApi'
-import { createAnswerRubric } from '../features/rubrics/rubricsApi'
+import {
+  createExamTemplate,
+  fetchExamTemplateById,
+  updateExamTemplate,
+} from '../features/exams/examsApi'
+import {
+  createAnswerRubric,
+  fetchAnswerRubrics,
+  updateAnswerRubric,
+} from '../features/rubrics/rubricsApi'
 import CreateExamPage from './CreateExamPage'
 
 const mockNavigate = vi.hoisted(() => vi.fn())
@@ -27,6 +35,8 @@ vi.mock('../features/exams/examsApi', async () => {
   return {
     ...actual,
     createExamTemplate: vi.fn(),
+    fetchExamTemplateById: vi.fn(),
+    updateExamTemplate: vi.fn(),
   }
 })
 
@@ -35,13 +45,19 @@ vi.mock('../features/rubrics/rubricsApi', async () => {
   return {
     ...actual,
     createAnswerRubric: vi.fn(),
+    fetchAnswerRubrics: vi.fn(),
+    updateAnswerRubric: vi.fn(),
   }
 })
 
 const fetchClassesMock = vi.mocked(fetchClasses)
 const ensureExamAssignmentForClassMock = vi.mocked(ensureExamAssignmentForClass)
 const createExamTemplateMock = vi.mocked(createExamTemplate)
+const fetchExamTemplateByIdMock = vi.mocked(fetchExamTemplateById)
+const updateExamTemplateMock = vi.mocked(updateExamTemplate)
 const createAnswerRubricMock = vi.mocked(createAnswerRubric)
+const fetchAnswerRubricsMock = vi.mocked(fetchAnswerRubrics)
+const updateAnswerRubricMock = vi.mocked(updateAnswerRubric)
 
 describe('CreateExamPage', () => {
   beforeEach(() => {
@@ -64,6 +80,7 @@ describe('CreateExamPage', () => {
         isActive: true,
       },
     ])
+    fetchAnswerRubricsMock.mockResolvedValue([])
   })
 
   afterEach(() => {
@@ -159,6 +176,97 @@ describe('CreateExamPage', () => {
         questionsJson: expect.any(String),
       })
       expect(createAnswerRubricMock).toHaveBeenCalledTimes(1)
+      expect(mockNavigate).toHaveBeenCalledWith('/exams')
+    })
+  })
+
+  it('loads an existing exam into the shared editor and updates it instead of creating a new template', async () => {
+    fetchExamTemplateByIdMock.mockResolvedValue({
+      id: 'exam-1',
+      assignmentId: 'assignment-1',
+      title: 'Algebra Midterm',
+      topic: 'Linear Equations',
+      questionCount: 1,
+      totalPoints: 10,
+      statusLabel: 'Draft',
+      questionsJson: JSON.stringify([
+        {
+          questionNumber: 1,
+          type: 'multiple-choice',
+          prompt: 'What is 2 + 2?',
+          pointsAvailable: 10,
+          options: [
+            { label: 'A', text: '4' },
+            { label: 'B', text: '5' },
+          ],
+          correctOptionIndex: 0,
+        },
+      ]),
+    } as never)
+    fetchAnswerRubricsMock.mockResolvedValueOnce([
+      {
+        id: 'rubric-1',
+        examTemplateId: 'exam-1',
+        questionNumber: 1,
+        answerText: 'A: 4',
+        answerImageUrl: null,
+        pointsAvailable: 10,
+        acceptableVariations: null,
+        gradingNotes: 'Multiple choice - exact match expected.',
+        createdAt: '2026-04-02T00:00:00Z',
+        updatedAt: '2026-04-02T00:00:00Z',
+      },
+    ])
+    updateExamTemplateMock.mockResolvedValue({
+      id: 'exam-1',
+      assignmentId: 'assignment-1',
+      title: 'Algebra Midterm',
+      topic: 'Linear Equations',
+      questionCount: 1,
+      totalPoints: 10,
+      statusLabel: 'Draft',
+      questionsJson: '[]',
+    } as never)
+    updateAnswerRubricMock.mockResolvedValue({
+      id: 'rubric-1',
+      examTemplateId: 'exam-1',
+      questionNumber: 1,
+      answerText: 'A: 4',
+      answerImageUrl: null,
+      pointsAvailable: 10,
+      acceptableVariations: null,
+      gradingNotes: 'Multiple choice - exact match expected.',
+      createdAt: '2026-04-02T00:00:00Z',
+      updatedAt: '2026-04-02T00:00:00Z',
+    })
+
+    render(
+      <MemoryRouter initialEntries={['/exams/new?examId=exam-1']}>
+        <CreateExamPage />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Edit exam' })).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Algebra Midterm')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Linear Equations')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continue to rubrics' }))
+
+    expect(await screen.findByDisplayValue('What is 2 + 2?')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Save exam changes' }))
+
+    await waitFor(() => {
+      expect(fetchExamTemplateByIdMock).toHaveBeenCalledWith('exam-1')
+      expect(fetchAnswerRubricsMock).toHaveBeenCalledWith('exam-1')
+      expect(updateExamTemplateMock).toHaveBeenCalledWith('exam-1', {
+        name: 'Algebra Midterm',
+        topic: 'Linear Equations',
+        totalPoints: 10,
+        questionsJson: expect.any(String),
+      })
+      expect(updateAnswerRubricMock).toHaveBeenCalledTimes(1)
+      expect(createExamTemplateMock).not.toHaveBeenCalled()
+      expect(createAnswerRubricMock).not.toHaveBeenCalled()
       expect(mockNavigate).toHaveBeenCalledWith('/exams')
     })
   })

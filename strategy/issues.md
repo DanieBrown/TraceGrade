@@ -58,3 +58,6 @@ For each bullet, I will treat it as a separate issue and:
  https://mui.com/material-ui/all-components/
 
  Try to use context 7 as much as necessary along with fonrent design skill to accomplish this task.
+
+ - [fullstack] [exams] [homework] the exams page can potentially be redesigned into a concept of a "assignments" page where when initially landing on it we can ask the teacher to create an assignment, this assignment can be an exam or homework and we simply label these assignment types throughout our views to allow the teacher to see them easily on the webapp.This will require end to end work to ensure the data strucure is updated to handle it as assignments, including our services and sql tables
+ - [frontend] [homework] When clicking on a homework assignment we are not thrown to any page. I think when clicking on a homework assignment we should be routed to the "exams/new" page so that they can make their edits.

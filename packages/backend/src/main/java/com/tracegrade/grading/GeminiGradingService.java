@@ -30,10 +30,12 @@ public class GeminiGradingService implements AIGradingService {
     private String apiKey;
 
     private final ObjectMapper objectMapper;
+    private final GradingImageUrlResolver gradingImageUrlResolver;
     private final HttpClient httpClient;
 
-    public GeminiGradingService(ObjectMapper objectMapper) {
+    public GeminiGradingService(ObjectMapper objectMapper, GradingImageUrlResolver gradingImageUrlResolver) {
         this.objectMapper = objectMapper;
+        this.gradingImageUrlResolver = gradingImageUrlResolver;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
@@ -183,8 +185,10 @@ public class GeminiGradingService implements AIGradingService {
             return parseDataUri(url);
         }
 
+        String resolvedUrl = gradingImageUrlResolver.resolveForBackendFetch(url);
+
         HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(url))
+                .uri(URI.create(resolvedUrl))
                 .GET()
                 .timeout(Duration.ofSeconds(30))
                 .build();

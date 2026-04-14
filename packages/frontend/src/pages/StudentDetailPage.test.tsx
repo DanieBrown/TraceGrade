@@ -186,6 +186,55 @@ describe('StudentDetailPage', () => {
     expect(screen.queryByText('Biology P1')).not.toBeInTheDocument()
   })
 
+  it('defaults class and overall averages to 0.0% when no recorded scores are available', async () => {
+    fetchStudentByIdMock.mockResolvedValueOnce({
+      id: 'student-1',
+      fullName: 'Alice Smith',
+      firstName: 'Alice',
+      lastName: 'Smith',
+      email: 'alice@example.com',
+      classLabel: 'Biology 1',
+      gradeLabel: '10',
+      isActive: true,
+    })
+    fetchClassesMock.mockResolvedValueOnce([
+      {
+        id: 'class-1',
+        name: 'Biology',
+        subject: 'Science',
+        period: '1',
+        schoolYear: '2025-2026',
+        isActive: true,
+      },
+    ])
+    fetchClassGradebookMock.mockResolvedValueOnce({
+      classId: 'class-1',
+      classLabel: 'Biology P1',
+      columns: [
+        { id: 'assignment-1', label: 'Cell Quiz', maxPoints: 20 },
+      ],
+      rows: [
+        {
+          studentId: 'student-1',
+          studentName: 'Alice Smith',
+          average: null,
+          cells: [],
+        },
+      ],
+    })
+
+    render(
+      <MemoryRouter initialEntries={['/students/student-1']}>
+        <Routes>
+          <Route path="/students/:studentId" element={<StudentDetailPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Alice Smith' })).toBeInTheDocument()
+    expect(screen.getAllByText('0.0%').length).toBeGreaterThan(0)
+  })
+
   it('saves profile edits back through the student API', async () => {
     fetchStudentByIdMock.mockResolvedValueOnce({
       id: 'student-1',

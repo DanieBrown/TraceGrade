@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import ExamDetailModal from '../features/exams/ExamDetailModal'
 import ExamPrintPreview from '../features/exams/ExamPrintPreview'
 import ExamsList from '../features/exams/ExamsList'
 import { EmptyExamsState, ErrorExamsState, LoadingExamsState } from '../features/exams/ExamsStates'
@@ -15,7 +14,6 @@ export default function ExamsPage() {
   const navigate = useNavigate()
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [items, setItems] = useState<ExamTemplateListItem[]>([])
-  const [selectedExam, setSelectedExam] = useState<ExamTemplateListItem | null>(null)
   const [printExam, setPrintExam] = useState<ExamTemplateListItem | null>(null)
   const latestRequestIdRef = useRef(0)
   const isMountedRef = useRef(true)
@@ -52,11 +50,18 @@ export default function ExamsPage() {
 
   const handleCreateExam = useCallback(() => {
     navigate('/exams/new')
-  }, [])
+  }, [navigate])
 
   const handleOpenExam = useCallback(
     (examId: string) => {
       navigate(`/exams/${encodeURIComponent(examId)}`)
+    },
+    [navigate],
+  )
+
+  const handleEditExam = useCallback(
+    (exam: ExamTemplateListItem) => {
+      navigate(`/exams/new?examId=${encodeURIComponent(exam.id)}`)
     },
     [navigate],
   )
@@ -108,22 +113,7 @@ export default function ExamsPage() {
       )}
 
       {loadState === 'done' && !isExamTemplateListEmpty(items) && (
-        <ExamsList items={items} onOpenExam={handleOpenExam} onExamClick={(exam) => setSelectedExam(exam)} onPrintExam={setPrintExam} onExportExam={handleExportExam} />
-      )}
-
-      {selectedExam && (
-        <ExamDetailModal
-          exam={selectedExam}
-          onClose={() => setSelectedExam(null)}
-          onExamUpdated={() => {
-            setSelectedExam(null)
-            void loadTemplates()
-          }}
-          onGradeExam={(examId) => {
-            setSelectedExam(null)
-            handleOpenExam(examId)
-          }}
-        />
+        <ExamsList items={items} onOpenExam={handleOpenExam} onExamClick={handleEditExam} onPrintExam={setPrintExam} onExportExam={handleExportExam} />
       )}
 
       {printExam && (

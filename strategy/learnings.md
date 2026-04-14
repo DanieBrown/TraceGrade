@@ -88,3 +88,6 @@ Recent-navigation breadcrumbs are most useful when they reflect workspace change
 
 ### Preserve structured backend error codes through frontend settings APIs
 Settings flows sometimes need specific UX copy, not just a generic save failure. When the backend returns a stable code like `PROVIDER_NOT_CONFIGURED`, the frontend API layer should keep that code intact so hooks and pages can explain the actual configuration problem instead of showing a vague retry message.
+
+### Backend-side AI fetches must prefer container-reachable storage URLs
+The browser-facing S3 preview URL is not always safe for backend AI providers to fetch. In Docker, LocalStack assets may be published to `localhost` for the browser while backend services need the internal `localstack` hostname. Normalize public storage URLs to the backend endpoint before provider-side image fetches or Gemini-style grading calls will fail with avoidable connection errors.

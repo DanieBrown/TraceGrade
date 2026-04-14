@@ -14,7 +14,7 @@ The primary user. TraceGrade is built around the teacher's paper exam lifecycle:
 
 | Area | Capabilities |
 |------|-------------|
-| **Exam Builder** | Create structured exam templates in a full-page two-step flow: choose the exam name, link it to an existing class, then build questions and rubrics with the visual editor. No JSON or code required. |
+| **Exam Builder** | Create and edit structured exam templates in a full-page two-step flow: choose the exam name, link it to an existing class when creating, then build questions and rubrics with the visual editor. Existing exams reopen in the same builder flow for consistency. No JSON or code required. |
 | **Integrated Rubrics** | Define rubric inline per question during exam creation: typed expected answer OR uploaded photo of handwritten answer key, point value, acceptable variations, grading notes. |
 | **Exam Print** | Preview a print-ready formatted exam and print directly from the browser via a Print button. |
 | **Exam Export** | Export any exam template as JSON for backup or sharing. |

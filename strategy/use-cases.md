@@ -207,6 +207,7 @@ Feature: Student Management
     Then a dedicated student profile page opens
     And it shows the student's profile information, class context, current status, and recorded grades
     And it calculates the student's overall average from recorded gradebook points
+    And it shows 0.0% when no recorded gradebook points exist yet
     And it summarizes the student's class performance where gradebook data exists
     And the teacher can page through one class summary at a time when multiple classes are available
 ```
@@ -256,6 +257,15 @@ Feature: Exam Builder with Integrated Rubrics
     And they add one or more sub-questions (each with its own type, answer, and points)
     Then the multi-part question is added with rubrics for each sub-question
     And the total points reflect the sum of all sub-question points
+
+  Scenario: Edit an existing exam in the shared builder flow
+    Given the teacher has an existing exam template on the Exams page
+    When they click the exam card
+    Then the full-page exam builder opens in edit mode
+    And the exam name, topic, questions, and rubric details are preloaded
+    When they save their changes
+    Then the existing exam template is updated
+    And the teacher returns to the Exams page
 
   Scenario: Upload handwritten answer key image for a question
     Given the teacher is setting up an open-ended or multi-part question
@@ -540,6 +550,7 @@ Feature: Homework Management
     When they view the Homework page
     Then assignments are listed with their name, due date, and class label
     And the page explains that homework records do not create Gradebook rows or columns
+    And the page paginates the list when more than ten homework records exist
 
   Scenario: Creating a homework assignment without a title fails
     Given the teacher opens the homework builder

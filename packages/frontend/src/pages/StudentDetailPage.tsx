@@ -42,10 +42,11 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function formatPercent(value: number | null): string {
   if (value === null || !Number.isFinite(value)) {
-    return 'No grades yet'
+    return '0.0%'
   }
 
-  return `${value.toFixed(1).replace(/\.0$/, '')}%`
+  const formattedValue = value.toFixed(1)
+  return formattedValue === '0.0' ? '0.0%' : `${formattedValue.replace(/\.0$/, '')}%`
 }
 
 function formatScore(value: number | null): string {
