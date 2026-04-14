@@ -222,8 +222,7 @@ AI-notes.md
 .github/skills/*
 agents.md
 mockups/*
-strategy/*
-strategy/issues.md
+strategy/
 specs/*
 .github/agents/*
 .github/prompts/*
