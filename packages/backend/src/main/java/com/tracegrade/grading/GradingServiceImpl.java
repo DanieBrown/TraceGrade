@@ -32,7 +32,6 @@ import com.tracegrade.dto.request.GradingReviewRequest;
 import com.tracegrade.dto.response.GradingEnqueuedResponse;
 import com.tracegrade.dto.response.GradingResultResponse;
 import com.tracegrade.exception.ResourceNotFoundException;
-import com.tracegrade.openai.OpenAiService;
 import com.tracegrade.openai.dto.GradingRequest;
 import com.tracegrade.openai.dto.GradingResponse;
 import com.tracegrade.openai.exception.OpenAiException;
@@ -54,7 +53,7 @@ public class GradingServiceImpl implements GradingService {
     private final GradingResultRepository gradingResultRepository;
     private final AnswerRubricRepository rubricRepository;
     private final UserRepository userRepository;
-    private final OpenAiService openAiService;
+    private final GradingProviderRouter gradingProviderRouter;
     private final GradingProperties gradingProperties;
     private final ObjectMapper objectMapper;
     private final AuditLogService auditLogService;
@@ -184,6 +183,10 @@ public class GradingServiceImpl implements GradingService {
         submission.setStatus(SubmissionStatus.PROCESSING);
         submissionRepository.save(submission);
 
+        UUID teacherId = submission.getExamTemplate() != null
+            ? submission.getExamTemplate().getTeacherId()
+            : null;
+
         long startMs = System.currentTimeMillis();
         List<GradingResponse> aiResponses = new ArrayList<>();
 
@@ -203,11 +206,11 @@ public class GradingServiceImpl implements GradingService {
                     .build();
 
             try {
-                aiResponses.add(openAiService.gradeSubmission(req));
+                aiResponses.add(gradingProviderRouter.gradeSubmission(teacherId, req));
                 if (gradingMetricsService != null) {
                     gradingMetricsService.recordOpenAiSuccess();
                 }
-            } catch (OpenAiException ex) {
+            } catch (ProviderNotConfiguredException | GradingProviderException | OpenAiException ex) {
                 log.error("AI grading failed for submissionId={} questionNumber={}: {}",
                         submissionId, rubric.getQuestionNumber(), ex.getMessage(), ex);
                 if (gradingMetricsService != null) {

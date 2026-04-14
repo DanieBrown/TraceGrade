@@ -39,12 +39,13 @@ Features are ordered by priority. The paper exam lifecycle is the product's prim
 | 2 | **Integrated Rubrics** | Each question gets its rubric defined inline during exam creation: expected answer (typed text OR uploaded photo of handwritten answer key), point value, acceptable variations, and grading notes. Rubrics are required before AI grading can run. |
 | 3 | **Exam Print** | Preview a clean, print-ready version of any exam and print it directly from the browser. Multiple choice shows labeled bubbles; open-ended shows lined answer space; multi-part shows indented sub-questions. |
 | 4 | **Exam Export** | Export any exam template as a JSON file for backup or sharing. |
-| 5 | **AI Paper Grading** | Upload a photo (or PDF) of a student's completed paper exam → AI grades every question against the rubric → returns per-question scores, confidence levels, and feedback — instantly. |
+| 5 | **AI Paper Grading** | Upload a photo (or PDF) of a student's completed paper exam → AI grades every question against the rubric → returns per-question scores, confidence levels, and feedback — instantly. Grading uses the teacher's selected AI model from Settings, with Gemini as the default option and OpenAI or Claude available when configured. |
 | 6 | **Confidence Review** | Submissions where AI confidence falls below the teacher's threshold are flagged for manual review. Teacher can approve, adjust, or re-scan. |
 | 7 | **Classes & Students** | Create classes, enroll students, manage rosters. Lightweight — exists to support the grading pipeline. |
 | 8 | **Homework Builder** | Create homework records in a dedicated two-step flow: set planning details first, then define structured questions and expected answers. Homework remains separate from Gradebook rows and AI grading. |
 | 9 | **Gradebook** | View and edit per-student grades across classes. Auto-calculated averages. Populated by AI grading results and manual entry. |
 | 10 | **Auth** | Register/login with JWT. Role selection at signup (only Teacher active for MVP). |
+| 11 | **Settings & Preferences** | Manage account details, confidence review threshold, and the active AI grading provider used for paper-exam grading. |
 
 ## Post-MVP Features
 
@@ -92,7 +93,7 @@ Features are ordered by priority. The paper exam lifecycle is the product's prim
 | Backend | Java 21 + Spring Boot 3.x + Spring Data JPA |
 | Database | PostgreSQL 15+ (RDS) |
 | Auth | JWT + BCrypt via Spring Security |
-| AI | OpenAI Vision API for handwriting grading |
+| AI | Provider-routed handwriting grading: Gemini Flash by default, with OpenAI GPT-4o and Claude Sonnet support when configured |
 | Infra | AWS (S3, CloudFront, ECS, RDS) |
 | Local dev | Docker Compose |
 

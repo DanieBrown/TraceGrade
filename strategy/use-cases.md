@@ -559,7 +559,7 @@ Feature: Homework Management
 
 ### UC-T-11: Account Settings
 
-**Feature:** The teacher manages their own account information.
+**Feature:** The teacher manages their own account information and grading preferences.
 
 ```gherkin
 Feature: Account Settings
@@ -570,12 +570,34 @@ Feature: Account Settings
   Scenario: View current account settings
     Given the teacher navigates to the Settings page
     Then they see their current name and email displayed
+    And they see their active confidence review threshold
+    And they see their selected AI grading model
 
   Scenario: Update account information
     Given the teacher is on the Settings page
     When they update their name or any editable field
     And save the changes
     Then the updated information is reflected in the UI
+
+  Scenario: Update confidence review threshold
+    Given the teacher is on the Settings page
+    When they set a valid confidence review threshold and save
+    Then the updated threshold is reflected in the UI
+    And future AI review gating uses that saved threshold
+
+  Scenario: Update AI grading model
+    Given the teacher is on the Settings page
+    And the selected AI provider is configured on the server
+    When they choose a different AI grading model and save
+    Then the selected AI grading model is persisted for that teacher
+    And future grading requests use that saved model
+
+  Scenario: Reject an AI grading model that is not configured
+    Given the teacher is on the Settings page
+    And the selected AI provider is missing its server API key
+    When they try to save that AI grading model
+    Then the selected AI grading model remains unchanged
+    And the UI explains that the provider is not configured
 
   Scenario: Navigate back to dashboard from Settings
     Given the teacher is on the Settings page

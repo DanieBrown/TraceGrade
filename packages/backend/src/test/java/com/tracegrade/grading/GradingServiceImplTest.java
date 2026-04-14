@@ -37,7 +37,6 @@ import com.tracegrade.domain.repository.StudentSubmissionRepository;
 import com.tracegrade.domain.repository.UserRepository;
 import com.tracegrade.dto.response.GradingResultResponse;
 import com.tracegrade.exception.ResourceNotFoundException;
-import com.tracegrade.openai.OpenAiService;
 import com.tracegrade.openai.dto.GradingRequest;
 import com.tracegrade.openai.dto.GradingResponse;
 import com.tracegrade.openai.exception.OpenAiException;
@@ -55,7 +54,7 @@ class GradingServiceImplTest {
     private GradingResultRepository     gradingResultRepository;
     private AnswerRubricRepository      rubricRepository;
         private UserRepository              userRepository;
-    private OpenAiService               openAiService;
+        private GradingProviderRouter       gradingProviderRouter;
     private GradingProperties           gradingProperties;
     private AuditLogService             auditLogService;
     private GradingServiceImpl          service;
@@ -71,13 +70,13 @@ class GradingServiceImplTest {
         gradingResultRepository = mock(GradingResultRepository.class);
         rubricRepository        = mock(AnswerRubricRepository.class);
         userRepository          = mock(UserRepository.class);
-        openAiService           = mock(OpenAiService.class);
+        gradingProviderRouter   = mock(GradingProviderRouter.class);
         gradingProperties       = new GradingProperties();
         gradingProperties.setConfidenceThreshold(0.80);
         auditLogService         = mock(AuditLogService.class);
         service = new GradingServiceImpl(
                 submissionRepository, gradingResultRepository,
-                rubricRepository, userRepository, openAiService,
+                rubricRepository, userRepository, gradingProviderRouter,
                 gradingProperties, new ObjectMapper(), auditLogService
         );
     }
@@ -199,7 +198,7 @@ class GradingServiceImplTest {
             GradingResultResponse response = service.grade(SUBMISSION_ID);
 
             assertThat(response.getGradeId()).isEqualTo(existing.getGradeId());
-            verify(openAiService, never()).gradeSubmission(any());
+            verify(gradingProviderRouter, never()).gradeSubmission(any(), any());
             verify(submissionRepository, never()).save(any());
         }
 
@@ -259,7 +258,7 @@ class GradingServiceImplTest {
             when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
             when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
                     .thenReturn(List.of(rubric));
-            when(openAiService.gradeSubmission(any())).thenReturn(aiResp);
+            when(gradingProviderRouter.gradeSubmission(any(), any())).thenReturn(aiResp);
             stubSubmissionSave(submission);
             stubResultSave();
 
@@ -282,7 +281,7 @@ class GradingServiceImplTest {
             when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
             when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
                     .thenReturn(List.of(rubric));
-            when(openAiService.gradeSubmission(any())).thenReturn(aiResp);
+            when(gradingProviderRouter.gradeSubmission(any(), any())).thenReturn(aiResp);
             stubSubmissionSave(submission);
             stubResultSave();
 
@@ -304,7 +303,7 @@ class GradingServiceImplTest {
             when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
             when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
                     .thenReturn(List.of(rubric));
-            when(openAiService.gradeSubmission(any())).thenReturn(aiResp);
+            when(gradingProviderRouter.gradeSubmission(any(), any())).thenReturn(aiResp);
             stubSubmissionSave(submission);
             stubResultSave();
 
@@ -340,7 +339,7 @@ class GradingServiceImplTest {
                     .thenReturn(List.of(rubric));
             when(userRepository.findByIdAndRoleAndIsActiveTrue(teacherId, UserRole.TEACHER))
                     .thenReturn(Optional.of(teacher));
-            when(openAiService.gradeSubmission(any())).thenReturn(aiResp);
+            when(gradingProviderRouter.gradeSubmission(any(), any())).thenReturn(aiResp);
             stubSubmissionSave(submission);
             stubResultSave();
 
@@ -365,7 +364,7 @@ class GradingServiceImplTest {
                     .thenReturn(List.of(rubric));
             when(userRepository.findByIdAndRoleAndIsActiveTrue(teacherId, UserRole.TEACHER))
                     .thenReturn(Optional.empty());
-            when(openAiService.gradeSubmission(any())).thenReturn(aiResp);
+            when(gradingProviderRouter.gradeSubmission(any(), any())).thenReturn(aiResp);
             stubSubmissionSave(submission);
             stubResultSave();
 
@@ -386,7 +385,7 @@ class GradingServiceImplTest {
             when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
             when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
                     .thenReturn(List.of(rubric));
-            when(openAiService.gradeSubmission(any())).thenReturn(aiResp);
+            when(gradingProviderRouter.gradeSubmission(any(), any())).thenReturn(aiResp);
             stubSubmissionSave(submission);
             stubResultSave();
 
@@ -419,7 +418,7 @@ class GradingServiceImplTest {
             when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
             when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
                     .thenReturn(List.of(rubric1, rubric2));
-            when(openAiService.gradeSubmission(any()))
+            when(gradingProviderRouter.gradeSubmission(any(), any()))
                     .thenReturn(aiResp1)
                     .thenReturn(aiResp2);
             stubSubmissionSave(submission);
@@ -442,7 +441,7 @@ class GradingServiceImplTest {
             when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
             when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
                     .thenReturn(List.of(rubric));
-            when(openAiService.gradeSubmission(any()))
+            when(gradingProviderRouter.gradeSubmission(any(), any()))
                     .thenThrow(new OpenAiException("GRADING", "API error", 500));
             stubSubmissionSave(submission);
             stubResultSave();
@@ -472,7 +471,7 @@ class GradingServiceImplTest {
             when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
             when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
                     .thenReturn(List.of(rubric));
-            when(openAiService.gradeSubmission(any()))
+            when(gradingProviderRouter.gradeSubmission(any(), any()))
                     .thenThrow(new OpenAiRateLimitException("GRADING", 4));
             stubSubmissionSave(submission);
             stubResultSave();
@@ -499,7 +498,7 @@ class GradingServiceImplTest {
             when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
             when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
                     .thenReturn(List.of(rubric1, rubric2));
-            when(openAiService.gradeSubmission(any(GradingRequest.class)))
+            when(gradingProviderRouter.gradeSubmission(any(), any(GradingRequest.class)))
                     .thenReturn(buildAiResponse(1, 0.90, false))
                     .thenThrow(new OpenAiException("GRADING", "API error", 500));
             stubSubmissionSave(submission);
@@ -522,7 +521,7 @@ class GradingServiceImplTest {
             when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
             when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
                     .thenReturn(List.of(rubric));
-            when(openAiService.gradeSubmission(any())).thenReturn(buildAiResponse(1, 0.90, false));
+            when(gradingProviderRouter.gradeSubmission(any(), any())).thenReturn(buildAiResponse(1, 0.90, false));
             stubSubmissionSave(submission);
             stubResultSave();
 
@@ -543,7 +542,7 @@ class GradingServiceImplTest {
             when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
             when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
                     .thenReturn(List.of(rubric));
-            when(openAiService.gradeSubmission(any())).thenReturn(buildAiResponse(1, 0.90, false));
+            when(gradingProviderRouter.gradeSubmission(any(), any())).thenReturn(buildAiResponse(1, 0.90, false));
             stubSubmissionSave(submission);
             stubResultSave();
 
@@ -568,7 +567,7 @@ class GradingServiceImplTest {
             when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
             when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
                     .thenReturn(List.of(rubric1, rubric2));
-            when(openAiService.gradeSubmission(any()))
+            when(gradingProviderRouter.gradeSubmission(any(), any()))
                     .thenReturn(aiResp1)
                     .thenReturn(aiResp2);
             stubSubmissionSave(submission);
@@ -696,7 +695,7 @@ class GradingServiceImplTest {
             assertThat(response.getStatus()).isEqualTo("QUEUED");
             assertThat(response.getEnqueuedAt()).isNotNull();
             verify(mockPublisher).publishGradingJob(SUBMISSION_ID);
-            verify(openAiService, never()).gradeSubmission(any());
+            verify(gradingProviderRouter, never()).gradeSubmission(any(), any());
         }
 
         @Test
@@ -754,7 +753,7 @@ class GradingServiceImplTest {
             when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
             when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
                     .thenReturn(List.of(rubric));
-            when(openAiService.gradeSubmission(any())).thenReturn(aiResp);
+            when(gradingProviderRouter.gradeSubmission(any(), any())).thenReturn(aiResp);
             stubSubmissionSave(submission);
             stubResultSave();
 
@@ -763,7 +762,7 @@ class GradingServiceImplTest {
             assertThat(response.getSubmissionId()).isEqualTo(SUBMISSION_ID);
             assertThat(response.getStatus()).isEqualTo("COMPLETED");
             assertThat(response.getEnqueuedAt()).isNotNull();
-            verify(openAiService).gradeSubmission(any());
+            verify(gradingProviderRouter).gradeSubmission(any(), any());
         }
 
         @Test
@@ -779,14 +778,14 @@ class GradingServiceImplTest {
             when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
             when(rubricRepository.findByExamTemplateIdOrderByQuestionNumberAsc(TEMPLATE_ID))
                     .thenReturn(List.of(rubric));
-            when(openAiService.gradeSubmission(any())).thenReturn(aiResp);
+            when(gradingProviderRouter.gradeSubmission(any(), any())).thenReturn(aiResp);
             stubSubmissionSave(submission);
             stubResultSave();
 
             service.grade(SUBMISSION_ID);
 
             ArgumentCaptor<GradingRequest> requestCaptor = ArgumentCaptor.forClass(GradingRequest.class);
-            verify(openAiService).gradeSubmission(requestCaptor.capture());
+            verify(gradingProviderRouter).gradeSubmission(any(), requestCaptor.capture());
             assertThat(requestCaptor.getValue().getExpectedAnswerImageUrl())
                     .isEqualTo("https://cdn.example.com/rubrics/q1.jpg");
         }

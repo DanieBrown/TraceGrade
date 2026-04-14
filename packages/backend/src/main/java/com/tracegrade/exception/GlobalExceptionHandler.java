@@ -25,10 +25,12 @@ import com.tracegrade.dto.response.ApiResponse;
 import com.tracegrade.dto.response.FieldError;
 import com.tracegrade.imageprocessing.PreprocessingException;
 import com.tracegrade.grading.GradingFailedException;
+import com.tracegrade.grading.GradingProviderException;
 import com.tracegrade.grading.RubricSetupRequiredException;
 import com.tracegrade.openai.exception.OpenAiException;
 import com.tracegrade.openai.exception.OpenAiRateLimitException;
 import com.tracegrade.rubric.DuplicateQuestionNumberException;
+import com.tracegrade.settings.GradingProviderService;
 
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -291,6 +293,21 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_GATEWAY)
                 .body(ApiResponse.error(error));
     }
+
+        @ExceptionHandler(GradingProviderService.ProviderNotConfiguredApiException.class)
+        public ResponseEntity<ApiResponse<Void>> handleProviderNotConfigured(
+                        GradingProviderService.ProviderNotConfiguredApiException ex) {
+                log.warn("Provider not configured: provider={}", ex.getProvider());
+                ApiError error = ApiError.of("PROVIDER_NOT_CONFIGURED", ex.getMessage());
+                return ResponseEntity.badRequest().body(ApiResponse.error(error));
+        }
+
+        @ExceptionHandler(GradingProviderException.class)
+        public ResponseEntity<ApiResponse<Void>> handleGradingProviderException(GradingProviderException ex) {
+                log.error("Grading provider [{}] failed: {}", ex.getProvider(), ex.getMessage(), ex);
+                ApiError error = ApiError.of("AI_ERROR", "AI service encountered an error");
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ApiResponse.error(error));
+        }
 
     @ExceptionHandler(GradingFailedException.class)
     public ResponseEntity<ApiResponse<Void>> handleGradingFailed(GradingFailedException ex) {
