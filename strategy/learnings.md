@@ -85,3 +85,6 @@ Teachers think in terms of classes first, not detached templates. The exam build
 
 ### Breadcrumb history should track only main pages
 Recent-navigation breadcrumbs are most useful when they reflect workspace changes, not every detail route. Track only top-level pages like Dashboard, Students, Grades, and Settings, keep the list FIFO-capped at five entries, and let detail workspaces reuse the last main-page context instead of polluting history.
+
+### Preserve structured backend error codes through frontend settings APIs
+Settings flows sometimes need specific UX copy, not just a generic save failure. When the backend returns a stable code like `PROVIDER_NOT_CONFIGURED`, the frontend API layer should keep that code intact so hooks and pages can explain the actual configuration problem instead of showing a vague retry message.

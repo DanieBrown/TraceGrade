@@ -131,8 +131,10 @@ services:
       CLOUDWATCH_NAMESPACE: TraceGrade/Grading
       CLOUDWATCH_STEP_SECONDS: "60"
 
-      # OpenAI Configuration
+      # AI Provider Configuration
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
 
       # Security
       SECURITY_HTTPS_REDIRECT: "false"

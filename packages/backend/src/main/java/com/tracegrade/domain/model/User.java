@@ -26,6 +26,8 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.util.Locale;
 
+import com.tracegrade.grading.GradingProvider;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -75,6 +77,12 @@ public class User extends BaseEntity {
     @Digits(integer = 1, fraction = 2, message = "Confidence threshold must have at most 2 decimal places")
     @Column(name = "confidence_threshold", precision = 3, scale = 2)
     private BigDecimal confidenceThreshold;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "grading_provider", nullable = false, length = 50, columnDefinition = "VARCHAR(50) DEFAULT 'GEMINI_FLASH'")
+    @Builder.Default
+    private GradingProvider gradingProvider = GradingProvider.GEMINI_FLASH;
 
     @PrePersist
     @PreUpdate

@@ -1,6 +1,7 @@
+import axios from 'axios'
 import api from '../../lib/api'
 import type { ApiResponse } from '../../lib/apiTypes'
-import type { TeacherThreshold, ThresholdSource } from './types'
+import type { GradingProviderSettings, GradingProviderId, ProviderOption, TeacherThreshold, ThresholdSource } from './types'
 
 interface TeacherThresholdPayload {
   effectiveThreshold?: unknown
@@ -73,4 +74,67 @@ export async function updateTeacherThreshold(threshold: number): Promise<Teacher
   }
 
   return normalized
+}
+
+// ---------------------------------------------------------------------------
+// Grading provider
+// ---------------------------------------------------------------------------
+
+const VALID_PROVIDER_IDS: GradingProviderId[] = ['GEMINI_FLASH', 'OPENAI_GPT4O', 'CLAUDE_SONNET']
+
+function isValidProviderId(value: unknown): value is GradingProviderId {
+  return typeof value === 'string' && (VALID_PROVIDER_IDS as string[]).includes(value)
+}
+
+function normalizeProviderOption(raw: unknown): ProviderOption | null {
+  if (!raw || typeof raw !== 'object') return null
+  const obj = raw as Record<string, unknown>
+  if (!isValidProviderId(obj.id) || typeof obj.displayName !== 'string' || typeof obj.description !== 'string') {
+    return null
+  }
+  return { id: obj.id, displayName: obj.displayName, description: obj.description }
+}
+
+function normalizeGradingProviderResponse(payload: unknown): GradingProviderSettings | null {
+  if (!payload || typeof payload !== 'object') return null
+  const obj = payload as Record<string, unknown>
+  if (!isValidProviderId(obj.currentProvider)) return null
+  if (!Array.isArray(obj.availableProviders)) return null
+  const options = obj.availableProviders.map(normalizeProviderOption)
+  if (options.some((o) => o === null)) return null
+  return {
+    currentProvider: obj.currentProvider,
+    availableProviders: options as ProviderOption[],
+  }
+}
+
+function getApiErrorCode(error: unknown): string | null {
+  if (!axios.isAxiosError(error)) {
+    return null
+  }
+
+  const code = (error.response?.data as { error?: { code?: unknown } } | undefined)?.error?.code
+  return typeof code === 'string' ? code : null
+}
+
+export async function getGradingProvider(): Promise<GradingProviderSettings | null> {
+  const response = await api.get<ApiResponse<unknown>>('/settings/grading')
+  return normalizeGradingProviderResponse(response.data?.data)
+}
+
+export async function updateGradingProvider(provider: GradingProviderId): Promise<GradingProviderSettings> {
+  try {
+    const response = await api.patch<ApiResponse<unknown>>('/settings/grading', { provider })
+    const normalized = normalizeGradingProviderResponse(response.data?.data)
+    if (!normalized) {
+      throw new Error('Unexpected response while saving grading provider')
+    }
+    return normalized
+  } catch (error) {
+    const errorCode = getApiErrorCode(error)
+    if (errorCode) {
+      throw new Error(errorCode)
+    }
+    throw error
+  }
 }

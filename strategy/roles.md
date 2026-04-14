@@ -25,7 +25,7 @@ The primary user. TraceGrade is built around the teacher's paper exam lifecycle:
 | **Students** | Add, edit, deactivate students; open a full student profile page with roster details, class placement, recorded grades, and performance summaries. |
 | **Grades** | View gradebook per class; enter/edit individual grades; auto-calculated averages. |
 | **Auth** | Register, login, JWT-based sessions. |
-| **Settings** | Account settings, confidence threshold configuration. |
+| **Settings** | Account settings, confidence threshold configuration, AI grading model selection. |
 
 ### Planned additions
 

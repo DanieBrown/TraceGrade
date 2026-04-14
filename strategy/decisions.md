@@ -303,7 +303,8 @@ The AI-powered grading system uses an asynchronous processing pipeline:
 │               Grading Worker (Spring Boot Service)               │
 │  - Poll SQS for grading jobs                                    │
 │  - Fetch submission images and answer rubric from S3            │
-│  - Call OpenAI Vision API (GPT-4V) with:                        │
+│  - Call the configured AI grading provider with:                │
+│    • Teacher-selected model (Gemini, GPT-4o, or Claude)         │
 │    • Student submission image                                   │
 │    • Answer rubric image                                        │
 │    • Grading instructions                                       │
@@ -325,7 +326,7 @@ The AI-powered grading system uses an asynchronous processing pipeline:
 **Key Design Decisions:**
 - **Asynchronous Processing**: Grading jobs run in background via SQS to handle batch uploads
 - **Image Preprocessing**: Lambda functions ensure consistent image format/quality for AI
-- **OpenAI Vision API**: GPT-4 Vision analyzes both student and rubric images
+- **Provider Router**: Resolve the teacher's saved grading model at runtime; Gemini is the default and OpenAI/Claude are optional when configured
 - **Confidence Threshold**: Configurable (default 95%) to balance automation vs accuracy
 - **Teacher Control**: All AI grades available for review; low-confidence flagged automatically
 - **Scalability**: SQS queue + worker pool can scale horizontally for large batch jobs
@@ -363,6 +364,7 @@ The AI-powered grading system uses an asynchronous processing pipeline:
 | first_name | String(100) | Required | User's first name |
 | last_name | String(100) | Required | User's last name |
 | role | Enum | Required | teacher, principal, counselor |
+| grading_provider | Enum | Required, Default: GEMINI_FLASH | Teacher-selected AI grading provider for paper exam grading |
 | is_active | Boolean | Default: true | Account status |
 | created_at | Timestamp | Required | Account creation time |
 | updated_at | Timestamp | Required | Last update time |
@@ -1446,3 +1448,43 @@ Homework already existed as a lightweight planner entry in navigation, but creat
 - Add `materials_json` to the backend homework entity and API DTOs.
 - Validate homework coverage at save time so each question has a prompt and expected answer.
 - Keep the Homework page copy explicit that planner records do not create Gradebook rows or columns.
+
+---
+
+### ADR-012: Teacher-Selectable AI Grading Providers
+
+**Date:** 2026-04-14  
+**Status:** Accepted  
+**Deciders:** Product owner, development team
+
+#### Context
+
+TraceGrade's grading flow was wired directly to a single OpenAI-backed service. That made it impossible to let teachers choose a model based on cost, latency, or provider preference, and it pushed provider availability concerns into runtime grading failures instead of the settings workflow.
+
+At the same time, the product already exposed teacher-specific grading behavior through the confidence threshold. Model selection belongs in the same teacher-owned settings surface and should persist independently of individual grading requests.
+
+#### Decision
+
+1. Persist the active grading provider on the teacher user record as `grading_provider`, defaulting to `GEMINI_FLASH`.
+2. Introduce a provider-agnostic grading contract plus a `GradingProviderRouter` that resolves the teacher's saved provider at grading time.
+3. Support three provider IDs in the settings and grading pipeline: `GEMINI_FLASH`, `OPENAI_GPT4O`, and `CLAUDE_SONNET`.
+4. Add teacher settings endpoints for reading and updating the active grading provider.
+5. Validate provider configuration when a teacher saves settings so unconfigured providers fail early with a stable `PROVIDER_NOT_CONFIGURED` API error.
+
+#### Consequences
+
+**Positive:**
+- Teachers can choose their grading model without changing exam or submission data.
+- The grading service is no longer tightly coupled to one provider implementation.
+- Missing API keys surface as a settings-time validation problem instead of a later grading surprise.
+
+**Trade-offs:**
+- The backend now owns provider routing, provider-specific exceptions, and an extra persistence field on users.
+- Frontend settings flows must preserve structured backend error codes so they can show provider-specific guidance.
+- More providers increase the test matrix for grading behavior and configuration paths.
+
+#### Implementation Notes
+
+- Store the provider enum on `users.grading_provider` with `GEMINI_FLASH` as the schema default.
+- Keep OpenAI as one routed provider rather than renaming the existing OpenAI service abstraction immediately.
+- Return provider metadata from the settings API so the frontend can render labels and descriptions without hardcoding a second source of truth.

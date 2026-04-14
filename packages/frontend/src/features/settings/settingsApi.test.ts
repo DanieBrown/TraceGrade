@@ -1,15 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import api from '../../lib/api'
-import { getTeacherThreshold, updateTeacherThreshold } from './settingsApi'
+import { getGradingProvider, getTeacherThreshold, updateGradingProvider, updateTeacherThreshold } from './settingsApi'
 
 vi.mock('../../lib/api', () => ({
   default: {
     get: vi.fn(),
+    patch: vi.fn(),
     put: vi.fn(),
   },
 }))
 
 const mockedGet = vi.mocked(api.get)
+const mockedPatch = vi.mocked(api.patch)
 const mockedPut = vi.mocked(api.put)
 
 describe('settingsApi normalization', () => {
@@ -160,6 +162,157 @@ describe('settingsApi normalization', () => {
         },
       })
       await expect(updateTeacherThreshold(0.8)).rejects.toThrow('Unexpected response while saving threshold')
+    })
+  })
+
+  describe('getGradingProvider', () => {
+    it('normalizes the current provider and available options', async () => {
+      mockedGet.mockResolvedValueOnce({
+        data: {
+          data: {
+            currentProvider: 'GEMINI_FLASH',
+            availableProviders: [
+              {
+                id: 'GEMINI_FLASH',
+                displayName: 'Gemini 2.0 Flash',
+                description: 'Free — recommended',
+              },
+              {
+                id: 'OPENAI_GPT4O',
+                displayName: 'GPT-4o',
+                description: 'OpenAI — requires API key',
+              },
+            ],
+          },
+        },
+      })
+
+      await expect(getGradingProvider()).resolves.toEqual({
+        currentProvider: 'GEMINI_FLASH',
+        availableProviders: [
+          {
+            id: 'GEMINI_FLASH',
+            displayName: 'Gemini 2.0 Flash',
+            description: 'Free — recommended',
+          },
+          {
+            id: 'OPENAI_GPT4O',
+            displayName: 'GPT-4o',
+            description: 'OpenAI — requires API key',
+          },
+        ],
+      })
+      expect(mockedGet).toHaveBeenCalledWith('/settings/grading')
+    })
+
+    it('returns null when the provider payload is malformed', async () => {
+      mockedGet.mockResolvedValueOnce({ data: { data: undefined } })
+      await expect(getGradingProvider()).resolves.toBeNull()
+
+      mockedGet.mockResolvedValueOnce({
+        data: {
+          data: {
+            currentProvider: 'NOPE',
+            availableProviders: [],
+          },
+        },
+      })
+      await expect(getGradingProvider()).resolves.toBeNull()
+
+      mockedGet.mockResolvedValueOnce({
+        data: {
+          data: {
+            currentProvider: 'GEMINI_FLASH',
+            availableProviders: [
+              {
+                id: 'CLAUDE_SONNET',
+                displayName: 'Claude Sonnet 4.6',
+                description: 42,
+              },
+            ],
+          },
+        },
+      })
+      await expect(getGradingProvider()).resolves.toBeNull()
+    })
+  })
+
+  describe('updateGradingProvider', () => {
+    it('normalizes the saved provider response', async () => {
+      mockedPatch.mockResolvedValueOnce({
+        data: {
+          data: {
+            currentProvider: 'CLAUDE_SONNET',
+            availableProviders: [
+              {
+                id: 'GEMINI_FLASH',
+                displayName: 'Gemini 2.0 Flash',
+                description: 'Free — recommended',
+              },
+              {
+                id: 'CLAUDE_SONNET',
+                displayName: 'Claude Sonnet 4.6',
+                description: 'Anthropic — requires API key',
+              },
+            ],
+          },
+        },
+      })
+
+      await expect(updateGradingProvider('CLAUDE_SONNET')).resolves.toEqual({
+        currentProvider: 'CLAUDE_SONNET',
+        availableProviders: [
+          {
+            id: 'GEMINI_FLASH',
+            displayName: 'Gemini 2.0 Flash',
+            description: 'Free — recommended',
+          },
+          {
+            id: 'CLAUDE_SONNET',
+            displayName: 'Claude Sonnet 4.6',
+            description: 'Anthropic — requires API key',
+          },
+        ],
+      })
+      expect(mockedPatch).toHaveBeenCalledWith('/settings/grading', {
+        provider: 'CLAUDE_SONNET',
+      })
+    })
+
+    it('throws when the saved provider payload is malformed', async () => {
+      mockedPatch.mockResolvedValueOnce({ data: { data: undefined } })
+      await expect(updateGradingProvider('OPENAI_GPT4O')).rejects.toThrow('Unexpected response while saving grading provider')
+
+      mockedPatch.mockResolvedValueOnce({
+        data: {
+          data: {
+            currentProvider: 'OPENAI_GPT4O',
+            availableProviders: [
+              {
+                id: 'INVALID',
+                displayName: 'Broken',
+                description: 'Broken',
+              },
+            ],
+          },
+        },
+      })
+      await expect(updateGradingProvider('OPENAI_GPT4O')).rejects.toThrow('Unexpected response while saving grading provider')
+    })
+
+    it('rethrows the backend provider code when the selected model is not configured', async () => {
+      mockedPatch.mockRejectedValueOnce({
+        isAxiosError: true,
+        response: {
+          data: {
+            error: {
+              code: 'PROVIDER_NOT_CONFIGURED',
+            },
+          },
+        },
+      })
+
+      await expect(updateGradingProvider('CLAUDE_SONNET')).rejects.toThrow('PROVIDER_NOT_CONFIGURED')
     })
   })
 })

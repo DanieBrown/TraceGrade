@@ -1,5 +1,7 @@
 import { useTeacherThreshold } from '../features/settings/useTeacherThreshold'
+import { useGradingProvider } from '../features/settings/useGradingProvider'
 import { AppNotice, AppPage, AppPageHeader, AppPanel } from '../components/layout/AppPage'
+import type { GradingProviderId } from '../features/settings/types'
 
 function ThresholdSourceBadge({ source }: { source: 'teacher_override' | 'default' }) {
   if (source === 'teacher_override') {
@@ -32,6 +34,17 @@ export default function SettingsPage() {
     save,
   } = useTeacherThreshold()
 
+  const {
+    loadState: providerLoadState,
+    settings: providerSettings,
+    fetchError: providerFetchError,
+    saveError: providerSaveError,
+    isSaving: providerIsSaving,
+    showSavedSuccess: providerSavedSuccess,
+    retryLoad: retryProviderLoad,
+    selectProvider,
+  } = useGradingProvider()
+
   const showInputError = Boolean(validationError) || Boolean(saveError)
   const activeErrorMessage = validationError ?? saveError
 
@@ -43,6 +56,92 @@ export default function SettingsPage() {
         description="Manage your teacher preferences and the confidence threshold used by AI grading."
       />
 
+      {/* ── AI Grading Model ── */}
+      <AppPanel className="mb-6">
+        <h2 className="font-display text-primary text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+          AI Grading Model
+        </h2>
+        <p className="font-body text-secondary text-sm mt-1 mb-4" style={{ color: 'var(--text-secondary)' }}>
+          Choose the AI model used to grade your students' handwritten submissions. Gemini 2.0 Flash is free and recommended.
+        </p>
+
+        {providerLoadState === 'loading' && (
+          <div className="flex items-center gap-3 py-4" style={{ color: 'var(--text-muted)' }}>
+            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+            <span className="font-mono text-xs">Loading preferences...</span>
+          </div>
+        )}
+
+        {providerLoadState === 'error' && (
+          <AppNotice tone="danger">
+            <p className="font-display text-sm font-semibold">Unable to load grading model preferences</p>
+            <p className="font-body text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>{providerFetchError}</p>
+            <button
+              type="button"
+              onClick={() => void retryProviderLoad()}
+              className="mt-3 font-display font-semibold text-xs underline"
+              style={{ color: 'var(--accent-gold)' }}
+            >
+              Retry
+            </button>
+          </AppNotice>
+        )}
+
+        {providerLoadState === 'done' && providerSettings && (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col">
+              <label
+                htmlFor="grading-provider"
+                className="font-mono text-[11px] mb-1"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                AI Model
+              </label>
+              <select
+                id="grading-provider"
+                value={providerSettings.currentProvider}
+                disabled={providerIsSaving}
+                onChange={(e) => void selectProvider(e.target.value as GradingProviderId)}
+                className="w-72 rounded-xl border bg-elevated px-3 py-2 font-mono text-sm text-primary outline-none focus:ring-1 focus:ring-[var(--accent-gold)] disabled:cursor-not-allowed disabled:opacity-70"
+                style={{
+                  backgroundColor: 'var(--bg-elevated)',
+                  color: 'var(--text-primary)',
+                  border: `1px solid ${providerSaveError ? 'var(--accent-crimson)' : 'var(--border)'}`,
+                }}
+              >
+                {providerSettings.availableProviders.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.displayName} — {opt.description}
+                  </option>
+                ))}
+              </select>
+              {providerSaveError && (
+                <p className="font-mono text-[11px] mt-1" style={{ color: 'var(--accent-crimson)' }}>
+                  {providerSaveError}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              {providerIsSaving && (
+                <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+                  Saving...
+                </span>
+              )}
+              {providerSavedSuccess && (
+                <span className="text-xs font-mono animate-pulse" style={{ color: 'var(--accent-teal)' }}>
+                  ✓ Saved successfully
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </AppPanel>
+
+      {/* ── AI Confidence Threshold ── */}
       <AppPanel className="mb-6">
         <h2 className="font-display text-primary text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
           AI Confidence Threshold
